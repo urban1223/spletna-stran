@@ -1,0 +1,7 @@
+services:
+  nova-akademija:
+    build: .
+    container_name: nova-akademija
+    restart: unless-stopped
+    ports:
+      - 4231:8080
