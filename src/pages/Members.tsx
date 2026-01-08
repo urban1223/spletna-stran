@@ -135,7 +135,7 @@ const Members = () => {
       role: "Glasbenik",
       instruments: "Kljunaste flavte, baročni fagot",
       image: erazemImage,
-      shortBio: "Na Konservatoriju za glasbo in balet Ljubljana (KGBL) je zaključil izobraževanje na kljunasti flavti in prejel Škerjančevo nagrado za izjemne umetniške dosežke. Na Univerzi Mozarteum Salzburg (MOZ) nadaljuje podiplomski študij koncertne smeri pri prof. Dorothee Oberlinger. Je štirikratni dobitnik prve nagrade in zlate plakete na slovenskem državnem tekmovanju TEMSIG ter prvi kljunasti flavtist, ki je postal zmagovalec razpisa Mladi upi za izjemno nadarjene mlade umetnike, športnike in znanstvenike.",
+      shortBio: "Na Konservatoriju za glasbo in balet Ljubljana (KGBL) je zaključil izobraževanje na kljunasti flavti in prejel Škerjančevo nagrado za izjemne umetniške dosežke. Na Univerzi Mozarteum Salzburg (MOZ) nadaljuje podiplomski študij koncertne smeri pri prof. Dorothee Oberlinger.",
       fullBio: "Erazem Žganjar (r. 2002) je slovenski izvajalec na kljunasti flavti, " +
       "ki trenutno opravlja podiplomski študij koncertne smeri na Univerzi Mozarteum Salzburg " +
       "pri svetovno priznani flavtistki Dorothee Oberlinger. Je štirikratni dobitnik prve nagrade " +
