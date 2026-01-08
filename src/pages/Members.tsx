@@ -11,6 +11,7 @@ import paulinaImage from "@/assets/members/paulina-tuhtan.jpg";
 import braneImage from "@/assets/members/brane-rezic.jpg";
 import egonImage from "@/assets/members/egon-mihajlović.jpg";
 import natalijaImage from "@/assets/members/natalija-ljubotina.jpg";
+import erazemImage from "@/assets/members/erazem-zganjar.jpg";
 
 
 const Members = () => {
@@ -128,6 +129,31 @@ const Members = () => {
     "Svoje znanje redno izpopolnjuje na seminarjih pri profesorjih, kot so Volodja Balžalorsky, " +
     "Wonji Kim Ozim, Benjamin Schmid, Lana Trotovšek, Helfried Fister, Sandor Javorkai, " +
     "Sreten Krstić, Janez Podlesek, Dan Zhu, Armin Sešek, Goran Kentera in Hannah Hurwitz."
+    },
+    {
+      name: "Erazem Žganjar",
+      role: "Glasbenik",
+      instruments: "Kljunaste flavte, baročni fagot",
+      image: erazemImage,
+      shortBio: "Na Konservatoriju za glasbo in balet Ljubljana (KGBL) je zaključil izobraževanje na kljunasti flavti in prejel Škerjančevo nagrado za izjemne umetniške dosežke. Na Univerzi Mozarteum Salzburg (MOZ) nadaljuje podiplomski študij koncertne smeri pri prof. Dorothee Oberlinger. Je štirikratni dobitnik prve nagrade in zlate plakete na slovenskem državnem tekmovanju TEMSIG ter prvi kljunasti flavtist, ki je postal zmagovalec razpisa Mladi upi za izjemno nadarjene mlade umetnike, športnike in znanstvenike.",
+      fullBio: "Erazem Žganjar (r. 2002) je slovenski izvajalec na kljunasti flavti, " +
+      "ki trenutno opravlja podiplomski študij koncertne smeri na Univerzi Mozarteum Salzburg " +
+      "pri svetovno priznani flavtistki Dorothee Oberlinger. Je štirikratni dobitnik prve nagrade " +
+      "in zlate plakete na slovenskem državnem tekmovanju TEMSIG ter prvi kljunasti flavtist, " +
+      "ki je postal zmagovalec razpisa Mladi upi za izjemno nadarjene mlade umetnike, športnike in znanstvenike. " +
+      "Prav tako je bil šele drugi kljunasti flavtist, ki je med izobraževanjem na Konservatoriju za glasbo " +
+      "in balet Ljubljana prejel Škerjančevo nagrado za izjemne umetniške dosežke. " +
+
+      " Kot solist in komorni glasbenik je nastopil na številnih pomembnih festivalih in koncertnih ciklih, " +
+      "med drugim na Festivalu Ljubljana, Festivalu Radovljica, Forumu Blockflöte v Nürnbergu, " +
+      "Festivalu ORA v Salzburgu, Slovenskih glasbenih dnevih ter ciklu Solo e da Camera. " +
+      "Nastopil je z baročnim orkestrom in vokalnim ansamblom Univerze Mozarteum ter s Centrom za baročno glasbo Versailles, " +
+      "redno pa sodeluje tudi s sodobnimi slovenskimi in tujimi skladatelji ter izvaja premiere njihovih del. " +
+
+      " Med njegove najnovejše dosežke sodijo solistični koncerti na Inštitutu za novo glasbo Univerze Mozarteum " +
+      "ter na Tednu sodobne glasbe na Bledu v organizaciji Inštitut.abeceda, kjer je deloval kot umetniški vodja ansambla kljunastih flavt. " +
+      "Januarja 2026 je skupaj z Dorothee Oberlinger nastopil v Dunajskem Konzerthausu. " +
+      "Aprila pa bo izvedel celovečerni koncert kot solist in umetniški vodja z baročnim orkestrom na Festivalu baročne glasbe v St. Johannu."
     },
 
     {
