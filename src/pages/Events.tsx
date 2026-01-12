@@ -6,6 +6,22 @@ const Events = () => {
   const upcomingEvents = [
 
     
+          {
+      title: "Skrivnosti baroka",
+      date: "jesenski meseci 2026",
+      time: "večerni uri - natančen čas bo objavljen naknadno",
+      location: "Staro mestno jedro Kranja",
+      description: "Komorni zbor Deprofundis Kranj",
+      program: "D. Buxtehude, G. Ph. Telemann in drugi nemški baročni skladatelji",
+      conductor: "Dirigentka: Branka Potočnik Krajnik",
+      cta: "VEČ O ZBORU",
+      link: "http://www.deprofundis.si/zbor/o-zboru/"
+    }
+
+
+  ];
+
+  const pastEvents = [
     {
       title: "Zven Veličastja - SAKRALNI ABONMA",
       date: "Sreda, 7. januar 2026",
@@ -17,9 +33,6 @@ const Events = () => {
       cta: "OGLEJTE SI LOKACIJO",
       link: "https://maps.app.goo.gl/JxPjxvEoyTzeZ4FC8",
     },
-  ];
-
-  const pastEvents = [
         {
     title: "Gloria in excelsis Deo",
     date: "Četrtek, 25. december 2025",

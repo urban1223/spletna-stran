@@ -130,22 +130,26 @@ const Projects = () => {
                   <p className="font-semibold text-foreground">
                     Termin in kraj:
                     <span className="font-normal text-muted-foreground ml-2">
-                      5. 1. 2026, v času pouka HIP1 in HIP2 na lokaciji predmeta.
+                      6. 1. 2026, v času pouka HIP1 in HIP2 na lokaciji predmeta.
                     </span>
                   </p>
 
                   <p className="font-semibold text-foreground">
                     Vstop prost!
                   </p>
+                  <div>
+                  </div>
                 </div>
               </div>
 
               <Button
-                className="w-full bg-accent text-accent-foreground hover:bg-accent/90 mt-4"
-                onClick={() => window.location.href = "/o-nas"}
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={() => window.location.href = ""}
               >
-                PRIJAVA NA SEMINAR PO E-POŠTI
+                DOGODEK JE POTEKEL!
               </Button>
+
+
             </Card>
           </div>
         </section>
