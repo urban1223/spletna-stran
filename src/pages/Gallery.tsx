@@ -98,7 +98,7 @@ const Gallery = () => {
                     onClick={() => window.open(project.instagramLink, "_blank")}
                     className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold px-8 py-6"
                   >
-                    VEČ SLIK NA INSTAGRAMU
+                    VEČ SLIK
                   </Button>
                 </div>
               )}

@@ -9,50 +9,75 @@ const Projects = () => {
           PROJEKTI IN IZOBRAŽEVANJA
         </h1>
 
-        {/* EDUCATION SECTION */}
+        {/* PROGRAMI IN IZOBRAŽEVANJA */}
         <section className="mb-16">
           <div className="flex items-center gap-3 mb-8">
-            <h2 className="text-4xl font-bold text-foreground">Izobraževanja</h2>
+            <h2 className="text-4xl font-bold text-foreground">
+              Programi in izobraževanja
+            </h2>
           </div>
+            
+         
 
           <div className="grid md:grid-cols-2 gap-6">
-            {/* === DELAVNICA: GENERALNI BAS === */}
             <Card className="p-8 bg-card border-border flex flex-col h-full">
-              <div className="flex-grow">
-                <h3 className="text-2xl font-bold text-accent mb-4">
-                  Delavnica: Generalni bas
-                </h3>
-
-                <p className="text-muted-foreground leading-relaxed mb-6 text-justify">
-                  Basso continuo ali generalni bas je vrsta glasbenega zapisa, pri katerem so pod 
-                  basovsko linijo zapisana števila, ki označujejo akorde. S teorijo in veliko prakse 
-                  je znanje generalbasa eno izmed ključnih znanj za vsakega izvajalca glasbe med 16. 
-                  in 18. stoletjem. Delavnica se <strong>prek igranja na čembalo ali lutnjo </strong> 
-                  osredotoča na pravila harmonije in improvizacijo generalnega basa, preostali člani 
-                  društva pa omogočajo, da se znanje prenese v prakso s skupnim muziciranjem.
+              <h3 className="text-2xl font-bold text-accent">
+                Tečaj bassa continua
+              </h3>
+              
+              <p className="text-muted-foreground leading-relaxed mb-6 text-justify">
+                  Basso continuo je harmonska glasbena struktura, po navadi sestavljena iz
+                  basovske linije in akordičnih simbolov, ki so značilni za baročno glasbo.
+                  Igranje continua pripomore k boljšemu razumevanju baročnih stilov, zato je priporočljivo,
+                  da vsak, ki se ukvarja z baročno glasbo (pa tudi kasnejšo) obladuje vsaj osnovne tehnike igranja continua.
+                  V sklopu društva ponujamo različne tečaje glede na predznanje:
+                  <ul className="list-none space-y-1 font-semibold text-foreground">
+                    <li className="before:content-['\2022'] before:mr-2 before:text-accent">
+                      Osnovni tečaj za začetnike
+                    </li>
+                    <li className="before:content-['\2022'] before:mr-2 before:text-accent">
+                      Nadaljevalni tečaj (razlike med francoskim, italijanskim in nemškim stilom)
+                    </li>
+                    <li className="before:content-['\2022'] before:mr-2 before:text-accent">
+                      Igranje partimentov
+                    </li>
+                    <li className="before:content-['\2022'] before:mr-2 before:text-accent">
+                      Continuo 17. stoletja
+                    </li>
+                  </ul>
                 </p>
+                <div className="space-y-3 text-muted-foreground">
+      <p>
+        <span className="font-semibold text-foreground">Cena:</span>
+        <span className="ml-2">po dogovoru, odvisno od velikosti skupine</span>
+      </p>
 
-                <div className="space-y-2 text-muted-foreground mb-6">
-                  <p>
-                    <span className="font-semibold text-foreground">Mentor:</span>
-                    <span className="ml-2">Branimir Rezić, asistent na AG LJ</span>
-                  </p>
+      <p>
+        <span className="font-semibold text-foreground">Obseg:</span>
+        <span className="ml-2">10 terminov po 4 šolske ure (40 ur)</span>
+      </p>
 
-                  <div>
-                    <span className="font-semibold text-foreground">Kotizacija za 10 ur:</span>
-                    <ul className="list-disc list-inside mt-2">
-                      <li>Skupinski pouk: 150€</li>
-                      <li>Individualni pouk: 300€</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
+      <p>
+        <span className="font-semibold text-foreground">Oblika pouka:</span>
+        <span className="ml-2">individualni ali skupinski pouk</span>
+      </p>
+
+      <p>
+        <span className="font-semibold text-foreground">Termini:</span>
+        <span className="ml-2">
+          med tednom (tudi dopoldne) ali ob vikendih po dogovoru
+        </span>
+      </p>
+      <p> 
+      </p>
+    </div>
+              
 
               <Button
                 className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
                 onClick={() => window.location.href = "/o-nas"}
               >
-                PRIJAVA NA DELAVNICO PO E-POŠTI
+                PRIJAVA PO E-POŠTI
               </Button>
             </Card>
 
@@ -142,12 +167,13 @@ const Projects = () => {
                 </div>
               </div>
 
-              <Button
-                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                onClick={() => window.location.href = ""}
-              >
-                DOGODEK JE POTEKEL!
-              </Button>
+              <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {}}
+                >
+                  DOGODEK JE POTEKEL
+                </Button>
 
 
             </Card>
@@ -180,7 +206,7 @@ const Projects = () => {
               className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
               onClick={() => window.location.href = "/podprite-nas"}
             >
-              PODPRITE TA RAZISKOVALNI PROJEKT
+              PODPRITE RAZISKOVALNI PROJEKT
             </Button>
           </Card>
         </section>

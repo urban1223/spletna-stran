@@ -14,7 +14,7 @@ const Events = () => {
       description: "Komorni zbor Deprofundis Kranj",
       program: "D. Buxtehude, G. Ph. Telemann in drugi nemški baročni skladatelji",
       conductor: "Dirigentka: Branka Potočnik Krajnik",
-      cta: "VEČ O ZBORU",
+      cta: "O ZBORU",
       link: "http://www.deprofundis.si/zbor/o-zboru/"
     }
 

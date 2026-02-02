@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import urbanImage from "@/assets/members/urban-klancar.jpg";
 import barbaraImage from "@/assets/members/barbara-kepic.jpg";
 import lauraImage from "@/assets/members/laura-calligaris.jpg";
@@ -32,6 +33,7 @@ const Home = () => {
   return (
     <div className="min-h-screen">
 
+
       {/* Hero Section */}
       <section 
         className="relative min-h-[500px] flex items-center justify-center py-6 md:py-12"
@@ -53,7 +55,7 @@ const Home = () => {
             onClick={() => navigate("/dogodki")}
             className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold px-8 py-6 text-base"
           >
-            OGLEJTE SI NASLEDNJI KONCERT
+           NASLEDNJI KONCERT
           </Button>
         </div>
       </section>
@@ -95,7 +97,7 @@ const Home = () => {
                 onClick={() => navigate("/galerija")}
                 className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold px-8 py-4"
               >
-                OGLEJTE SI VEČ SLIK
+               VEČ SLIK
               </Button>
             </div>
           </div>
@@ -148,7 +150,7 @@ const Home = () => {
         onClick={() => navigate("/clani")}
         className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold px-8 py-4"
       >
-        POGLEJTE SI NAŠE ČLANE
+       VSI ČLANI
       </Button>
     </div>
   </div>
@@ -185,7 +187,7 @@ const Home = () => {
         onClick={() => navigate("/o-nas")}
         className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold px-8 py-4"
       >
-        VEČ O NAS
+        O NAS
       </Button>
     </div>
         </div>

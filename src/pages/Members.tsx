@@ -12,6 +12,8 @@ import braneImage from "@/assets/members/brane-rezic.jpg";
 import egonImage from "@/assets/members/egon-mihajlović.jpg";
 import natalijaImage from "@/assets/members/natalija-ljubotina.jpg";
 import erazemImage from "@/assets/members/erazem-zganjar.jpg";
+import anaImage from "@/assets/members/ana-birsa.jpg";
+import livijaImage from "@/assets/members/livija-zagar.jpg";
 
 
 const Members = () => {
@@ -157,6 +159,64 @@ const Members = () => {
     },
 
     {
+  name: "Ana Birsa Krušec",
+  role: "Glasbenica, pedagoginja",
+  instruments: "Kljunaste flavte",
+  image: anaImage,
+  shortBio: "Leta 2022 je zaključila dodiplomski študij na Akademiji za glasbo (AG LJ) pri doc. Mateji Bajt. Magistrski študij kljunaste flavte je maja 2025 zaključila pri Maruši Brezavšček, del študija pa je opravila tudi na Konservatoriju v Amsterdamu (CvA) pri prof. Jorgu Isaacu. Trenutno poučuje na Glasbenem centru Edgar Willems.",
+  fullBio:
+    "Ana Birsa Krušec (2000) je glasbeno pot začela leta 2007 na Glasbeni šoli Koper, " +
+    "podružnici Izola, v razredu Dušana Kitića. S petnajstimi leti je šolanje nadaljevala " +
+    "na Konservatoriju za glasbo in balet v Ljubljani pri prof. Mateji Bajt, " +
+    "pod njenim mentorstvom pa je leta 2022 uspešno zaključila tudi dodiplomski študij " +
+    "na Akademiji za glasbo v Ljubljani. V tem obdobju je na državnih tekmovanjih TEMSIG " +
+    "osvojila tri zlata priznanja, dve prvi nagradi ter posebno nagrado za doseženih 100 točk. " +
+    "Magistrski študij je zaključila maja 2025 pri profesorici Maruši Brezavšček. " +
+    "Istega leta je bila na študijski izmenjavi na Konservatoriju v Amsterdamu, " +
+    "kjer se je izpopolnjevala v razredu prof. Jorga Isaaca ter poglobila svoje znanje " +
+    "sodobne in stare glasbe. Redno se izobražuje na mojstrskih tečajih pri " +
+    "mednarodno priznanih izvajalcih, kot so Matthijs Lunenburg, Stefano Bagliano, " +
+    "Inês d'Avena, Susanna Borsch, Andreas Böhlen, Hester Groenleer in drugi. " +
+    "Dejavno koncertira v različnih zasedbah, med drugim v duu Štefana, " +
+    "srednjeveški skupini Cappella Justinopolitana, duu Iter Musici, " +
+    "v priložnostnih baročnih orkestrih ter kot solistka. Nastopila je " +
+    "na uglednih koncertnih ciklih, kot so Glasbena mladina ljubljanska, " +
+    "Solo e da camera, GM Oder, Mladi virtuozi in Sakralni abonma."
+    },
+
+    {
+  name: "Livija Žagar",
+  role: "Glasbenica",
+  instruments: "Violina, viola",
+  image: livijaImage,
+  shortBio: "Na Konservatoriju za glasbo in balet Ljubljana (KGBL) je violino študirala v razredu prof. Armina Seška. V Celovcu je na Gustav Mahler Privatuniversität für Musik (GMPU) zaključila študij violine.",
+  fullBio:
+    "Livija Žagar je po končani nižji glasbeni šoli pri prof. Poloni Češarek " +
+    "šolanje nadaljevala na Konservatoriju za glasbo in balet Ljubljana " +
+    "pri prof. Arminu Sešku. Študij violine je zaključila " +
+    "na Gustav Mahler Privatuniversität für Musik v Celovcu. " +
+    "Znanje violine je izpopolnjevala pri prof. Arminu Sešku, " +
+    "prof. Vesni Stanković-Moffatt, prof. Tatyani Balashovi, " +
+    "prof. Helfriedu Fistru, prof. Anki Schittenhelm, " +
+    "prof. Wonji Kim-Ozim in prof. Benjaminu Schmidu. " +
+    "S komornim sestavom se je izobraževala na " +
+    "Associazione Musicale e Culturale di Farra d'Isonzo – Gorizia, " +
+    "Seminari Internationali di Musica da Camera Alpe-Adria. " +
+    "Leta 2024 se je kot violistka udeležila " +
+    "Stellenbosch International Chamber Music Festival " +
+    "v Južni Afriki. " +
+    "V študijskem letu 2024/25 je na " +
+    "Gustav Mahler Privatuniversität für Musik sodelovala " +
+    "pri baročnem projektu, kjer so pod vodstvom " +
+    "Klausa Kuchlinga premierno izvedli opero »Penelope«, " +
+    "skladatelja Francesca Bartholomea Contija. " +
+    "Sodelovala je tudi pri projektu Zven veličastja " +
+    "skupaj z APZ France Prešeren in Orkestrom Nova akademija " +
+    "ter s Slovenskim baročnim orkestrom " +
+    "pri projektu Gloria in excelsis Deo."
+},
+
+    {
   name: "Egon Mihajlović - MENTOR",
   role: "Glasbenik, dirigent, pedagog",
   instruments: "Čembalo, hammerklavier, orgle",
@@ -266,7 +326,7 @@ Poleg mentorstva in dirigiranja aktivno nastopa kot čembalist ter sodeluje pri 
             onClick={() => window.location.href = '/o-nas'}
             className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
           >
-            KONTAKTIRAJTE NAS ZA VČLANITEV
+            VČLANITE SE
           </Button>
         </div>
       </div>
