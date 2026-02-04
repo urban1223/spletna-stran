@@ -14,7 +14,7 @@ import natalijaImage from "@/assets/members/natalija-ljubotina.jpg";
 import erazemImage from "@/assets/members/erazem-zganjar.jpg";
 import anaImage from "@/assets/members/ana-birsa.jpg";
 import livijaImage from "@/assets/members/livija-zagar.jpg";
-
+import domenImage from "@/assets/members/domen-gvozdanovic.jpg";
 
 const Members = () => {
   const [selectedMember, setSelectedMember] = useState<typeof members[0] | null>(null);
@@ -189,7 +189,7 @@ const Members = () => {
   role: "Glasbenica",
   instruments: "Violina, viola",
   image: livijaImage,
-  shortBio: "Na Konservatoriju za glasbo in balet Ljubljana (KGBL) je violino študirala v razredu prof. Armina Seška. V Celovcu je na Gustav Mahler Privatuniversität für Musik (GMPU) zaključila študij violine.",
+  shortBio: "Na Konservatoriju za glasbo in balet Ljubljana (KGBL) je violino študirala v razredu prof. Armina Seška. V Celovcu je na Gustav Mahler Privatuniversität für Musik (GMPU) zaključila študij violine pri prof. Christianu Tacheziju.",
   fullBio:
     "Livija Žagar je po končani nižji glasbeni šoli pri prof. Poloni Češarek " +
     "šolanje nadaljevala na Konservatoriju za glasbo in balet Ljubljana " +
@@ -215,6 +215,41 @@ const Members = () => {
     "ter s Slovenskim baročnim orkestrom " +
     "pri projektu Gloria in excelsis Deo."
 },
+
+{
+  name: "Domen Gvozdanović",
+  role: "Glasbenik",
+  instruments: "Kitara, teorba",
+  image: domenImage,
+  shortBio:
+    "Na Konservatoriju za glasbo in balet Ljubljana (KGBL) se je izobraževal v razredih proferjev Mladena Bucića in Jerka Novaka. Leta 2022 je bil sprejet na Akademijo za glasbo v Ljubljani (AG LJ), kjer študira kitaro pri prof. Tomažu Rajteriču.",
+  fullBio:
+    "Domen Gvozdanović je svojo glasbeno pot začel " +
+    "na nižji stopnji Konservatorija za glasbo in balet Ljubljana " +
+    "pod mentorstvom prof. Mladena Bucića, šolanje pa nadaljeval " +
+    "na srednji stopnji pri prof. Jerku Novaku. " +
+    "Leta 2022 je bil sprejet na Akademijo za glasbo v Ljubljani, " +
+    "kjer študira kitaro pri prof. Tomažu Rajteriču. " +
+    "Po končanem dodiplomskem študiju načrtuje magistrski študij v tujini. " +
+    "Kot kitarist sodeluje v različnih komornih sestavih " +
+    "(glas–kitara, flavta–kitara, viola–kitara) ter je član " +
+    "etno-folk skupine propertea, ki izvaja glasbo različnih " +
+    "svetovnih tradicij, vključno z irsko, balkansko, " +
+    "južnoameriško, dansko in predvsem slovensko glasbo. " +
+    "V preteklem letu je kot teorbist sodeloval v baročnem orkestru " +
+    "Akademije za glasbo in nastopil v operi »Kronanje Popeje« " +
+    "skladatelja Claudia Monteverdija. " +
+    "V okviru koncertnega cikla Solo e da camera je sodeloval " +
+    "pri projektu »Zefiro torna« pod vodstvom prof. Egona Mihajlovića. " +
+    "Na Gimnaziji Kranj in kasneje v cerkvi sv. Trojice v Ljubljani " +
+    "je skupaj z baročnim orkestrom Nova akademija in " +
+    "Akademskim pevskim zborom France Prešeren izvedel " +
+    "Charpentierjev »Te Deum«. " +
+    "V božičnem času je v stolnici sv. Nikolaja sodeloval " +
+    "pri izvedbi Bachove kantate »Gloria in excelsis Deo« " +
+    "ter prvega dela Händlovega »Mesije«."
+},
+
 
     {
   name: "Egon Mihajlović - MENTOR",
