@@ -104,14 +104,6 @@ export function ContactModal({ courseName, triggerButton }: ContactModalProps) {
       const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
       const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
-      // Validate EmailJS configuration
-      if (!serviceId || !templateId || !publicKey || 
-          serviceId.includes("YOUR_") || templateId.includes("YOUR_") || publicKey.includes("YOUR_")) {
-        console.error("EmailJS is not properly configured. Please set up environment variables.");
-        toast.error("Kontaktni obrazec ni pravilno konfiguriran. Prosimo, uporabite e-pošto: info.nova.akademija@gmail.com");
-        return;
-      }
-
       const templateParams = {
         from_name: values.name,
         from_email: values.email,
