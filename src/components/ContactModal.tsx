@@ -126,16 +126,12 @@ export function ContactModal({ courseName, triggerButton }: ContactModalProps) {
       console.error("EmailJS error:", error);
       const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
       
-      // Show more helpful error based on the type of error
       // Check for common configuration-related keywords (case-insensitive)
-      const isConfigError = errorMessage.includes("publickey") || 
-                           errorMessage.includes("public_key") ||
-                           errorMessage.includes("serviceid") || 
-                           errorMessage.includes("service_id") ||
-                           errorMessage.includes("templateid") || 
-                           errorMessage.includes("template_id") ||
-                           errorMessage.includes("api key") ||
-                           errorMessage.includes("invalid key");
+      const configErrorKeywords = [
+        "publickey", "public_key", "serviceid", "service_id", 
+        "templateid", "template_id", "api key", "invalid key"
+      ];
+      const isConfigError = configErrorKeywords.some(keyword => errorMessage.includes(keyword));
       
       if (isConfigError) {
         toast.error("Napaka konfiguracije EmailJS. Prosimo, kontaktirajte nas direktno na: info.nova.akademija@gmail.com");
