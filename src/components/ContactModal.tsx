@@ -124,10 +124,20 @@ export function ContactModal({ courseName, triggerButton }: ContactModalProps) {
       form.reset();
     } catch (error) {
       console.error("EmailJS error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Neznana napaka";
+      const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
       
       // Show more helpful error based on the type of error
-      if (errorMessage.includes("publicKey") || errorMessage.includes("serviceID") || errorMessage.includes("templateID")) {
+      // Check for common configuration-related keywords (case-insensitive)
+      const isConfigError = errorMessage.includes("publickey") || 
+                           errorMessage.includes("public_key") ||
+                           errorMessage.includes("serviceid") || 
+                           errorMessage.includes("service_id") ||
+                           errorMessage.includes("templateid") || 
+                           errorMessage.includes("template_id") ||
+                           errorMessage.includes("api key") ||
+                           errorMessage.includes("invalid key");
+      
+      if (isConfigError) {
         toast.error("Napaka konfiguracije EmailJS. Prosimo, kontaktirajte nas direktno na: info.nova.akademija@gmail.com");
       } else {
         toast.error("Napaka pri pošiljanju sporočila. Prosimo, poskusite znova ali nas kontaktirajte na: info.nova.akademija@gmail.com");
