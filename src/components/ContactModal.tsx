@@ -104,14 +104,6 @@ export function ContactModal({ courseName, triggerButton }: ContactModalProps) {
       const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
       const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
-      // Validate EmailJS configuration
-      if (!serviceId || !templateId || !publicKey || 
-          serviceId.includes("YOUR_") || templateId.includes("YOUR_") || publicKey.includes("YOUR_")) {
-        console.error("EmailJS is not properly configured. Please set up environment variables.");
-        toast.error("Kontaktni obrazec ni pravilno konfiguriran. Prosimo, uporabite e-pošto: info.nova.akademija@gmail.com");
-        return;
-      }
-
       const templateParams = {
         from_name: values.name,
         from_email: values.email,
@@ -132,7 +124,20 @@ export function ContactModal({ courseName, triggerButton }: ContactModalProps) {
       form.reset();
     } catch (error) {
       console.error("EmailJS error:", error);
-      toast.error("Napaka pri pošiljanju sporočila. Prosimo, poskusite znova ali nas kontaktirajte na: info.nova.akademija@gmail.com");
+      const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
+      
+      // Check for common configuration-related keywords (case-insensitive)
+      const configErrorKeywords = [
+        "publickey", "public_key", "serviceid", "service_id", 
+        "templateid", "template_id", "api key", "invalid key"
+      ];
+      const isConfigError = configErrorKeywords.some(keyword => errorMessage.includes(keyword));
+      
+      if (isConfigError) {
+        toast.error("Napaka konfiguracije EmailJS. Prosimo, kontaktirajte nas direktno na: info.nova.akademija@gmail.com");
+      } else {
+        toast.error("Napaka pri pošiljanju sporočila. Prosimo, poskusite znova ali nas kontaktirajte na: info.nova.akademija@gmail.com");
+      }
     } finally {
       setIsSubmitting(false);
     }
