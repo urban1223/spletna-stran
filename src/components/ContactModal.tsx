@@ -96,9 +96,22 @@ export function ContactModal({ courseName, triggerButton }: ContactModalProps) {
       // These need to be set up in EmailJS dashboard:
       // 1. Create an account at emailjs.com
       // 2. Create an email service
-      // 3. Create an email template with variables: {{from_name}}, {{from_email}}, {{course_name}}, {{message}}
+      // 3. Create an email template with variables: {{from_name}}, {{from_email}}, {{course_name}}, {{message}}, {{to_email}}
       // 4. Get your Public Key, Service ID, and Template ID
+      // 5. Set environment variables in .env file (see .env.example)
       
+      const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+      const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+      const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+      // Validate EmailJS configuration
+      if (!serviceId || !templateId || !publicKey || 
+          serviceId.includes("YOUR_") || templateId.includes("YOUR_") || publicKey.includes("YOUR_")) {
+        console.error("EmailJS is not properly configured. Please set up environment variables.");
+        toast.error("Kontaktni obrazec ni pravilno konfiguriran. Prosimo, uporabite e-pošto: info.nova.akademija@gmail.com");
+        return;
+      }
+
       const templateParams = {
         from_name: values.name,
         from_email: values.email,
@@ -106,12 +119,6 @@ export function ContactModal({ courseName, triggerButton }: ContactModalProps) {
         message: values.message,
         to_email: "info.nova.akademija@gmail.com",
       };
-
-      // Replace these with actual EmailJS credentials
-      // For now, using placeholder values - these need to be configured
-      const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || "YOUR_SERVICE_ID";
-      const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "YOUR_TEMPLATE_ID";
-      const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "YOUR_PUBLIC_KEY";
 
       await emailjs.send(
         serviceId,
@@ -125,7 +132,7 @@ export function ContactModal({ courseName, triggerButton }: ContactModalProps) {
       form.reset();
     } catch (error) {
       console.error("EmailJS error:", error);
-      toast.error("Napaka pri pošiljanju sporočila. Prosimo, poskusite znova.");
+      toast.error("Napaka pri pošiljanju sporočila. Prosimo, poskusite znova ali nas kontaktirajte na: info.nova.akademija@gmail.com");
     } finally {
       setIsSubmitting(false);
     }
