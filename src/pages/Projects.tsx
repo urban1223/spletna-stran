@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import ContactFormDialog from "@/components/ContactFormDialog";
 
 const Projects = () => {
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
+
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
@@ -75,7 +79,7 @@ const Projects = () => {
 
               <Button
                 className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                onClick={() => window.location.href = "/o-nas"}
+                onClick={() => setContactDialogOpen(true)}
               >
                 PRIJAVA PO E-POŠTI
               </Button>
@@ -211,6 +215,11 @@ const Projects = () => {
           </Card>
         </section>
       </div>
+
+      <ContactFormDialog
+        open={contactDialogOpen}
+        onOpenChange={setContactDialogOpen}
+      />
     </div>
   );
 };
