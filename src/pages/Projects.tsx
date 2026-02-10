@@ -1,6 +1,5 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ContactModal } from "@/components/ContactModal";
 
 const Projects = () => {
   return (
@@ -74,7 +73,12 @@ const Projects = () => {
     </div>
               
 
-              <ContactModal courseName="Tečaj bassa continua" />
+              <Button
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={() => window.location.href = "/o-nas"}
+              >
+                PRIJAVA PO E-POŠTI
+              </Button>
             </Card>
 
             {/* === MENTORSTVO MLADIH GLASBENIKOV === */}
