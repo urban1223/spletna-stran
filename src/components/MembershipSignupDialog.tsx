@@ -34,20 +34,20 @@ const MembershipSignupDialog = ({ open, onOpenChange }: MembershipSignupDialogPr
     setSending(true);
 
     try {
+      const formData = {
+        access_key: WEB3FORMS_ACCESS_KEY,
+        name: name.trim(),
+        email: email.trim(),
+        subject: `Nova prijava za članstvo – ${name.trim()}`,
+        message: `Nova oseba se želi včlaniti v društvo Nova akademija.\n\nIme: ${name.trim()}\nE-pošta: ${email.trim()}\nTelefon: ${phone.trim() || "Ni navedeno"}`,
+      };
+
       const response = await fetch("https://api.web3forms.com/submit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          access_key: WEB3FORMS_ACCESS_KEY,
-          name: name.trim(),
-          email: email.trim(),
-          phone: phone.trim() || "Ni navedeno",
-          subject: `Nova prijava za članstvo – ${name.trim()}`,
-          message: `Nova oseba se želi včlaniti v društvo Nova akademija.\n\nIme: ${name.trim()}\nE-pošta: ${email.trim()}\nTelefon: ${phone.trim() || "Ni navedeno"}`,
-          from_name: "Nova Akademija - Prijava za članstvo",
-        }),
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
