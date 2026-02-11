@@ -8,27 +8,25 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Send, Loader2 } from "lucide-react";
 
-interface ContactFormDialogProps {
+interface MembershipSignupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 const WEB3FORMS_ACCESS_KEY = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY;
 
-const ContactFormDialog = ({ open, onOpenChange }: ContactFormDialogProps) => {
+const MembershipSignupDialog = ({ open, onOpenChange }: MembershipSignupDialogProps) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
+  const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
 
-  const handleSend = async () => {
-    if (!name.trim() || !email.trim() || !message.trim()) {
+  const handleSubmit = async () => {
+    if (!name.trim() || !email.trim()) {
       toast.error("Prosimo, izpolnite vsa obvezna polja.");
       return;
     }
@@ -45,20 +43,20 @@ const ContactFormDialog = ({ open, onOpenChange }: ContactFormDialogProps) => {
           access_key: WEB3FORMS_ACCESS_KEY,
           name: name.trim(),
           email: email.trim(),
-          subject: subject.trim() || "Prijava – Tečaj bassa continua",
-          message: message.trim(),
-          from_name: "Nova Akademija - Spletna stran",
+          phone: phone.trim() || "Ni navedeno",
+          subject: `Nova prijava za članstvo – ${name.trim()}`,
+          message: `Nova oseba se želi včlaniti v društvo Nova akademija.\n\nIme: ${name.trim()}\nE-pošta: ${email.trim()}\nTelefon: ${phone.trim() || "Ni navedeno"}`,
+          from_name: "Nova Akademija - Prijava za članstvo",
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success("Sporočilo je bilo uspešno poslano!");
+        toast.success("Vaša prijava je bila poslana! Kmalu vas bomo kontaktirali.");
         setName("");
         setEmail("");
-        setSubject("");
-        setMessage("");
+        setPhone("");
         onOpenChange(false);
       } else {
         toast.error("Napaka pri pošiljanju. Prosimo, poskusite znova.");
@@ -75,21 +73,21 @@ const ContactFormDialog = ({ open, onOpenChange }: ContactFormDialogProps) => {
       <DialogContent className="bg-card border-border sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-accent">
-            Prijava po e-pošti
+            Včlanitev v društvo
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Izpolnite spodnji obrazec in kliknite "Pošlji". Vaše sporočilo
-            bo poslano neposredno na naš e-poštni naslov.
+            Izpolnite spodnji obrazec in postanite del Nove akademije. 
+            Kmalu vas bomo kontaktirali z dodatnimi informacijami.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
           <div className="space-y-2">
-            <Label htmlFor="contact-name" className="text-foreground">
+            <Label htmlFor="signup-name" className="text-foreground">
               Ime in priimek <span className="text-accent">*</span>
             </Label>
             <Input
-              id="contact-name"
+              id="signup-name"
               placeholder="Vaše ime in priimek"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -99,11 +97,11 @@ const ContactFormDialog = ({ open, onOpenChange }: ContactFormDialogProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="contact-email" className="text-foreground">
+            <Label htmlFor="signup-email" className="text-foreground">
               E-pošta <span className="text-accent">*</span>
             </Label>
             <Input
-              id="contact-email"
+              id="signup-email"
               type="email"
               placeholder="vaš.email@primer.com"
               value={email}
@@ -114,30 +112,16 @@ const ContactFormDialog = ({ open, onOpenChange }: ContactFormDialogProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="contact-subject" className="text-foreground">
-              Zadeva
+            <Label htmlFor="signup-phone" className="text-foreground">
+              Telefon (opcijsko)
             </Label>
             <Input
-              id="contact-subject"
-              placeholder="npr. Prijava na tečaj bassa continua"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              id="signup-phone"
+              type="tel"
+              placeholder="040 123 456"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               className="bg-background border-border text-foreground placeholder:text-muted-foreground"
-              disabled={sending}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="contact-message" className="text-foreground">
-              Sporočilo <span className="text-accent">*</span>
-            </Label>
-            <Textarea
-              id="contact-message"
-              placeholder="Napišite svoje sporočilo..."
-              rows={5}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="bg-background border-border text-foreground placeholder:text-muted-foreground resize-none"
               disabled={sending}
             />
           </div>
@@ -146,7 +130,7 @@ const ContactFormDialog = ({ open, onOpenChange }: ContactFormDialogProps) => {
           <input type="checkbox" name="botcheck" className="hidden" style={{ display: "none" }} />
 
           <Button
-            onClick={handleSend}
+            onClick={handleSubmit}
             disabled={sending}
             className="w-full bg-accent text-accent-foreground hover:bg-accent/90 mt-2"
           >
@@ -158,7 +142,7 @@ const ContactFormDialog = ({ open, onOpenChange }: ContactFormDialogProps) => {
             ) : (
               <>
                 <Send className="mr-2 h-4 w-4" />
-                POŠLJI
+                POŠLJI PRIJAVO
               </>
             )}
           </Button>
@@ -168,4 +152,4 @@ const ContactFormDialog = ({ open, onOpenChange }: ContactFormDialogProps) => {
   );
 };
 
-export default ContactFormDialog;
+export default MembershipSignupDialog;

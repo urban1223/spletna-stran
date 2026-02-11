@@ -187,7 +187,7 @@ const Events = () => {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => {}}
+                  disabled
                 >
                   DOGODEK JE POTEKEL
                 </Button>

@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import urbanImage from "@/assets/members/urban-klancar.jpg";
 import barbaraImage from "@/assets/members/barbara-kepic.jpg";
 import lauraImage from "@/assets/members/laura-calligaris.jpg";
@@ -79,6 +78,7 @@ const Home = () => {
                       <img
                         src={image.src}
                         alt={image.alt}
+                        loading="lazy"
                         className="w-full h-full object-cover transform transition-transform duration-500 hover:scale-105"
                       />
                     </div>
@@ -113,34 +113,46 @@ const Home = () => {
 
     <div className="grid md:grid-cols-3 gap-8 justify-center items-center mb-12">
       {/* Urban Klančar */}
-      <div className="flex flex-col items-center cursor-pointer" onClick={() => navigate("/clani")}>
+      <button
+        className="flex flex-col items-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded-lg p-2"
+        onClick={() => navigate("/clani")}
+      >
         <img
           src={urbanImage}
           alt="Urban Klančar"
+          loading="lazy"
           className="rounded-full mx-auto object-cover w-64 h-64 border-4 border-yellow-500 shadow-lg hover:scale-105 transition-transform duration-300"
         />
         <p className="mt-4 font-semibold text-foreground">Urban Klančar</p>
-      </div>
+      </button>
 
       {/* Barbara Kepic */}
-      <div className="flex flex-col items-center cursor-pointer" onClick={() => navigate("/clani")}>
+      <button
+        className="flex flex-col items-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded-lg p-2"
+        onClick={() => navigate("/clani")}
+      >
         <img
           src={barbaraImage}
           alt="Barbara Kepic"
+          loading="lazy"
           className="rounded-full mx-auto object-cover w-64 h-64 border-4 border-yellow-500 shadow-lg hover:scale-105 transition-transform duration-300"
         />
         <p className="mt-4 font-semibold text-foreground">Barbara Kepic</p>
-      </div>
+      </button>
 
       {/* Laura Calligaris */}
-      <div className="flex flex-col items-center cursor-pointer" onClick={() => navigate("/clani")}>
+      <button
+        className="flex flex-col items-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded-lg p-2"
+        onClick={() => navigate("/clani")}
+      >
         <img
           src={lauraImage}
           alt="Laura Calligaris"
+          loading="lazy"
           className="rounded-full mx-auto object-cover w-64 h-64 border-4 border-yellow-500 shadow-lg hover:scale-105 transition-transform duration-300"
         />
         <p className="mt-4 font-semibold text-foreground">Laura Calligaris</p>
-      </div>
+      </button>
     </div>
 
     {/* Button to full members page */}

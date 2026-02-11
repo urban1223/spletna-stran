@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ContactFormDialog from "@/components/ContactFormDialog";
 
 const Projects = () => {
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen py-20">
@@ -103,7 +105,7 @@ const Projects = () => {
 
               <Button
                 className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                onClick={() => window.location.href = "/clani"}
+                onClick={() => navigate("/clani")}
               >
                 PREGLEJ MENTORJE
               </Button>
@@ -174,7 +176,7 @@ const Projects = () => {
               <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => {}}
+                  disabled
                 >
                   DOGODEK JE POTEKEL
                 </Button>
@@ -208,7 +210,7 @@ const Projects = () => {
 
             <Button
               className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-              onClick={() => window.location.href = "/podprite-nas"}
+              onClick={() => navigate("/podprite-nas")}
             >
               PODPRITE RAZISKOVALNI PROJEKT
             </Button>

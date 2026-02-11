@@ -1,9 +1,12 @@
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
+import { BANK_ACCOUNT } from "@/lib/constants";
 
 const Support = () => {
+  const navigate = useNavigate();
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} kopiran!`);
@@ -38,25 +41,25 @@ const Support = () => {
                 <div>
                   <p className="text-sm font-semibold text-muted-foreground mb-1">Ime:</p>
                   <p className="text-foreground text-sm leading-relaxed">
-                    Društvo za širjenje stare glasbe Nova akademija
+                    {BANK_ACCOUNT.NAME}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-sm font-semibold text-muted-foreground mb-1">Naslov:</p>
                   <p className="text-foreground text-sm leading-relaxed">
-                    Voduškova ulica 22, 1000 Ljubljana
+                    {BANK_ACCOUNT.ADDRESS}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-sm font-semibold text-muted-foreground mb-1">TRR:</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-foreground text-sm font-mono">SI56 6100 0003 0933 259</p>
+                    <p className="text-foreground text-sm font-mono">{BANK_ACCOUNT.IBAN}</p>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard("SI56 6100 0003 0933 259", "TRR")}
+                      onClick={() => copyToClipboard(BANK_ACCOUNT.IBAN, "TRR")}
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
@@ -66,11 +69,11 @@ const Support = () => {
                 <div>
                   <p className="text-sm font-semibold text-muted-foreground mb-1">BIC:</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-foreground text-sm font-mono">HDELSI22</p>
+                    <p className="text-foreground text-sm font-mono">{BANK_ACCOUNT.BIC}</p>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard("HDELSI22", "BIC")}
+                      onClick={() => copyToClipboard(BANK_ACCOUNT.BIC, "BIC")}
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
@@ -104,25 +107,25 @@ const Support = () => {
                 <div>
                   <p className="text-sm font-semibold text-muted-foreground mb-1">Ime:</p>
                   <p className="text-foreground text-sm leading-relaxed">
-                    Društvo za širjenje stare glasbe Nova akademija
+                    {BANK_ACCOUNT.NAME}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-sm font-semibold text-muted-foreground mb-1">Naslov:</p>
                   <p className="text-foreground text-sm leading-relaxed">
-                    Voduškova ulica 22, 1000 Ljubljana
+                    {BANK_ACCOUNT.ADDRESS}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-sm font-semibold text-muted-foreground mb-1">TRR:</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-foreground text-sm font-mono">SI56 6100 0003 0933 259</p>
+                    <p className="text-foreground text-sm font-mono">{BANK_ACCOUNT.IBAN}</p>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard("SI56 6100 0003 0933 259", "TRR")}
+                      onClick={() => copyToClipboard(BANK_ACCOUNT.IBAN, "TRR")}
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
@@ -132,11 +135,11 @@ const Support = () => {
                 <div>
                   <p className="text-sm font-semibold text-muted-foreground mb-1">BIC:</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-foreground text-sm font-mono">HDELSI22</p>
+                    <p className="text-foreground text-sm font-mono">{BANK_ACCOUNT.BIC}</p>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard("HDELSI22", "BIC")}
+                      onClick={() => copyToClipboard(BANK_ACCOUNT.BIC, "BIC")}
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
@@ -169,7 +172,7 @@ const Support = () => {
 
               <Button 
                 className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                onClick={() => window.location.href = '/o-nas'}
+                onClick={() => navigate('/o-nas')}
               >
                 KONTAKTIRAJTE NAS ZA SPONZORSTVO
               </Button>

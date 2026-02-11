@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Mail, MapPin, Instagram, Facebook, Youtube } from "lucide-react";
+import { SOCIAL_MEDIA, CONTACT } from "@/lib/constants";
 
 const About = () => {
   return (
@@ -34,10 +35,10 @@ const About = () => {
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Elektronska pošta</h3>
                     <a 
-                      href="mailto:info.nova.akademija@gmail.com"
+                      href={`mailto:${CONTACT.EMAIL}`}
                       className="text-accent hover:underline"
                     >
-                      info.nova.akademija@gmail.com
+                      {CONTACT.EMAIL}
                     </a>
                   </div>
                 </div>
@@ -77,7 +78,7 @@ const About = () => {
               
               <div className="flex flex-wrap gap-4">
                 <a
-                  href="https://www.instagram.com/novaakademija?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+                  href={SOCIAL_MEDIA.INSTAGRAM}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background hover:bg-muted transition-colors group"
@@ -87,7 +88,7 @@ const About = () => {
                 </a>
 
                 <a
-                  href="https://www.facebook.com/profile.php?id=61583343850108"
+                  href={SOCIAL_MEDIA.FACEBOOK}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background hover:bg-muted transition-colors group"
@@ -97,7 +98,7 @@ const About = () => {
                 </a>
 
                 <a
-                  href="https://www.youtube.com/@NovaAkademija-g1t"
+                  href={SOCIAL_MEDIA.YOUTUBE}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background hover:bg-muted transition-colors group"
