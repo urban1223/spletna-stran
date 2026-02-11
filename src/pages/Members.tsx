@@ -1,8 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useState } from "react";
+import MembershipSignupDialog from "@/components/MembershipSignupDialog";
 import urbanImage from "@/assets/members/urban-klancar.jpg";
 import lauraImage from "@/assets/members/laura-calligaris.jpg";
 import barbaraImage from "@/assets/members/barbara-kepic.jpg";
@@ -17,7 +19,9 @@ import livijaImage from "@/assets/members/livija-zagar.jpg";
 import domenImage from "@/assets/members/domen-gvozdanovic.jpg";
 
 const Members = () => {
+  const navigate = useNavigate();
   const [selectedMember, setSelectedMember] = useState<typeof members[0] | null>(null);
+  const [signupDialogOpen, setSignupDialogOpen] = useState(false);
 
   const members = [
     {
@@ -289,6 +293,10 @@ Poleg mentorstva in dirigiranja aktivno nastopa kot čembalist ter sodeluje pri 
     },
   ];
 
+  // Separate mentors from regular members
+  const mentors = members.filter(member => member.name.includes("MENTOR"));
+  const regularMembers = members.filter(member => !member.name.includes("MENTOR"));
+
   return (
     <div className="min-h-screen py-20">
       <div className="container mx-auto px-4">
@@ -301,8 +309,52 @@ Poleg mentorstva in dirigiranja aktivno nastopa kot čembalist ter sodeluje pri 
           zagon in nove ideje na slovensko sceno stare glasbe.
         </p>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {members.map((member, index) => (
+        {/* Mentors Section */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-accent mb-8 text-center">
+            Mentorji
+          </h2>
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {mentors.map((member, index) => (
+              <Card 
+                key={index} 
+                className="p-8 bg-card border-border hover:border-accent transition-colors cursor-pointer"
+                onClick={() => setSelectedMember(member)}
+              >
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold text-accent mb-1">
+                        {member.name}
+                      </h3>
+                      <p className="text-sm font-semibold text-foreground mb-2">
+                        {member.role}
+                      </p>
+                      <p className="text-sm text-muted-foreground italic">
+                        {member.instruments}
+                      </p>
+                    </div>
+                    <Avatar className="h-16 w-16 border-2 border-accent">
+                      <AvatarImage src={member.image} alt={member.name} />
+                      <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {member.shortBio}
+                  </p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Regular Members Section */}
+        <div>
+          <h2 className="text-3xl font-bold text-accent mb-8 text-center">
+            Člani
+          </h2>
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {regularMembers.map((member, index) => (
             <Card 
               key={index} 
               className="p-8 bg-card border-border hover:border-accent transition-colors cursor-pointer"
@@ -333,6 +385,7 @@ Poleg mentorstva in dirigiranja aktivno nastopa kot čembalist ter sodeluje pri 
             </Card>
           ))}
         </div>
+        </div>
 
         <Dialog open={!!selectedMember} onOpenChange={() => setSelectedMember(null)}>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -358,12 +411,17 @@ Poleg mentorstva in dirigiranja aktivno nastopa kot čembalist ter sodeluje pri 
         <div className="text-center mt-12">
           <Button 
             size="lg"
-            onClick={() => window.location.href = '/o-nas'}
+            onClick={() => setSignupDialogOpen(true)}
             className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
           >
             VČLANITE SE
           </Button>
         </div>
+
+        <MembershipSignupDialog
+          open={signupDialogOpen}
+          onOpenChange={setSignupDialogOpen}
+        />
       </div>
     </div>
   );

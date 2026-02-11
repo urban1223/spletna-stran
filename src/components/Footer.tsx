@@ -1,4 +1,5 @@
 import { Instagram, Facebook, Youtube } from "lucide-react";
+import { SOCIAL_MEDIA, CONTACT, BANK_ACCOUNT } from "@/lib/constants";
 
 const Footer = () => {
   return (
@@ -15,10 +16,10 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Kontakt</h4>
             <p className="text-sm text-muted-foreground mb-2">
-              Voduškova ulica 22, 1000 Ljubljana
+              {BANK_ACCOUNT.ADDRESS}
             </p>
             <p className="text-sm text-muted-foreground">
-              info.nova.akademija@gmail.com
+              {CONTACT.EMAIL}
             </p>
           </div>
 
@@ -26,7 +27,7 @@ const Footer = () => {
             <h4 className="font-semibold mb-4">Sledite nam</h4>
             <div className="flex space-x-4">
               <a
-                href="https://www.instagram.com/novaakademija?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+                href={SOCIAL_MEDIA.INSTAGRAM}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-accent transition-colors"
@@ -34,7 +35,7 @@ const Footer = () => {
                 <Instagram size={24} />
               </a>
               <a
-                href="https://www.facebook.com/profile.php?id=61583343850108"
+                href={SOCIAL_MEDIA.FACEBOOK}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-accent transition-colors"
@@ -42,7 +43,7 @@ const Footer = () => {
                 <Facebook size={24} />
               </a>
               <a
-                href="https://www.youtube.com/channel/UCFyeD8susO2xc9PSc_JK7gQ"
+                href={SOCIAL_MEDIA.YOUTUBE}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-accent transition-colors"
