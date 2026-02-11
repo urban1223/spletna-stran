@@ -1,6 +1,9 @@
 services:
   nova-akademija:
-    build: .
+    build:
+      context: .
+      args:
+        - VITE_WEB3FORMS_ACCESS_KEY=600f6776-ced9-416d-bd21-a6c5b66c8dec
     container_name: nova-akademija
     restart: unless-stopped
     ports:
