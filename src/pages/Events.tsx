@@ -4,9 +4,29 @@ import { Calendar, MapPin, Music } from "lucide-react";
 
 const Events = () => {
   const upcomingEvents = [
-
-    
-          {
+    {
+      title: "Vstajenjska velikonočna maša",
+      date: "Nedelja, 5. april 2026",
+      time: "06:30",
+      location: "Cerkev Marije pomočnice na Rakovniku, Ljubljana",
+      description: "Orkester Nova akademija",
+      program: "W. A. Mozart, G. F. Händel",
+      conductor: "Dirigent: Žiga Godec",
+      cta: "OGLEJTE SI LOKACIJO",
+      link: "https://maps.app.goo.gl/WpA9vYipKEsQETDd7",
+    },
+    {
+      title: "Vivaldi vs. Telemann - SM Kreativa",
+      date: "Sobota, 16. maj 2026",
+      time: "19:30",
+      location: "Baročna dvorana, Radovljica",
+      description: "Orkester Nova akademija",
+      program: "A. Vivaldi, G. P. Telemann, M. Zahnhausen, J. van Eyck",
+      conductor: "Solista: Erazem Žganjar, Urban Klančar",
+      cta: "OGLEJTE SI LOKACIJO",
+      link: "https://maps.app.goo.gl/LqBVXjDnAJ7kJ3w1A",
+    },
+    {
       title: "Skrivnosti baroka",
       date: "jesenski meseci 2026",
       time: "večerni uri - natančen čas bo objavljen naknadno",
