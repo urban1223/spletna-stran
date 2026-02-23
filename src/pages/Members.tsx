@@ -11,7 +11,6 @@ import barbaraImage from "@/assets/members/barbara-kepic.jpg";
 import marieImage from "@/assets/members/marie-tuhtan.jpg";
 import paulinaImage from "@/assets/members/paulina-tuhtan.jpg";
 import braneImage from "@/assets/members/brane-rezic.jpg";
-import egonImage from "@/assets/members/egon-mihajlović.jpg";
 import natalijaImage from "@/assets/members/natalija-ljubotina.jpg";
 import erazemImage from "@/assets/members/erazem-zganjar.jpg";
 import anaImage from "@/assets/members/ana-birsa.jpg";
@@ -256,25 +255,6 @@ const Members = () => {
 
 
     {
-  name: "Egon Mihajlović - MENTOR",
-  role: "Glasbenik, dirigent, pedagog",
-  instruments: "Čembalo, hammerklavier, orgle",
-  image: egonImage,
-
-  shortBio:
-    "Zgodovinske inštrumente s tipkami je študiral na Hochschule für Musik und Darstellende Kunst v Frankfurtu, kjer je diplomiral leta 1992 in leta 1996 končal podiplomski študij z najvišjimi priznanji. Deluje kot mednarodno priznan interpret repertoarja za čembalo in profesor na Akademiji za glasbo v Ljubljani (AG LJ) ter je vodja oddelka za staro glasbo.",
-
-  fullBio:
-    "Egon Mihajlovič se je rodil leta 1972 v Postojni. Zgodovinske inštrumente s tipkami (čembalo, hammerklavier, orgle) in staro glasbo je študiral na Visoki šoli za glasbo – Hochschule für Musik und Darstellende Kunst – v Frankfurtu, kjer je leta 1992 diplomiral. Leta 1996 je z najvišjimi priznanji končal podiplomski študij in pridobil naziv koncertnega solista. " +
-    "Nastopal je s solo-recitali na pomembnih festivalih in koncertnih prizoriščih v mestih, kot so Berlin (Konzerthaus), Frankfurt (Alte Oper), Herne (Tage der Alten Musik), Köln (WDR), München (Gasteig), Brugge (Festival van Vlaanders), Cannes, Dijon, Festival de Nice, Lausanne, Zürich (Tonhalle), Granada, Palma de Mallorca, Madrid, Fano, Pesaro, Benetke, Neapelj (dvorana Scarlatti), Alessano (Festival il Montesardo), Varaždin (Baročne večeri), San Francisco, Berkeley, Los Angeles (Chamber Hall), Passadena in mnogi drugi. " +
-    "Kritiki so ga označili kot enega najpomembnejših čembalistov in poznavalcev repertoarja za čembalo, posebej glasbe Domenica Scarlattija. Kot organist se je specializiral za interpretacijo italijanske, španske in francoske glasbe od 16. do 18. stoletja. " +
-    "Kot dirigent ansambla Compagnie Fontainebleau vodi od leta 1994 baročne opere in sakralno glasbo Monteverdija, De Lalanda, Charpentierja, Lullyja, Rameauja, Haendla in Telemanna. Dirigiral je tudi znamenitim orkestrom, med njimi Berlin Baroque in Züricher Kammerorchester. " +
-    "Snemal je za založbe Marc Aurel Edition, Cybele, Zenon in Moeck, sodeloval pa je tudi pri radijskih in televizijskih produkcijah ter koncertnih prenosih (BBC, BR, HR, SWF, RBB, Deutschland Radio, RTV Slovenija, TVCG, HRT, RTS). " +
-    "Kot docent in gostujoči profesor za čembalo, historične inštrumente s tipkami in staro glasbo je poučeval na visokošolskih ustanovah in akademijah v Würzburgu (1998–2000), Nürnbergu (2001), na Cetinju (2002–2003), v Ferrari (2006) in Pesaru (2006–2008). Od leta 2009 je habilitirani docent za čembalo na Akademiji za glasbo v Ljubljani. " +
-    "Sodeloval je tudi kot član žirij na evropskih nacionalnih in mednarodnih tekmovanjih, med njimi Jugend musiziert, italijanskem nacionalnem in mednarodnem tekmovanju za čembalo G. Gambi v Pesaru (2006–2011) ter UNESCO-vem svetovnem tekmovanju za pevce L'Orfeo v Veroni (2007)."
-},
-
-    {
       name: "Branimir Rezić - MENTOR",
       role: "Glasbenik, pedagog, notograf, skladatelj",
       instruments: "Čembalo, klavir",
@@ -309,8 +289,47 @@ Poleg mentorstva in dirigiranja aktivno nastopa kot čembalist ter sodeluje pri 
           zagon in nove ideje na slovensko sceno stare glasbe.
         </p>
 
-        {/* Mentors Section */}
+        {/* Regular Members Section */}
         <div className="mb-16">
+          <h2 className="text-3xl font-bold text-accent mb-8 text-center">
+            Člani
+          </h2>
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {regularMembers.map((member, index) => (
+            <Card 
+              key={index} 
+              className="p-8 bg-card border-border hover:border-accent transition-colors cursor-pointer"
+              onClick={() => setSelectedMember(member)}
+            >
+              <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-accent mb-1">
+                      {member.name}
+                    </h3>
+                    <p className="text-sm font-semibold text-foreground mb-2">
+                      {member.role}
+                    </p>
+                    <p className="text-sm text-muted-foreground italic">
+                      {member.instruments}
+                    </p>
+                  </div>
+                  <Avatar className="h-16 w-16 border-2 border-accent">
+                    <AvatarImage src={member.image} alt={member.name} />
+                    <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                  </Avatar>
+                </div>
+                <p className="text-muted-foreground leading-relaxed">
+                  {member.shortBio}
+                </p>
+              </div>
+            </Card>
+          ))}
+          </div>
+        </div>
+
+        {/* Mentors Section */}
+        <div>
           <h2 className="text-3xl font-bold text-accent mb-8 text-center">
             Mentorji
           </h2>
@@ -346,45 +365,6 @@ Poleg mentorstva in dirigiranja aktivno nastopa kot čembalist ter sodeluje pri 
               </Card>
             ))}
           </div>
-        </div>
-
-        {/* Regular Members Section */}
-        <div>
-          <h2 className="text-3xl font-bold text-accent mb-8 text-center">
-            Člani
-          </h2>
-          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {regularMembers.map((member, index) => (
-            <Card 
-              key={index} 
-              className="p-8 bg-card border-border hover:border-accent transition-colors cursor-pointer"
-              onClick={() => setSelectedMember(member)}
-            >
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-accent mb-1">
-                      {member.name}
-                    </h3>
-                    <p className="text-sm font-semibold text-foreground mb-2">
-                      {member.role}
-                    </p>
-                    <p className="text-sm text-muted-foreground italic">
-                      {member.instruments}
-                    </p>
-                  </div>
-                  <Avatar className="h-16 w-16 border-2 border-accent">
-                    <AvatarImage src={member.image} alt={member.name} />
-                    <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                  </Avatar>
-                </div>
-                <p className="text-muted-foreground leading-relaxed">
-                  {member.shortBio}
-                </p>
-              </div>
-            </Card>
-          ))}
-        </div>
         </div>
 
         <Dialog open={!!selectedMember} onOpenChange={() => setSelectedMember(null)}>
