@@ -23,6 +23,28 @@ const Events = () => {
 
   const pastEvents = [
     {
+      title: "Nedeljske glasbeno sodelovanje",
+      date: "Nedelja, 22. februar 2026",
+      time: "18:00",
+      location: "Cerkev sv. Antona Padovanskega, Ljubljana",
+      description: "Ansambel Nova akademija",
+      program: "G.F. Händel, A. Corelli",
+      conductor: "",
+      cta: "OGLEJTE SI LOKACIJO",
+      link: "https://maps.app.goo.gl/ReAk3jmRUvZ4GEyM7",
+    },
+    {
+      title: "Sobotne umetniške maše",
+      date: "Sobota, 21. februar 2026",
+      time: "18:00",
+      location: "Cerkev sv. Kancijana in tovarišev, Kranj",
+      description: "Ansambel Nova akademija",
+      program: "G.F. Händel, A. Corelli",
+      conductor: "",
+      cta: "OGLEJTE SI LOKACIJO",
+      link: "https://maps.app.goo.gl/BV7MQP2aFzGoyZ6r8",
+    },
+    {
       title: "Zven Veličastja - SAKRALNI ABONMA",
       date: "Sreda, 7. januar 2026",
       time: "19:30",
