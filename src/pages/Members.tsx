@@ -16,6 +16,8 @@ import erazemImage from "@/assets/members/erazem-zganjar.jpg";
 import anaImage from "@/assets/members/ana-birsa.jpg";
 import livijaImage from "@/assets/members/livija-zagar.jpg";
 import domenImage from "@/assets/members/domen-gvozdanovic.jpg";
+import jakobImage from "@/assets/members/jakob-istenic.jpg";
+import lovroImage from "@/assets/members/lovro-tavcar.jpg";
 
 const Members = () => {
   const navigate = useNavigate();
@@ -40,7 +42,7 @@ const Members = () => {
       role: "Glasbenica",
       instruments: "Violina",
       image: lauraImage,
-      shortBio: "V razredu prof. Priye Mitchell (KUG) je zaključila diplomski študij violine, sedaj pa je vpisana k prof. Philippu Graffina na Kraljevi univerzi v Bruslju (KCB). Pri prof. Lucii Hreihofer- Graber (KUG) se je izpopolnjevala na baročni violini. ",
+      shortBio: "V razredu prof. Priye Mitchell (KUG) je zaključila diplomski študij violine, sedaj pa je vpisana k prof. Philippu Graffinu na Kraljevi univerzi v Bruslju (KCB). Pri prof. Lucii Froihofer- Graber (KUG) se je izpopolnjevala na baročni violini. ",
       fullBio: "Violinistka Laura Calligaris, rojena leta 2002, je z igranjem violine začela s petimi leti pri prof. Roku Zgoncu. Od leta 2015 se je violino učila pri prof. Idi Bieler na Visoki šoli za glasbo in upodabljajoče umetnosti v Gradcu, leta 2017 pa se je vpisala na umetniško gimnazijo Konservatorija za glasbo in balet Maribor, kjer jo je violino učila prof. Vesna Čobal. Je dobitnica nagrade “Dr. Romana Klasinca” konservatorija Maribor za leto 2021. Prejela je tudi več priznanj na državnih in mednarodnih tekmovanjih; na TEMSIG-u leta 2018 dvojno zlato plaketo (violina, solfeggio), leta 2020 zlato plaketo in tretjo nagrado s klavirskim triom Libero in leta 2021 kot solistka zlato plaketo in tretjo nagrado. Na mednarodnem tekmovanju Svirel leta 2016 in 2017 zlato plaketo, na tekmovanju Leona Pfeifferja leta 2016 pa drugo nagrado. Februarja 2023 je osvojila 3. nagrado (1. ni bila podeljena) v kategoriji do 32 let, na tekmovanju VIII Agustín Aponte International Music Competition na Tenerifih, Španija. Kot solistka je leta 2017 s Komornim orkestrom slovenskih solistov dvakrat izvedla Mozartov violinski koncert v D-duru, leta 2018 pa je nastopila kot solistka z orkestrom Konservatorija Maribor, s katerim je izvedla Bachov dvojni violinski koncert v d-molu. Leta 2021 je bila sprejeta na Visoko šolo za glasbo in upodabljajoče umetnosti v Gradcu, kjer je z odliko diplomirala v razredu profesorice Priye Mitchell. Oktobra 2024 sta s pianistom Andreyem Ilienkom nastopila v sklopu ciklusa “32. Mladi virtuozi” Festivala Ljubljana. Od septembra 2025 je vpisana v razred Philippa Graffina na Kraljevi univerzi v Bruslju. Igra tudi baročno violino ter je soustanoviteljica društva za baročno glasbo Nova Akademija."
     },
     {
@@ -189,7 +191,7 @@ const Members = () => {
 
     {
   name: "Livija Žagar",
-  role: "Glasbenica",
+  role: "Glasbenica, mladinska delavka",
   instruments: "Violina, viola",
   image: livijaImage,
   shortBio: "Na Konservatoriju za glasbo in balet Ljubljana (KGBL) je violino študirala v razredu prof. Armina Seška. V Celovcu je na Gustav Mahler Privatuniversität für Musik (GMPU) zaključila študij violine pri prof. Christianu Tacheziju.",
@@ -221,7 +223,7 @@ const Members = () => {
 
 {
   name: "Domen Gvozdanović",
-  role: "Glasbenik",
+  role: "Glasbenik, skladatelj",
   instruments: "Kitara, teorba",
   image: domenImage,
   shortBio:
@@ -253,6 +255,48 @@ const Members = () => {
     "ter prvega dela Händlovega »Mesije«."
 },
 
+    {
+      name: "Jakob Istenič",
+      role: "Glasbenik",
+      instruments: "Kontrabas, tuba, ukulele, petje",
+      image: jakobImage,
+      shortBio:
+        "Na Konservatoriju za glasbo in balet Ljubljana (KGBL) se s kontrabasom izobražuje na oddelku za jazz, kot pevec pa deluje v Komornem zboru De profundis Kranj.",
+      fullBio:
+        "Kontrabasist Jakob Istenič je svoje glasbeno izobraževanje začel v Glasbeni šoli Kranj. " +
+        "Tam je igral tudi na tubo in redno sodeloval pri koncertih s Tuba božički. " +
+        "Poleg študija fizike se je odločil za poglobljeno glasbeno izobraževanje na področju jazza. " +
+        "Na Konservatoriju za glasbo in balet Ljubljana se s kontrabasom izobražuje na oddelku za jazz. " +
+        "Svoj pevski talent pa redno udejstvuje kot član Komornega zbora De profundis Kranj, " +
+        "ki deluje pod vodstvom branke Potočnik Krajnik. " +
+        "Z zborom je sodeloval pri poustvarjanju stare glasbe na koncertih in projektih, " +
+        "posvečenih srednjeveškemu in sakralnemu repertoarju. " +
+        "Nastopal je v okviru projektov Odmevi srednjega veka, Grajske zgodbe, Božični čas, " +
+        "v sklopu sakralnega abonmaja v cerkvi Svete Trojice ter drugih projektih in nastopih. " +
+        "Prav tako je sodeloval na koncertu Zven veličastja z Akademski pevski zbor France Prešeren " +
+        "znotraj baročnega orkestra Nova Akademija."
+    },
+
+        {
+      name: "Lovro Tavčar",
+      role: "Glasbenik",
+      instruments: "Trobenta, baročna trobenta",
+      image: lovroImage,
+      shortBio:
+        "Na Konservatoriju za glasbo in balet Ljubljana (KGBL) je s trobento pri prof. Matjažu Jevšnikarju zaključil srednješolsko izobraževanje, trenutno pa študira na Akademiji za glasbo v Ljubljani (AG LJ) pri prof. Juretu Gradišniku.",
+      fullBio:
+        "Lovro Tavčar je trobento začel igrati pri sedmih letih na Glasbeni šoli Franza Šturma pri prof. Martinu Dukariću. " +
+        "Šolanje je nadaljeval na Konservatoriju za glasbo in balet Ljubljana pri prof. Matjažu Jevšnikarju, trenutno pa študira na Akademiji za glasbo v Ljubljani pri prof. Juretu Gradišniku. " +
+        "Kot solist in komorni glasbenik je prejemnik več zlatih priznanj in prvih nagrad na državnih in mednarodnih tekmovanjih (TEMSIG, Euritmia, Svirel, PaMus Flow, WoodWind Brass, University Brass Competition). " +
+        "Že večkrat je sodeloval kot substitut v Simfoničnem orkestru RTV Slovenija, Orkestru SNG Opera in balet Ljubljana ter v mednarodnem orkestru FVG v Italiji. " +
+        "S Trobilnim ansamblom Akademije za glasbo UL je na RTV Slovenija posnel CD zgoščenko (2024). " +
+        "Je član trobilnega kvinteta FiveBrass. Skupina je nastopila in sodelovala na številnih festivalih in koncertnih ciklih doma ter v tujini, kot so Imago Sloveniae, Glasbena mladina ljubljanska, Festival Ljubljana, Music System Italy, Solo e da camera in mnogi drugi. " +
+        "Leta 2025 so na državnem tekmovanju TEMSIG osvojili prvo nagrado in zlato plaketo s posebnim priznanjem za obvezno skladbo. " +
+        "Udeležil se je mojstrskih tečajev pri priznanih trobentačih, kot so Gábor Tarkövi, Jeroen Berwaerts, Marco Pierobon, Roman Rindberger in drugi. " +
+        "V zadnjem času pa posebno pozornost namenja tudi raziskovanju baročne trobente in izvajanju stare glasbe. " +
+        "Na Gimnaziji Kranj ter pozneje v cerkvi sv. Trojice v Ljubljani je skupaj z baročnim orkestrom Nova akademija in Akademskim pevskim zborom France Prešeren izvedel Charpentierjev Te Deum. " +
+        "Z namenom poglobiti svoje znanje ter prispevati k razvoju in prepoznavnosti baročne trobente v Sloveniji se je pridružil društvu Nova Akademija."
+    },
 
     {
       name: "Branimir Rezić - MENTOR",
