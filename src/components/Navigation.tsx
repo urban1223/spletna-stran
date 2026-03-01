@@ -1,6 +1,7 @@
 import { NavLink } from "./NavLink";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import logo from "../assets/logo.png";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,8 +20,8 @@ const Navigation = () => {
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
-          <NavLink to="/" className="text-2xl font-bold text-accent">
-            Nova akademija
+          <NavLink to="/" className="flex items-center">
+            <img src={logo} alt="Nova akademija" className="h-14 w-auto" />
           </NavLink>
 
           {/* Desktop Navigation */}
