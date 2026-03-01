@@ -21,7 +21,7 @@ const Navigation = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           <NavLink to="/" className="flex items-center h-full">
-            <img src={logo} alt="Nova akademija" className="h-[192px] w-auto -translate-y-[15%]" />
+            <img src={logo} alt="Nova akademija" className="h-[192px] w-auto mt-2" />
           </NavLink>
 
           {/* Desktop Navigation */}
