@@ -1,8 +1,8 @@
 // Social media URLs
 export const SOCIAL_MEDIA = {
-  INSTAGRAM: "https://www.instagram.com/nova__akademija?igsh=MWNjZ2RxeXY2M2R0dg%3D%3D&utm_source=qr",
-  FACEBOOK: "https://www.facebook.com/profile.php?id=61569941569857",
-  YOUTUBE: "https://www.youtube.com/@nova_akademija",
+  INSTAGRAM: "https://www.instagram.com/novaakademija/",
+  FACEBOOK: "https://www.facebook.com/profile.php?id=61583343850108",
+  YOUTUBE: "https://www.youtube.com/channel/UCFyeD8susO2xc9PSc_JK7gQ",
 } as const;
 
 // Bank account details
