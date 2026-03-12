@@ -55,17 +55,17 @@ const Projects = () => {
                 <div className="space-y-3 text-muted-foreground">
       <p>
         <span className="font-semibold text-foreground">Cena:</span>
-        <span className="ml-2">po dogovoru, odvisno od velikosti skupine</span>
+        <span className="ml-2">Individualni pouk (200€), skupinski pouk (160€)</span>
       </p>
 
       <p>
         <span className="font-semibold text-foreground">Obseg:</span>
-        <span className="ml-2">10 terminov po 4 šolske ure (40 ur)</span>
+        <span className="ml-2">5 terminov po 4 šolske ure (20 ur) – prejmete potrdilo o udeležbi</span>
       </p>
 
       <p>
         <span className="font-semibold text-foreground">Oblika pouka:</span>
-        <span className="ml-2">individualni ali skupinski pouk</span>
+        <span className="ml-2">Individualni ali skupinski pouk</span>
       </p>
 
       <p>
