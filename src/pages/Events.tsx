@@ -18,7 +18,7 @@ const Events = () => {
         {
       title: "Victimae paschali",
       date: "Sobota, 11. april 2026",
-      time: "19:30",
+      time: "20:00",
       location: "Cerkev sv. Petra, Radovljica",
       description: "Zbor Consortium musicum s solisti, Orkester Nova akademija",
       program: "G.F. Händel (HWV 56, 2. del), J.S. Bach (BWV 4)",
