@@ -24,7 +24,7 @@ const Events = () => {
       program: "G.F. Händel (HWV 56, 2. del), J.S. Bach (BWV 4)",
       conductor: "Dirigent: Stephen Layton",
       cta: "OGLEJTE SI LOKACIJO",
-      link: "https://maps.app.goo.gl/oHFpmUpyi5UgevHp8",
+      link: "https://ld-radovljica.kupikarto.si/dogodek.php?&dogId=1641&page=4",
     },
     {
       title: "Victimae paschali",
