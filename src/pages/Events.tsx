@@ -23,7 +23,7 @@ const Events = () => {
       description: "Zbor Consortium musicum s solisti, Orkester Nova akademija",
       program: "G.F. Händel (HWV 56, 2. del), J.S. Bach (BWV 4)",
       conductor: "Dirigent: Stephen Layton",
-      cta: "OGLEJTE SI LOKACIJO",
+      cta: "KUPI KARTO",
       link: "https://ld-radovljica.kupikarto.si/dogodek.php?&dogId=1641&page=4",
     },
     {
