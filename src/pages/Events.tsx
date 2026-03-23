@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Music } from "lucide-react";
+import ReservationFormDialog from "@/components/ReservationFormDialog";
 
 const Events = () => {
+  const [reservationOpen, setReservationOpen] = useState(false);
+
   const upcomingEvents = [
     {
       title: "Vstajenjska velikonočna maša",
@@ -14,8 +18,9 @@ const Events = () => {
       conductor: "Dirigent: Žiga Godec",
       cta: "OGLEJTE SI LOKACIJO",
       link: "https://maps.app.goo.gl/WpA9vYipKEsQETDd7",
+      reservation: false,
     },
-        {
+    {
       title: "Victimae paschali",
       date: "Sobota, 11. april 2026",
       time: "20:00",
@@ -25,6 +30,7 @@ const Events = () => {
       conductor: "Dirigent: Stephen Layton",
       cta: "KUPI KARTO",
       link: "https://ld-radovljica.kupikarto.si/dogodek.php?&dogId=1641&page=4",
+      reservation: false,
     },
     {
       title: "Victimae paschali",
@@ -34,8 +40,9 @@ const Events = () => {
       description: "Zbor Consortium musicum s solisti, Orkester Nova akademija",
       program: "G.F. Händel (HWV 56, 2. del), J.S. Bach (BWV 4)",
       conductor: "Dirigent: Stephen Layton",
-      cta: "OGLEJTE SI LOKACIJO",
-      link: "https://maps.app.goo.gl/YjwibH1vw4BH9Q9b7",
+      cta: "REZERVIRAJ KARTO",
+      link: null,
+      reservation: true,
     },
     {
       title: "Vivaldi vs. Telemann - SM Kreativa",
@@ -47,6 +54,7 @@ const Events = () => {
       conductor: "Solista: Erazem Žganjar, Urban Klančar",
       cta: "OGLEJTE SI LOKACIJO",
       link: "https://maps.app.goo.gl/LqBVXjDnAJ7kJ3w1A",
+      reservation: false,
     },
     {
       title: "Skrivnosti baroka",
@@ -57,10 +65,9 @@ const Events = () => {
       program: "D. Buxtehude, G. Ph. Telemann in drugi nemški baročni skladatelji",
       conductor: "Dirigentka: Branka Potočnik Krajnik",
       cta: "O ZBORU",
-      link: "http://www.deprofundis.si/zbor/o-zboru/"
-    }
-
-
+      link: "http://www.deprofundis.si/zbor/o-zboru/",
+      reservation: false,
+    },
   ];
 
   const pastEvents = [
@@ -97,18 +104,17 @@ const Events = () => {
       cta: "OGLEJTE SI LOKACIJO",
       link: "https://maps.app.goo.gl/JxPjxvEoyTzeZ4FC8",
     },
-        {
-    title: "Gloria in excelsis Deo",
-    date: "Četrtek, 25. december 2025",
-    time: "19:30",
-    location: "Stolnica sv. Nikolaja, Ljubljana",
-    description: "Božični koncert v sodelovanju s Consortium musicum, Slovenskim Baročnim Orkestrom, Baročnim orkestrom UL AG",
-    program: "J.S. Bach (BWV 191), G.F. Händel (HWV 56, 1. del)",
-    conductor: "Dirigent: Egon Mihajlović",
-    admission: "VSTOP PROST",
-    cta: "OGLEJTE SI LOKACIJO",
-    link: "https://maps.app.goo.gl/Y4r5z95X6oMNYhFB6", 
-    },  
+    {
+      title: "Gloria in excelsis Deo",
+      date: "Četrtek, 25. december 2025",
+      time: "19:30",
+      location: "Stolnica sv. Nikolaja, Ljubljana",
+      description: "Božični koncert v sodelovanju s Consortium musicum, Slovenskim Baročnim Orkestrom, Baročnim orkestrom UL AG",
+      program: "J.S. Bach (BWV 191), G.F. Händel (HWV 56, 1. del)",
+      conductor: "Dirigent: Egon Mihajlović",
+      cta: "OGLEJTE SI LOKACIJO",
+      link: "https://maps.app.goo.gl/Y4r5z95X6oMNYhFB6",
+    },
     {
       title: "Zven Veličastja",
       date: "Sobota, 27. december 2025",
@@ -122,7 +128,7 @@ const Events = () => {
     },
     {
       title: "Zven Veličastja",
-      date: "Nedelja, 27. december 2025",
+      date: "Nedelja, 28. december 2025",
       time: "19:00",
       location: "Dvorana Gimnazije Kranj",
       description: "AKADEMSKI PEVSKI ZBOR FRANCE PREŠEREN KRANJ, solisti in priložnostni baročni orkester",
@@ -131,18 +137,17 @@ const Events = () => {
       cta: "KUPI VSTOPNICE",
       link: "https://www.facebook.com/photo/?fbid=1505282407718468&set=a.848350820078300",
     },
-        {
+    {
       title: "Baročna polifonija",
       date: "Sreda, 22. oktober 2025",
       time: "18:45",
       location: "Cerkev svetega Kancijana in tovarišev, Kranj",
       description: "Sodelovanje pri maši in krajši koncert",
       program: "J. S. Bach, G. P. Telemann",
-      price: "Vstop prost, prostovoljni prispevki zaželeni",
+      conductor: "",
       cta: "OGLEJTE SI LOKACIJO",
       link: "https://maps.app.goo.gl/BV7MQP2aFzGoyZ6r8",
     },
-
     {
       title: "Bachu v spomin",
       date: "Četrtek, 16. oktober 2025",
@@ -150,11 +155,10 @@ const Events = () => {
       location: "Cerkev Svetega Petra, Ilirska Bistrica",
       description: "V okviru Festivala Reka Reka",
       program: "J. S. Bach in C. P. E. Bach",
+      conductor: "",
       cta: "KUPI VSTOPNICE",
       link: "https://www.ilirska-bistrica.si/dogodek/1174450",
     },
-    
-
   ];
 
   return (
@@ -175,7 +179,7 @@ const Events = () => {
                 <h3 className="text-2xl font-bold text-accent mb-4">
                   {event.title}
                 </h3>
-                
+
                 <div className="space-y-3 mb-6 flex-grow">
                   <div className="flex items-start gap-3 text-muted-foreground">
                     <Calendar className="w-5 h-5 mt-1 flex-shrink-0" />
@@ -184,12 +188,12 @@ const Events = () => {
                       <p className="text-sm">ob {event.time}</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3 text-muted-foreground">
                     <MapPin className="w-5 h-5 mt-1 flex-shrink-0" />
                     <p>{event.location}</p>
                   </div>
-                  
+
                   <div className="flex items-start gap-3 text-muted-foreground">
                     <Music className="w-5 h-5 mt-1 flex-shrink-0" />
                     <div>
@@ -198,13 +202,15 @@ const Events = () => {
                       {event.conductor && <p className="text-sm mt-1">{event.conductor}</p>}
                     </div>
                   </div>
-
-
                 </div>
 
-                <Button 
+                <Button
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 mt-auto"
-                  onClick={() => window.open(event.link, '_blank')}
+                  onClick={() =>
+                    event.reservation
+                      ? setReservationOpen(true)
+                      : window.open(event.link!, "_blank")
+                  }
                 >
                   {event.cta}
                 </Button>
@@ -224,7 +230,7 @@ const Events = () => {
                 <h3 className="text-xl font-bold text-foreground mb-4">
                   {event.title}
                 </h3>
-                
+
                 <div className="space-y-3 mb-6">
                   <div className="flex items-start gap-3 text-muted-foreground text-sm">
                     <Calendar className="w-4 h-4 mt-1 flex-shrink-0" />
@@ -233,12 +239,12 @@ const Events = () => {
                       <p>ob {event.time}</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3 text-muted-foreground text-sm">
                     <MapPin className="w-4 h-4 mt-1 flex-shrink-0" />
                     <p>{event.location}</p>
                   </div>
-                  
+
                   <div className="flex items-start gap-3 text-muted-foreground text-sm">
                     <Music className="w-4 h-4 mt-1 flex-shrink-0" />
                     <div>
@@ -248,11 +254,7 @@ const Events = () => {
                   </div>
                 </div>
 
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  disabled
-                >
+                <Button variant="outline" className="w-full" disabled>
                   DOGODEK JE POTEKEL
                 </Button>
               </Card>
@@ -260,6 +262,11 @@ const Events = () => {
           </div>
         </section>
       </div>
+
+      <ReservationFormDialog
+        open={reservationOpen}
+        onOpenChange={setReservationOpen}
+      />
     </div>
   );
 };
