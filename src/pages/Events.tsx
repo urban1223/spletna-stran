@@ -13,9 +13,10 @@ const Events = () => {
       date: "Nedelja, 5. april 2026",
       time: "06:30",
       location: "Cerkev Marije pomočnice na Rakovniku, Ljubljana",
-      description: "Orkester Nova akademija",
+      description: "MPZ Rakovnik s solisti, Orkester Nova akademija",
       program: "W. A. Mozart, G. F. Händel",
       conductor: "Dirigent: Žiga Godec",
+      admission: "Vstop prost!",
       cta: "OGLEJTE SI LOKACIJO",
       link: "https://maps.app.goo.gl/WpA9vYipKEsQETDd7",
       reservation: false,
@@ -28,6 +29,7 @@ const Events = () => {
       description: "Zbor Consortium musicum s solisti, Orkester Nova akademija",
       program: "G.F. Händel (HWV 56, 2. del), J.S. Bach (BWV 4)",
       conductor: "Dirigent: Stephen Layton",
+      admission: "Karte: 13 € (študenti/upokojenci) | 15 € (odrasli)",
       cta: "KUPI KARTO",
       link: "https://ld-radovljica.kupikarto.si/dogodek.php?&dogId=1641&page=4",
       reservation: false,
@@ -40,6 +42,7 @@ const Events = () => {
       description: "Zbor Consortium musicum s solisti, Orkester Nova akademija",
       program: "G.F. Händel (HWV 56, 2. del), J.S. Bach (BWV 4)",
       conductor: "Dirigent: Stephen Layton",
+      admission: "Karte: 13 € (študenti/upokojenci) | 15 € (odrasli)",
       cta: "REZERVIRAJ KARTO",
       link: null,
       reservation: true,
@@ -52,6 +55,7 @@ const Events = () => {
       description: "Orkester Nova akademija",
       program: "A. Vivaldi, G. P. Telemann, M. Zahnhausen, J. van Eyck",
       conductor: "Solista: Erazem Žganjar, Urban Klančar",
+      admission: "Vstop prost!",
       cta: "OGLEJTE SI LOKACIJO",
       link: "https://maps.app.goo.gl/LqBVXjDnAJ7kJ3w1A",
       reservation: false,
@@ -64,6 +68,7 @@ const Events = () => {
       description: "Komorni zbor Deprofundis Kranj, ansambel Nova akademija",
       program: "D. Buxtehude, G. Ph. Telemann in drugi nemški baročni skladatelji",
       conductor: "Dirigentka: Branka Potočnik Krajnik",
+      admission: "Vstop prost!",
       cta: "O ZBORU",
       link: "http://www.deprofundis.si/zbor/o-zboru/",
       reservation: false,
@@ -71,6 +76,17 @@ const Events = () => {
   ];
 
   const pastEvents = [
+        {
+      title: "Sobotne umetniške maše",
+      date: "Sobota, 13. marec 2026",
+      time: "18:00",
+      location: "Cerkev sv. Kancijana in tovarišev, Kranj",
+      description: "Ansambel Nova akademija",
+      program: "A. Corelli",
+      conductor: "",
+      cta: "OGLEJTE SI LOKACIJO",
+      link: "https://maps.app.goo.gl/BV7MQP2aFzGoyZ6r8",
+    },
     {
       title: "Nedeljske glasbeno sodelovanje",
       date: "Nedelja, 22. februar 2026",
@@ -200,6 +216,7 @@ const Events = () => {
                       <p className="mb-1">{event.description}</p>
                       <p className="text-sm font-semibold text-foreground">Program: {event.program}</p>
                       {event.conductor && <p className="text-sm mt-1">{event.conductor}</p>}
+                      {event.admission && <p className="text-sm mt-1 font-bold text-foreground">{event.admission}</p>}
                     </div>
                   </div>
                 </div>
