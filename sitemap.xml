@@ -1,45 +1,187 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-   <url>
-      <loc>https://nova-akademija.si/</loc>
-      <lastmod>2026-01-13</lastmod>
-      <changefreq>weekly</changefreq>
-      <priority>1.0</priority>
-   </url>
-   <url>
-      <loc>https://nova-akademija.si/dogodki</loc>
-      <lastmod>2026-01-13</lastmod>
-      <changefreq>monthly</changefreq>
-      <priority>0.8</priority>
-   </url>
-   <url>
-      <loc>https://nova-akademija.si/projekti</loc>
-      <lastmod>2026-01-13</lastmod>
-      <changefreq>monthly</changefreq>
-      <priority>0.8</priority>
-   </url>
-   <url>
-      <loc>https://nova-akademija.si/clani</loc>
-      <lastmod>2026-01-13</lastmod>
-      <changefreq>monthly</changefreq>
-      <priority>0.7</priority>
-   </url>
-   <url>
-      <loc>https://nova-akademija.si/galerija</loc>
-      <lastmod>2026-01-13</lastmod>
-      <changefreq>monthly</changefreq>
-      <priority>0.7</priority>
-   </url>
-   <url>
-      <loc>https://nova-akademija.si/o-nas</loc>
-      <lastmod>2026-01-13</lastmod>
-      <changefreq>monthly</changefreq>
-      <priority>0.8</priority>
-   </url>
-   <url>
-      <loc>https://nova-akademija.si/podprite-nas</loc>
-      <lastmod>2026-01-13</lastmod>
-      <changefreq>monthly</changefreq>
-      <priority>0.6</priority>
-   </url>
+
+  <!-- Domača stran -->
+  <url>
+    <loc>https://nova-akademija.si/</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Seznam vseh koncertov -->
+  <url>
+    <loc>https://nova-akademija.si/dogodki</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- === POSAMEZNI KONCERTI (prihajajoči) === -->
+  <url>
+    <loc>https://nova-akademija.si/dogodki/vstajenjska-velikonocna-masa-2026</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://nova-akademija.si/dogodki/victimae-paschali-radovljica-2026</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://nova-akademija.si/dogodki/victimae-paschali-ljubljana-2026</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://nova-akademija.si/dogodki/vivaldi-vs-telemann-radovljica-2026</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://nova-akademija.si/dogodki/skrivnosti-baroka-kranj-2026</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- === POSAMEZNI KONCERTI (pretekli) === -->
+  <url>
+    <loc>https://nova-akademija.si/dogodki/gloria-in-excelsis-deo-2025</loc>
+    <lastmod>2025-12-25</lastmod>
+    <changefreq>never</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+  <url>
+    <loc>https://nova-akademija.si/dogodki/bachu-v-spomin-2025</loc>
+    <lastmod>2025-10-16</lastmod>
+    <changefreq>never</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+  <!-- === POSAMEZNI ČLANI === -->
+  <url>
+    <loc>https://nova-akademija.si/clani/urban-klancar</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nova-akademija.si/clani/laura-calligaris</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nova-akademija.si/clani/barbara-kepic</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nova-akademija.si/clani/marie-tuhtan</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nova-akademija.si/clani/paulina-tuhtan</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nova-akademija.si/clani/natalija-ljubotina</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nova-akademija.si/clani/erazem-zganjar</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nova-akademija.si/clani/ana-birsa-krusec</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nova-akademija.si/clani/livija-zagar</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nova-akademija.si/clani/domen-gvozdanovic</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nova-akademija.si/clani/jakob-istenic</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nova-akademija.si/clani/lovro-tavcar</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nova-akademija.si/clani/branimir-rezic</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Ostale strani -->
+  <url>
+    <loc>https://nova-akademija.si/projekti</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://nova-akademija.si/clani</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <url>
+    <loc>https://nova-akademija.si/o-nas</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://nova-akademija.si/galerija</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://nova-akademija.si/podprite-nas</loc>
+    <lastmod>2026-03-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
 </urlset>

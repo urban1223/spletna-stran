@@ -1,181 +1,11 @@
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Music } from "lucide-react";
-import ReservationFormDialog from "@/components/ReservationFormDialog";
+import { upcomingEvents, pastEvents } from "@/data/events-data";
 
 const Events = () => {
-  const [reservationOpen, setReservationOpen] = useState(false);
-
-  const upcomingEvents = [
-    {
-      title: "Vstajenjska velikonočna maša",
-      date: "Nedelja, 5. april 2026",
-      time: "06:30",
-      location: "Cerkev Marije pomočnice na Rakovniku, Ljubljana",
-      description: "MPZ Rakovnik s solisti, Orkester Nova akademija",
-      program: "W. A. Mozart, G. F. Händel",
-      conductor: "Dirigent: Žiga Godec",
-      admission: "Vstop prost!",
-      cta: "OGLEJTE SI LOKACIJO",
-      link: "https://maps.app.goo.gl/WpA9vYipKEsQETDd7",
-      reservation: false,
-    },
-    {
-      title: "Victimae paschali",
-      date: "Sobota, 11. april 2026",
-      time: "20:00",
-      location: "Cerkev sv. Petra, Radovljica",
-      description: "Zbor Consortium musicum s solisti, Orkester Nova akademija",
-      program: "G.F. Händel (HWV 56, 2. del), J.S. Bach (BWV 4)",
-      conductor: "Dirigent: Stephen Layton",
-      admission: "Karte: 13 € (študenti/upokojenci) | 15 € (odrasli)",
-      cta: "KUPI KARTO",
-      link: "https://ld-radovljica.kupikarto.si/dogodek.php?&dogId=1641&page=4",
-      reservation: false,
-    },
-    {
-      title: "Victimae paschali",
-      date: "Nedelja, 12. april 2026",
-      time: "20:00",
-      location: "Stolnica sv. Nikolaja, Ljubljana",
-      description: "Zbor Consortium musicum s solisti, Orkester Nova akademija",
-      program: "G.F. Händel (HWV 56, 2. del), J.S. Bach (BWV 4)",
-      conductor: "Dirigent: Stephen Layton",
-      admission: "Karte: 13 € (študenti/upokojenci) | 15 € (odrasli)",
-      cta: "REZERVIRAJ KARTO",
-      link: null,
-      reservation: true,
-    },
-    {
-      title: "Vivaldi vs. Telemann - SM Kreativa",
-      date: "Sobota, 16. maj 2026",
-      time: "19:30",
-      location: "Baročna dvorana, Radovljica",
-      description: "Orkester Nova akademija",
-      program: "A. Vivaldi, G. P. Telemann, M. Zahnhausen, J. van Eyck",
-      conductor: "Solista: Erazem Žganjar, Urban Klančar",
-      admission: "Vstop prost!",
-      cta: "OGLEJTE SI LOKACIJO",
-      link: "https://maps.app.goo.gl/LqBVXjDnAJ7kJ3w1A",
-      reservation: false,
-    },
-    {
-      title: "Skrivnosti baroka",
-      date: "jesenski meseci 2026",
-      time: "večerni uri - natančen čas bo objavljen naknadno",
-      location: "Staro mestno jedro Kranja",
-      description: "Komorni zbor Deprofundis Kranj, ansambel Nova akademija",
-      program: "D. Buxtehude, G. Ph. Telemann in drugi nemški baročni skladatelji",
-      conductor: "Dirigentka: Branka Potočnik Krajnik",
-      admission: "Vstop prost!",
-      cta: "O ZBORU",
-      link: "http://www.deprofundis.si/zbor/o-zboru/",
-      reservation: false,
-    },
-  ];
-
-  const pastEvents = [
-        {
-      title: "Sobotne umetniške maše",
-      date: "Sobota, 13. marec 2026",
-      time: "18:00",
-      location: "Cerkev sv. Kancijana in tovarišev, Kranj",
-      description: "Ansambel Nova akademija",
-      program: "A. Corelli",
-      conductor: "",
-      cta: "OGLEJTE SI LOKACIJO",
-      link: "https://maps.app.goo.gl/BV7MQP2aFzGoyZ6r8",
-    },
-    {
-      title: "Nedeljske glasbeno sodelovanje",
-      date: "Nedelja, 22. februar 2026",
-      time: "18:00",
-      location: "Cerkev sv. Antona Padovanskega, Ljubljana",
-      description: "Ansambel Nova akademija",
-      program: "G.F. Händel, A. Corelli",
-      conductor: "",
-      cta: "OGLEJTE SI LOKACIJO",
-      link: "https://maps.app.goo.gl/ReAk3jmRUvZ4GEyM7",
-    },
-    {
-      title: "Sobotne umetniške maše",
-      date: "Sobota, 21. februar 2026",
-      time: "18:00",
-      location: "Cerkev sv. Kancijana in tovarišev, Kranj",
-      description: "Ansambel Nova akademija",
-      program: "G.F. Händel, A. Corelli",
-      conductor: "",
-      cta: "OGLEJTE SI LOKACIJO",
-      link: "https://maps.app.goo.gl/BV7MQP2aFzGoyZ6r8",
-    },
-    {
-      title: "Zven Veličastja - SAKRALNI ABONMA",
-      date: "Sreda, 7. januar 2026",
-      time: "19:30",
-      location: "Uršulinska cerkev Sv. Trojice, Ljubljana",
-      description: "AKADEMSKI PEVSKI ZBOR FRANCE PREŠEREN KRANJ, solisti in priložnostni baročni orkester",
-      program: "I. Posch, J. L. Bach, G. Allegri, M. A. Charpentier",
-      conductor: "Dirigent: Erik Šmid",
-      cta: "OGLEJTE SI LOKACIJO",
-      link: "https://maps.app.goo.gl/JxPjxvEoyTzeZ4FC8",
-    },
-    {
-      title: "Gloria in excelsis Deo",
-      date: "Četrtek, 25. december 2025",
-      time: "19:30",
-      location: "Stolnica sv. Nikolaja, Ljubljana",
-      description: "Božični koncert v sodelovanju s Consortium musicum, Slovenskim Baročnim Orkestrom, Baročnim orkestrom UL AG",
-      program: "J.S. Bach (BWV 191), G.F. Händel (HWV 56, 1. del)",
-      conductor: "Dirigent: Egon Mihajlović",
-      cta: "OGLEJTE SI LOKACIJO",
-      link: "https://maps.app.goo.gl/Y4r5z95X6oMNYhFB6",
-    },
-    {
-      title: "Zven Veličastja",
-      date: "Sobota, 27. december 2025",
-      time: "17:00",
-      location: "Dvorana Gimnazije Kranj",
-      description: "AKADEMSKI PEVSKI ZBOR FRANCE PREŠEREN KRANJ, solisti in priložnostni baročni orkester",
-      program: "I. Posch, J. L. Bach, G. Allegri, M. A. Charpentier",
-      conductor: "Dirigent: Erik Šmid",
-      cta: "KUPI VSTOPNICE",
-      link: "https://www.facebook.com/photo/?fbid=1505282407718468&set=a.848350820078300",
-    },
-    {
-      title: "Zven Veličastja",
-      date: "Nedelja, 28. december 2025",
-      time: "19:00",
-      location: "Dvorana Gimnazije Kranj",
-      description: "AKADEMSKI PEVSKI ZBOR FRANCE PREŠEREN KRANJ, solisti in priložnostni baročni orkester",
-      program: "I. Posch, J. L. Bach, G. Allegri, M. A. Charpentier",
-      conductor: "Dirigent: Erik Šmid",
-      cta: "KUPI VSTOPNICE",
-      link: "https://www.facebook.com/photo/?fbid=1505282407718468&set=a.848350820078300",
-    },
-    {
-      title: "Baročna polifonija",
-      date: "Sreda, 22. oktober 2025",
-      time: "18:45",
-      location: "Cerkev svetega Kancijana in tovarišev, Kranj",
-      description: "Sodelovanje pri maši in krajši koncert",
-      program: "J. S. Bach, G. P. Telemann",
-      conductor: "",
-      cta: "OGLEJTE SI LOKACIJO",
-      link: "https://maps.app.goo.gl/BV7MQP2aFzGoyZ6r8",
-    },
-    {
-      title: "Bachu v spomin",
-      date: "Četrtek, 16. oktober 2025",
-      time: "19:00",
-      location: "Cerkev Svetega Petra, Ilirska Bistrica",
-      description: "V okviru Festivala Reka Reka",
-      program: "J. S. Bach in C. P. E. Bach",
-      conductor: "",
-      cta: "KUPI VSTOPNICE",
-      link: "https://www.ilirska-bistrica.si/dogodek/1174450",
-    },
-  ];
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen py-20">
@@ -190,8 +20,12 @@ const Events = () => {
             Prihajajoči koncerti
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
-            {upcomingEvents.map((event, index) => (
-              <Card key={index} className="p-6 bg-card border-border hover:border-accent transition-all flex flex-col">
+            {upcomingEvents.map((event) => (
+              <Card
+                key={event.slug}
+                className="p-6 bg-card border-border hover:border-accent transition-all flex flex-col cursor-pointer"
+                onClick={() => navigate(`/dogodki/${event.slug}`)}
+              >
                 <h3 className="text-2xl font-bold text-accent mb-4">
                   {event.title}
                 </h3>
@@ -214,22 +48,29 @@ const Events = () => {
                     <Music className="w-5 h-5 mt-1 flex-shrink-0" />
                     <div>
                       <p className="mb-1">{event.description}</p>
-                      <p className="text-sm font-semibold text-foreground">Program: {event.program}</p>
-                      {event.conductor && <p className="text-sm mt-1">{event.conductor}</p>}
-                      {event.admission && <p className="text-sm mt-1 font-bold text-foreground">{event.admission}</p>}
+                      <p className="text-sm font-semibold text-foreground">
+                        Program: {event.program}
+                      </p>
+                      {event.conductor && (
+                        <p className="text-sm mt-1">{event.conductor}</p>
+                      )}
+                      {event.admission && (
+                        <p className="text-sm mt-1 font-bold text-foreground">
+                          {event.admission}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <Button
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 mt-auto"
-                  onClick={() =>
-                    event.reservation
-                      ? setReservationOpen(true)
-                      : window.open(event.link!, "_blank")
-                  }
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/dogodki/${event.slug}`);
+                  }}
                 >
-                  {event.cta}
+                  VEČ INFO
                 </Button>
               </Card>
             ))}
@@ -242,8 +83,11 @@ const Events = () => {
             Arhiv preteklih koncertov
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
-            {pastEvents.map((event, index) => (
-              <Card key={index} className="p-6 bg-card border-border opacity-75">
+            {pastEvents.map((event) => (
+              <Card
+                key={event.slug}
+                className="p-6 bg-card border-border opacity-75"
+              >
                 <h3 className="text-xl font-bold text-foreground mb-4">
                   {event.title}
                 </h3>
@@ -279,11 +123,6 @@ const Events = () => {
           </div>
         </section>
       </div>
-
-      <ReservationFormDialog
-        open={reservationOpen}
-        onOpenChange={setReservationOpen}
-      />
     </div>
   );
 };

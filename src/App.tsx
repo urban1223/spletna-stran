@@ -14,6 +14,8 @@ import Projects from "./pages/Projects";
 import Gallery from "./pages/Gallery";
 import Support from "./pages/Support";
 import NotFound from "./pages/NotFound";
+import EventDetail from "./pages/EventDetail";
+import MemberDetail from "./pages/MemberDetail";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,8 @@ const App = () => (
               <Route path="/galerija" element={<Gallery />} />
               <Route path="/podprite-nas" element={<Support />} />
               <Route path="*" element={<NotFound />} />
+              <Route path="/dogodki/:slug" element={<EventDetail />} />
+              <Route path="/clani/:slug" element={<MemberDetail />} />
             </Routes>
           </MainLayout>
         </BrowserRouter>
