@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { ArrowRight } from "lucide-react";
 import MembershipSignupDialog from "@/components/MembershipSignupDialog";
 import { regularMembers, mentors } from "@/data/members-data";
 
-// Slika mapa
 import urbanImage from "@/assets/members/urban-klancar.jpg";
 import lauraImage from "@/assets/members/laura-calligaris.jpg";
 import barbaraImage from "@/assets/members/barbara-kepic.jpg";
@@ -37,6 +37,33 @@ const imageMap: Record<string, string> = {
   "lovro-tavcar": lovroImage,
 };
 
+const MemberCard = ({ member, navigate }: { member: any; navigate: any }) => (
+  <Card
+    className="p-8 bg-card border-border hover:border-accent transition-colors cursor-pointer"
+    onClick={() => navigate(`/clani/${member.slug}`)}
+  >
+    <div className="flex flex-col h-full space-y-4">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <h3 className="text-2xl font-bold text-accent mb-1">{member.name}</h3>
+          <p className="text-sm font-semibold text-foreground mb-2">{member.role}</p>
+          <p className="text-sm text-muted-foreground italic">{member.instruments}</p>
+        </div>
+        <Avatar className="h-16 w-16 border-2 border-accent">
+          <AvatarImage src={imageMap[member.imageKey]} alt={member.name} />
+          <AvatarFallback>
+            {member.name.split(" ").map((n: string) => n[0]).join("")}
+          </AvatarFallback>
+        </Avatar>
+      </div>
+      <p className="text-muted-foreground leading-relaxed flex-grow">{member.shortBio}</p>
+      <div className="flex justify-end mt-auto">
+        <ArrowRight className="w-6 h-6 text-accent" />
+      </div>
+    </div>
+  </Card>
+);
+
 const Members = () => {
   const navigate = useNavigate();
   const [signupDialogOpen, setSignupDialogOpen] = useState(false);
@@ -58,28 +85,7 @@ const Members = () => {
           <h2 className="text-3xl font-bold text-accent mb-8 text-center">Člani</h2>
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {regularMembers.map((member) => (
-              <Card
-                key={member.slug}
-                className="p-8 bg-card border-border hover:border-accent transition-colors cursor-pointer"
-                onClick={() => navigate(`/clani/${member.slug}`)}
-              >
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-bold text-accent mb-1">{member.name}</h3>
-                      <p className="text-sm font-semibold text-foreground mb-2">{member.role}</p>
-                      <p className="text-sm text-muted-foreground italic">{member.instruments}</p>
-                    </div>
-                    <Avatar className="h-16 w-16 border-2 border-accent">
-                      <AvatarImage src={imageMap[member.imageKey]} alt={member.name} />
-                      <AvatarFallback>
-                        {member.name.split(" ").map((n) => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <p className="text-muted-foreground leading-relaxed">{member.shortBio}</p>
-                </div>
-              </Card>
+              <MemberCard key={member.slug} member={member} navigate={navigate} />
             ))}
           </div>
         </div>
@@ -89,28 +95,7 @@ const Members = () => {
           <h2 className="text-3xl font-bold text-accent mb-8 text-center">Mentorji</h2>
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {mentors.map((member) => (
-              <Card
-                key={member.slug}
-                className="p-8 bg-card border-border hover:border-accent transition-colors cursor-pointer"
-                onClick={() => navigate(`/clani/${member.slug}`)}
-              >
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-bold text-accent mb-1">{member.name}</h3>
-                      <p className="text-sm font-semibold text-foreground mb-2">{member.role}</p>
-                      <p className="text-sm text-muted-foreground italic">{member.instruments}</p>
-                    </div>
-                    <Avatar className="h-16 w-16 border-2 border-accent">
-                      <AvatarImage src={imageMap[member.imageKey]} alt={member.name} />
-                      <AvatarFallback>
-                        {member.name.split(" ").map((n) => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <p className="text-muted-foreground leading-relaxed">{member.shortBio}</p>
-                </div>
-              </Card>
+              <MemberCard key={member.slug} member={member} navigate={navigate} />
             ))}
           </div>
         </div>
