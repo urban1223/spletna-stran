@@ -16,20 +16,6 @@ export interface Event {
 
 export const upcomingEvents: Event[] = [
   {
-    slug: "vstajenjska-velikonocna-masa-2026",
-    title: "Vstajenjska velikonočna maša",
-    date: "Nedelja, 5. april 2026",
-    time: "06:30",
-    location: "Cerkev Marije pomočnice na Rakovniku, Ljubljana",
-    description: "MPZ Rakovnik s solisti, Orkester Nova akademija",
-    program: "W. A. Mozart, G. F. Händel",
-    conductor: "Dirigent: Žiga Godec",
-    admission: "Vstop prost!",
-    cta: "OGLEJTE SI LOKACIJO",
-    link: "https://maps.app.goo.gl/WpA9vYipKEsQETDd7",
-    reservation: false,
-  },
-  {
     slug: "victimae-paschali-radovljica-2026",
     title: "Victimae paschali – Radovljica",
     date: "Sobota, 11. april 2026",
@@ -88,6 +74,20 @@ export const upcomingEvents: Event[] = [
 ];
 
 export const pastEvents: Event[] = [
+    {
+    slug: "vstajenjska-velikonocna-masa-2026",
+    title: "Vstajenjska velikonočna maša",
+    date: "Nedelja, 5. april 2026",
+    time: "06:30",
+    location: "Cerkev Marije pomočnice na Rakovniku, Ljubljana",
+    description: "MPZ Rakovnik s solisti, Orkester Nova akademija",
+    program: "W. A. Mozart, G. F. Händel",
+    conductor: "Dirigent: Žiga Godec",
+    admission: "Vstop prost!",
+    cta: "OGLEJTE SI LOKACIJO",
+    link: "https://maps.app.goo.gl/WpA9vYipKEsQETDd7",
+    reservation: false,
+  },
   {
     slug: "sobotne-umetnicke-mase-marc-2026",
     title: "Sobotne umetniške maše",
