@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { members } from "@/data/members-data";
 
-// Slika mapa — imageKey se ujema z members-data.ts
 import urbanImage from "@/assets/members/urban-klancar.jpg";
 import lauraImage from "@/assets/members/laura-calligaris.jpg";
 import barbaraImage from "@/assets/members/barbara-kepic.jpg";
@@ -84,10 +83,10 @@ const MemberDetail = () => {
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-6 mb-10">
-          <Avatar className="h-24 w-24 border-4 border-accent flex-shrink-0">
-            <AvatarImage src={image} alt={member.name} />
-            <AvatarFallback className="text-xl">{initials}</AvatarFallback>
+        <div className="flex flex-col items-center gap-4 mb-10 text-center">
+          <Avatar className="h-48 w-48 border-4 border-accent flex-shrink-0">
+            <AvatarImage src={image} alt={member.name} className="object-cover" />
+            <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
           </Avatar>
           <div>
             {member.isMentor && (
