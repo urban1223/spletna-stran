@@ -2,6 +2,7 @@ export interface Event {
   slug: string;
   title: string;
   date: string;
+  isoDate: string;
   time: string;
   location: string;
   description: string;
@@ -19,6 +20,7 @@ export const upcomingEvents: Event[] = [
     slug: "victimae-paschali-radovljica-2026",
     title: "Victimae paschali – Radovljica",
     date: "Sobota, 11. april 2026",
+    isoDate: "2026-04-11",
     time: "20:00",
     location: "Cerkev sv. Petra, Radovljica",
     description: "Zbor Consortium musicum s solisti, Orkester Nova akademija",
@@ -33,6 +35,7 @@ export const upcomingEvents: Event[] = [
     slug: "victimae-paschali-ljubljana-2026",
     title: "Victimae paschali – Ljubljana",
     date: "Nedelja, 12. april 2026",
+    isoDate: "2026-04-12",
     time: "20:00",
     location: "Stolnica sv. Nikolaja, Ljubljana",
     description: "Zbor Consortium musicum s solisti, Orkester Nova akademija",
@@ -47,6 +50,7 @@ export const upcomingEvents: Event[] = [
     slug: "vivaldi-vs-telemann-radovljica-2026",
     title: "Vivaldi vs. Telemann – SM Kreativa",
     date: "Sobota, 16. maj 2026",
+    isoDate: "2026-05-16",
     time: "19:30",
     location: "Baročna dvorana, Radovljica",
     description: "Orkester Nova akademija",
@@ -61,6 +65,7 @@ export const upcomingEvents: Event[] = [
     slug: "skrivnosti-baroka-kranj-2026",
     title: "Skrivnosti baroka",
     date: "Jesenski meseci 2026",
+    isoDate: "2026-10-01",
     time: "Natančen čas bo objavljen naknadno",
     location: "Staro mestno jedro Kranja",
     description: "Komorni zbor Deprofundis Kranj, ansambel Nova akademija",
@@ -74,10 +79,11 @@ export const upcomingEvents: Event[] = [
 ];
 
 export const pastEvents: Event[] = [
-    {
+  {
     slug: "vstajenjska-velikonocna-masa-2026",
     title: "Vstajenjska velikonočna maša",
     date: "Nedelja, 5. april 2026",
+    isoDate: "2026-04-05",
     time: "06:30",
     location: "Cerkev Marije pomočnice na Rakovniku, Ljubljana",
     description: "MPZ Rakovnik s solisti, Orkester Nova akademija",
@@ -92,6 +98,7 @@ export const pastEvents: Event[] = [
     slug: "sobotne-umetnicke-mase-marc-2026",
     title: "Sobotne umetniške maše",
     date: "Sobota, 13. marec 2026",
+    isoDate: "2026-03-13",
     time: "18:00",
     location: "Cerkev sv. Kancijana in tovarišev, Kranj",
     description: "Ansambel Nova akademija",
@@ -104,6 +111,7 @@ export const pastEvents: Event[] = [
     slug: "nedeljsko-glasbeno-sodelovanje-2026",
     title: "Nedeljske glasbeno sodelovanje",
     date: "Nedelja, 22. februar 2026",
+    isoDate: "2026-02-22",
     time: "18:00",
     location: "Cerkev sv. Antona Padovanskega, Ljubljana",
     description: "Ansambel Nova akademija",
@@ -116,6 +124,7 @@ export const pastEvents: Event[] = [
     slug: "sobotne-umetnicke-mase-feb-2026",
     title: "Sobotne umetniške maše",
     date: "Sobota, 21. februar 2026",
+    isoDate: "2026-02-21",
     time: "18:00",
     location: "Cerkev sv. Kancijana in tovarišev, Kranj",
     description: "Ansambel Nova akademija",
@@ -128,6 +137,7 @@ export const pastEvents: Event[] = [
     slug: "zven-velicastja-sakralni-abonma-2026",
     title: "Zven Veličastja – Sakralni abonma",
     date: "Sreda, 7. januar 2026",
+    isoDate: "2026-01-07",
     time: "19:30",
     location: "Uršulinska cerkev Sv. Trojice, Ljubljana",
     description: "Akademski pevski zbor France Prešeren Kranj, solisti in priložnostni baročni orkester",
@@ -141,6 +151,7 @@ export const pastEvents: Event[] = [
     slug: "gloria-in-excelsis-deo-2025",
     title: "Gloria in excelsis Deo",
     date: "Četrtek, 25. december 2025",
+    isoDate: "2025-12-25",
     time: "19:30",
     location: "Stolnica sv. Nikolaja, Ljubljana",
     description: "Božični koncert v sodelovanju s Consortium musicum, Slovenskim Baročnim Orkestrom, Baročnim orkestrom UL AG",
@@ -154,6 +165,7 @@ export const pastEvents: Event[] = [
     slug: "zven-velicastja-kranj-dec-2025",
     title: "Zven Veličastja",
     date: "Sobota, 27. december 2025",
+    isoDate: "2025-12-27",
     time: "17:00",
     location: "Dvorana Gimnazije Kranj",
     description: "Akademski pevski zbor France Prešeren Kranj, solisti in priložnostni baročni orkester",
@@ -167,6 +179,7 @@ export const pastEvents: Event[] = [
     slug: "zven-velicastja-kranj-dec28-2025",
     title: "Zven Veličastja",
     date: "Nedelja, 28. december 2025",
+    isoDate: "2025-12-28",
     time: "19:00",
     location: "Dvorana Gimnazije Kranj",
     description: "Akademski pevski zbor France Prešeren Kranj, solisti in priložnostni baročni orkester",
@@ -180,6 +193,7 @@ export const pastEvents: Event[] = [
     slug: "barocna-polifonija-2025",
     title: "Baročna polifonija",
     date: "Sreda, 22. oktober 2025",
+    isoDate: "2025-10-22",
     time: "18:45",
     location: "Cerkev svetega Kancijana in tovarišev, Kranj",
     description: "Sodelovanje pri maši in krajši koncert",
@@ -192,6 +206,7 @@ export const pastEvents: Event[] = [
     slug: "bachu-v-spomin-2025",
     title: "Bachu v spomin",
     date: "Četrtek, 16. oktober 2025",
+    isoDate: "2025-10-16",
     time: "19:00",
     location: "Cerkev Svetega Petra, Ilirska Bistrica",
     description: "V okviru Festivala Reka Reka",

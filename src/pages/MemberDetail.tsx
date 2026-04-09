@@ -44,6 +44,7 @@ const MemberDetail = () => {
   useEffect(() => {
     if (member) {
       document.title = `${member.name} – Nova akademija`;
+
       const meta = document.querySelector('meta[name="description"]');
       if (meta) {
         meta.setAttribute(
@@ -51,6 +52,29 @@ const MemberDetail = () => {
           `${member.name} – ${member.role}. Inštrumenti: ${member.instruments}. ${member.shortBio}`
         );
       }
+
+      // JSON-LD structured data
+      const script = document.createElement("script");
+      script.type = "application/ld+json";
+      script.id = "member-jsonld";
+      script.text = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": member.name,
+        "description": member.shortBio,
+        "jobTitle": member.role,
+        "memberOf": {
+          "@type": "Organization",
+          "name": "Nova akademija",
+          "url": "https://nova-akademija.si"
+        },
+        "url": `https://nova-akademija.si/clani/${member.slug}`,
+      });
+      document.head.appendChild(script);
+
+      return () => {
+        document.getElementById("member-jsonld")?.remove();
+      };
     }
   }, [member]);
 
@@ -84,7 +108,7 @@ const MemberDetail = () => {
 
         {/* Header */}
         <div className="flex flex-col items-center gap-4 mb-10 text-center">
-          <Avatar className="h-48 w-48 border-4 border-accent flex-shrink-0">
+          <Avatar className="h-56 w-56 border-4 border-accent flex-shrink-0">
             <AvatarImage src={image} alt={member.name} className="object-cover" />
             <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
           </Avatar>
