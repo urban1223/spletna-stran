@@ -11,6 +11,15 @@ interface GalleryProject {
 
 const galleryData: GalleryProject[] = [
   {
+    title: "Victimae paschali",
+    images: [
+      { src: "/images/Victimae paschali/1.jpg", alt: "Victimae paschali 1" },
+      { src: "/images/Victimae paschali/2.jpg", alt: "Victimae paschali 2" },
+      { src: "/images/Victimae paschali/3.jpg", alt: "Victimae paschali 3" },
+    ],
+    instagramLink: "https://www.instagram.com/stories/highlights/18082883375347368/",
+  },
+  {
     title: "Gloria in excelsis Deo",
     images: [
       { src: "/images/Gloria in excelsis Deo/1.jpg", alt: "Gloria in excelsis Deo 1" },
