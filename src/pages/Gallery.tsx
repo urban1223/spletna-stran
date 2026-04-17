@@ -11,7 +11,7 @@ interface GalleryProject {
 
 const galleryData: GalleryProject[] = [
   {
-    title: "Victimae paschali",
+    title: "Koncert Victimae paschali",
     images: [
       { src: "/images/Victimae paschali/1.jpg", alt: "Victimae paschali 1" },
       { src: "/images/Victimae paschali/2.jpg", alt: "Victimae paschali 2" },
@@ -20,7 +20,16 @@ const galleryData: GalleryProject[] = [
     instagramLink: "https://www.instagram.com/stories/highlights/18082883375347368/",
   },
   {
-    title: "Gloria in excelsis Deo",
+    title: "Igranje pri vstajenjski maši, Rakovnik",
+    images: [
+      { src: "/images/Velikonočna maša/1.jpg", alt: "Velikonočna maša 1" },
+      { src: "/images/Velikonočna maša/2.jpg", alt: "Velikonočna maša 2" },
+      { src: "/images/Velikonočna maša/3.jpg", alt: "Velikonočna maša 3" },
+    ],
+    instagramLink: "https://www.instagram.com/stories/highlights/18082883375347368/",
+  },
+  {
+    title: "Koncert Gloria in excelsis Deo",
     images: [
       { src: "/images/Gloria in excelsis Deo/1.jpg", alt: "Gloria in excelsis Deo 1" },
       { src: "/images/Gloria in excelsis Deo/2.jpg", alt: "Gloria in excelsis Deo 2" },
@@ -29,7 +38,7 @@ const galleryData: GalleryProject[] = [
     instagramLink: "https://www.instagram.com/novaakademija",
   },
   {
-    title: "Zven veličastja",
+    title: "Koncert Zven veličastja",
     images: [
       { src: "/images/Zven veličastja/1.jpg", alt: "Zven veličastja 1" },
       { src: "/images/Zven veličastja/2.jpg", alt: "Zven veličastja 2" },
@@ -38,7 +47,7 @@ const galleryData: GalleryProject[] = [
     instagramLink: "https://www.instagram.com/novaakademija",
   },
   {
-    title: "Baročna polifonija",
+    title: "Koncert Baročna polifonija",
     images: [
       { src: "/images/Baročna polifonija/1.jpg", alt: "Baročna polifonija 1" },
       { src: "/images/Baročna polifonija/2.jpg", alt: "Baročna polifonija 2" },
@@ -47,7 +56,7 @@ const galleryData: GalleryProject[] = [
     instagramLink: "https://www.instagram.com/novaakademija",
   },
   {
-    title: "Bachu v spomin",
+    title: "Koncert Bachu v spomin",
     images: [
       { src: "/images/Bachu v spomin/1.jpg", alt: "Bachu v spomin 1" },
       { src: "/images/Bachu v spomin/2.jpg", alt: "Bachu v spomin 2" },

@@ -124,6 +124,22 @@ export const members: Member[] = [
   },
   // === MENTOR ===
   {
+  slug: "mojca-jerman",
+  name: "Mojca Jerman",
+  role: "Glasbenica",
+  instruments: "Baročna violina",
+  imageKey: "mojca-jerman",
+  isMentor: true,
+  shortBio: "Študij baročne violine je zaključila na Konservatoriju v Bologni pri Enricu Gattiju, izobraževala pa se je tudi v Ljubljani (AG LJ), Celovcu (GMPU) in Gradcu (KUG). Svoje znanje nadgrajuje pod mentorstvom violinista Luce Giardinija.",
+   fullBio: `Mojca Jerman je violinistka, ki se v veliki meri posveča historičnemu izvajanju glasbe.
+
+    Glasbeno se je izobraževala v Ljubljani, Celovcu, Gradcu in Bologni. Baročno violino je doštudirala pri Enricu Gattiju, na glasbenem Konservatoriju v Bologni. Zadnja leta nadgrajuje svoje znanje pod mentorstvom violinista in pedagoga Luce Giardinija.
+
+    S svojimi komornimi zasedbami je osvojila več nagrad in priznanj, v zadnjih letih je aktivna v zasedbi Nocturnalia, baročnem triu, katere prioriteta je izvajanje glasbe 17. in 18. stoletja, predvsem odkrivanje neznanega repertoarja in kreiranje tematsko zanimivih, raziskanih in zaokroženih programov, ki v publiki pustijo trajen učinek. So ena od zasedb, ki jih v letih 2026/27 podpira organizacija Eeemerging. Pred tem so bili izbranci sheme BREMF Young Artist, nastopali pa so na festivalih BREMF (Brighton Early Music Festival), Festival Tartini v Ljubljani, Contratemps, Festival Oudek Utrecht in drugje.
+
+    Kot solistka, komorna glasbenica in članica raznih orkestrov (Insula, Anima Eterna, Frau Musika) nastopa po vsej Evropi.`
+  },
+  {
     slug: "branimir-rezic",
     name: "Branimir Rezić",
     role: "Glasbenik, pedagog, notograf, skladatelj",
