@@ -21,6 +21,7 @@ import domenImage from "@/assets/members/domen-gvozdanovic.jpg";
 import jakobImage from "@/assets/members/jakob-istenic.jpg";
 import lovroImage from "@/assets/members/lovro-tavcar.jpg";
 import mojcaImage from "@/assets/members/mojca-jerman.jpg";
+import lukaImage from "@/assets/members/luka-posavec.jpg";
 
 const imageMap: Record<string, string> = {
   "urban-klancar": urbanImage,
@@ -37,6 +38,7 @@ const imageMap: Record<string, string> = {
   "jakob-istenic": jakobImage,
   "lovro-tavcar": lovroImage,
   "mojca-jerman": mojcaImage,
+  "luka-posavec": lukaImage,
 };
 
 const MemberCard = ({ member, navigate }: { member: any; navigate: any }) => (

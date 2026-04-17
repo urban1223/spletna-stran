@@ -140,6 +140,28 @@ export const members: Member[] = [
     Kot solistka, komorna glasbenica in članica raznih orkestrov (Insula, Anima Eterna, Frau Musika) nastopa po vsej Evropi.`
   },
   {
+  slug: "luka-posavec",
+  name: "Luka Posavec",
+  role: "Glasbenik, organolog",
+  instruments: "Orgle, čembalo",
+  imageKey: "luka-posavec",
+  isMentor: true,
+  shortBio: "Študij orgel je opravil na Visoki šoli za glasbo Franz Liszt v Weimarju pri prof. Martinu Sturmu, kjer je zaključil magistrski študij, ter na Visoki šoli za glasbo v Würzburgu pri prof. Ralfu Waldnerju, kjer je diplomiral iz historičnih inštrumentov – čembala.",
+  fullBio: `Kot certificiran orgelski strokovnjak Luka sledi svoji viziji povezovanja zgodovine in orgelske glasbene kulture. Njegova strast je razkrivanje zakladnice znanj in veščin starih mojstrov ter z njimi povezanih zgodb iz preteklosti. V dediščini prednikov odkriva korenine sodobne kulture in temelje njene prihodnosti.
+
+  Luka je učenje orgel pričel leta 2011 pri prof. Poloni Gantar na Orglarski šoli ljubljanske Teološke fakultete, od 2014 do 2017 pa ga nadgrajeval pri prof. Tomažu Sevšku Šramelu. Leta 2017 je pričel študij orgel v razredu prof. dr. c.h. Christopha Bosserta na Visoki šoli za glasbo v Würzburgu. Leta 2024 je zaključil magistrski študij orgel na Visoki šoli za glasbo Franz Liszt v Weimarju pri prof. Martinu Sturmu, leta 2025 pa diplomski študij historičnih inštrumentov – čembala na Visoki šoli za glasbo v Würzburgu pri prof. Ralfu Waldnerju. Jeseni leta 2025 je zaključil tudi študij cerkvene glasbe (Diplom Kirchenmusiker A) na Visoki šoli za glasbo Franz Liszt v Weimarju pri prof. Martinu Sturmu.
+
+  Kot organist in dirigent je svoje prve izkušnje pridobival v samostanu Stična, kjer je pet let vodil zbor Chorus Sitticensis. Je tudi soustanovitelj in prvi predsednik kulturnega društva Musica Basilicae Sitticensis Stična.
+
+  Udeležuje se mojstrskih orgelskih seminarjev doma in v tujini, prepoznaven pa postaja tudi kot predavatelj. Tako je bil npr. kot predavatelj povabljen na Orglarsko šolo v Ljubljani, Akademijo za glasbo Univerze v Ljubljani, na Poletno orgelsko šolo v Šibeniku in Varaždinu … Kot certificiran orgelski izvedenec je danes član več komisij za gradnjo novih ali obnovo starih orgel.
+
+  Luka je soustanovitelj (2024) in umetniški vodja orgelskega cikla »Zvočne impresije romantike z domačimi in tujimi virtuozi« v župniji Šentvid pri Stični. Poleg tega je član Slovenskega orgelskega društva in sodelavec pri promociji projekta Orglekids Slovenija.
+
+  V okviru projekta Organistica, katerega soustanovitelj je bil leta 2022, si je zadal cilj vzpostavitve sistema dokumentiranja in vrednotenja slovenskih zgodovinskih orgel ter posledično njihovo zavarovanje. Vse to pridobiva vse večji pomen tako pri slovenski kot tudi tuji strokovni javnosti.
+
+  S pridobljeno strokovno usposobljenostjo in nivojem izobrazbe želi Luka v slovenskem prostoru zapolniti vrzel manjkajočega znanja na področju organologije ter pri strokovni javnosti dvigniti raven spoštovanja in ohranjanja dragocene kulturne dediščine zgodovinskih orgel. S svojim profesionalnim odnosom bi rad prispeval k spodbujanju in oblikovanju razvoja slovenske orgelske kulture. Njegova ambicija za prihodnost je vzpostavitev sistema kakovostnega izobraževanja na področju organologije, v okviru katerega bi strokovnjaki različnih profilov lahko predajali svoje znanje in izkušnje novim generacijam.`
+  },
+  {
     slug: "branimir-rezic",
     name: "Branimir Rezić",
     role: "Glasbenik, pedagog, notograf, skladatelj",
