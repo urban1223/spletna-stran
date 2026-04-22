@@ -122,6 +122,20 @@ export const members: Member[] = [
     shortBio: "Na Konservatoriju za glasbo in balet Ljubljana (KGBL) je s trobento pri prof. Matjažu Jevšnikarju zaključil srednješolsko izobraževanje, trenutno pa študira na Akademiji za glasbo v Ljubljani (AG LJ) pri prof. Juretu Gradišniku.",
     fullBio: "Lovro Tavčar je trobento začel igrati pri sedmih letih na Glasbeni šoli Franza Šturma pri prof. Martinu Dukariću. Šolanje je nadaljeval na Konservatoriju za glasbo in balet Ljubljana pri prof. Matjažu Jevšnikarju, trenutno pa študira na Akademiji za glasbo v Ljubljani pri prof. Juretu Gradišniku. Kot solist in komorni glasbenik je prejemnik več zlatih priznanj in prvih nagrad na državnih in mednarodnih tekmovanjih (TEMSIG, Euritmia, Svirel, PaMus Flow, WoodWind Brass, University Brass Competition). Že večkrat je sodeloval kot substitut v Simfoničnem orkestru RTV Slovenija, Orkestru SNG Opera in balet Ljubljana ter v mednarodnem orkestru FVG v Italiji. S Trobilnim ansamblom Akademije za glasbo UL je na RTV Slovenija posnel CD zgoščenko (2024). Je član trobilnega kvinteta FiveBrass. Skupina je nastopila in sodelovala na številnih festivalih in koncertnih ciklih doma ter v tujini, kot so Imago Sloveniae, Glasbena mladina ljubljanska, Festival Ljubljana, Music System Italy, Solo e da camera in mnogi drugi. Leta 2025 so na državnem tekmovanju TEMSIG osvojili prvo nagrado in zlato plaketo s posebnim priznanjem za obvezno skladbo. Udeležil se je mojstrskih tečajev pri priznanih trobentačih, kot so Gábor Tarkövi, Jeroen Berwaerts, Marco Pierobon, Roman Rindberger in drugi. V zadnjem času pa posebno pozornost namenja tudi raziskovanju baročne trobente in izvajanju stare glasbe. Na Gimnaziji Kranj ter pozneje v cerkvi sv. Trojice v Ljubljani je skupaj z baročnim orkestrom Nova akademija in Akademskim pevskim zborom France Prešeren izvedel Charpentierjev Te Deum. Z namenom poglobiti svoje znanje ter prispevati k razvoju in prepoznavnosti baročne trobente v Sloveniji se je pridružil društvu Nova Akademija.",
   },
+  {
+  slug: "neza-gorup",
+  name: "Neža Gorup",
+  role: "Glasbenica",
+  instruments: "Violina, viola",
+  imageKey: "neza-gorup",
+  isMentor: false,
+  shortBio: "Trenutno se izobražuje na Univerzi za glasbo in upodabljajočo umetnost v Gradcu (KUG) ter na Islandski univerzi za umetnost (IUA) pri prof. Sylvii E. Viertel in prof. Sif Margrét Tulinius, dodatno pa se izpopolnjuje na področju baročne violine pri prof. Lucii Froihofer-Garber (KUG).",
+  fullBio: `Neža Gorup je z igranjem violine začela pri sedmih letih na Glasbeni šoli v Cerknici, v razredu prof. Mojce Brank, šolanje pa je nadaljevala na Umetniški Gimnaziji v Kopru pri prof. Sonji Horvat. Trenutno se izobražuje na Univerzi za glasbo in upodabljajočo umetnost v Gradcu (KUG) in na Islandski univerzi za umetnost (IUA) pod mentorstvom prof. Sylvie E. Viertel in prof. Sif Margrét Tulinius, svoje znanje pa nadgrajuje na mojstrskih tečajih pri uglednih domačih in tujih pedagogih.
+
+  Kot violinistka in violistka aktivno sodeluje v različnih komornih in orkestrskih zasedbah v okviru obeh univerz, obenem pa pogosto nastopa tudi z mladinskimi in drugimi orkestri v Sloveniji in po svetu. Med drugim je nastopila v Zlati dvorani Musikvereina na Dunaju ter na mednarodno priznanih festivalih, kot sta Festival Ljubljana in Ravello Festival.
+
+  Od leta 2024 se pod mentorstvom prof. Lucie Froihofer-Garber (KUG) izpopolnjuje tudi na področju baročne violine, poleg tega pa sodeluje v raznih baročnih komornih sestavih, na Islandski univerzi za umetnost pa kot violinistka in violistka sodeluje v komornem baročnem orkestru.`
+  },
   // === MENTOR ===
   {
   slug: "mojca-jerman",
