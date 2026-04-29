@@ -47,7 +47,7 @@ export const upcomingEvents: Event[] = [
     reservation: false,
   },
   {
-  slug: "od-corellija-do-tartinija-piran-2026",
+  slug: "od-corellija-do-tartinija-koper-2026",
   title: "Pastore italiano - TARTINI JUNIOR",
   date: "Četrtek, 3. september 2026",
   isoDate: "2026-09-03",
