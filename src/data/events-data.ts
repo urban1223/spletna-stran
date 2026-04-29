@@ -48,7 +48,7 @@ export const upcomingEvents: Event[] = [
   },
   {
   slug: "od-corellija-do-tartinija-piran-2026",
-  title: "Pastore italiano - TARTINI FESTIVAL",
+  title: "Pastore italiano - TARTINI JUNIOR",
   date: "Četrtek, 3. september 2026",
   isoDate: "2026-09-03",
   time: "20:30",
@@ -63,7 +63,7 @@ export const upcomingEvents: Event[] = [
 },
 {
   slug: "od-corellija-do-tartinija-ljubljana-2026",
-  title: "Od Corellija do Tartinija - TARTINI JUNIOR",
+  title: "Od Corellija do Tartinija - TARTINI FESTIVAL ",
   date: "Sobota, 26. september 2026",
   isoDate: "2026-09-26",
   time: "20:00",
