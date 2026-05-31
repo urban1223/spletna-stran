@@ -136,6 +136,21 @@ export const members: Member[] = [
 
   Od leta 2024 se pod mentorstvom prof. Lucie Froihofer-Garber (KUG) izpopolnjuje tudi na področju baročne violine, poleg tega pa sodeluje v raznih baročnih komornih sestavih, na Islandski univerzi za umetnost pa kot violinistka in violistka sodeluje v komornem baročnem orkestru.`
   },
+  {
+  slug: "luka-poljanec",
+  name: "Luka Poljanec",
+  role: "Glasbenik",
+  instruments: "Tolkala",
+  imageKey: "luka-poljanec",
+  isMentor: false,
+  shortBio: "Diplomiral je na Visoki šoli za glasbo v Münchnu (HMTM) pri prof. Alexeju Gerassimezu, magistrski študij pa zaključil na Akademiji za glasbo v Ljubljani (AG LJ) pri prof. Simonu Klavžarju.",
+  fullBio: `Luka Poljanec kot spreten poustvarjalec sodobne glasbe sodeluje pri raznih projektih (Gimnastika ne/smisla – Matej Bonin) in nastopa na priznanih festivalih (Forum nove glasbe, Neposlušno, Jazz festival Ljubljana). Je član nekaterih ljudskih in jazz zasedb, z bendom Gugutke denimo, je nastopal na več kot stotih prizoriščih. Je tudi ponosni član skupin Nika Prusnik in bratje Poljanec, Spranga Farbat ter Pepel in kri, s katerimi nastopa širom po Sloveniji.
+
+  Poleg tega je zagret prostovoljec na DOPPS, kjer sodeluje pri raznih obnovitvenih delih na terenu ter naravovarstvo povezuje z glasbenimi dogodki – tako je leta 2022 organiziral koncert Za gozd v sodelovanju z DOPPS in Adijem Smolarjem, kjer so se zbirala sredstva za nakup gozdne površine, ki bo prepuščena naravnemu razvoju.
+
+  Nova akademija ga je spomladi povabila k sodelovanju pri izvedbi dveh koncertov, ki sta uspešno zazvenela v Radovljici in v ljubljanski stolnici.`
+  },
+
   // === MENTOR ===
   {
   slug: "mojca-jerman",
