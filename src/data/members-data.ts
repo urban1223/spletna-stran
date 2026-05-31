@@ -123,6 +123,24 @@ export const members: Member[] = [
     fullBio: "Lovro Tavčar je trobento začel igrati pri sedmih letih na Glasbeni šoli Franza Šturma pri prof. Martinu Dukariću. Šolanje je nadaljeval na Konservatoriju za glasbo in balet Ljubljana pri prof. Matjažu Jevšnikarju, trenutno pa študira na Akademiji za glasbo v Ljubljani pri prof. Juretu Gradišniku. Kot solist in komorni glasbenik je prejemnik več zlatih priznanj in prvih nagrad na državnih in mednarodnih tekmovanjih (TEMSIG, Euritmia, Svirel, PaMus Flow, WoodWind Brass, University Brass Competition). Že večkrat je sodeloval kot substitut v Simfoničnem orkestru RTV Slovenija, Orkestru SNG Opera in balet Ljubljana ter v mednarodnem orkestru FVG v Italiji. S Trobilnim ansamblom Akademije za glasbo UL je na RTV Slovenija posnel CD zgoščenko (2024). Je član trobilnega kvinteta FiveBrass. Skupina je nastopila in sodelovala na številnih festivalih in koncertnih ciklih doma ter v tujini, kot so Imago Sloveniae, Glasbena mladina ljubljanska, Festival Ljubljana, Music System Italy, Solo e da camera in mnogi drugi. Leta 2025 so na državnem tekmovanju TEMSIG osvojili prvo nagrado in zlato plaketo s posebnim priznanjem za obvezno skladbo. Udeležil se je mojstrskih tečajev pri priznanih trobentačih, kot so Gábor Tarkövi, Jeroen Berwaerts, Marco Pierobon, Roman Rindberger in drugi. V zadnjem času pa posebno pozornost namenja tudi raziskovanju baročne trobente in izvajanju stare glasbe. Na Gimnaziji Kranj ter pozneje v cerkvi sv. Trojice v Ljubljani je skupaj z baročnim orkestrom Nova akademija in Akademskim pevskim zborom France Prešeren izvedel Charpentierjev Te Deum. Z namenom poglobiti svoje znanje ter prispevati k razvoju in prepoznavnosti baročne trobente v Sloveniji se je pridružil društvu Nova Akademija.",
   },
   {
+  slug: "martin-tavcar",
+  name: "Martin Tavčar",
+  role: "Glasbenik",
+  instruments: "Trobenta, baročna trobenta",
+  imageKey: "martin-tavcar",
+  isMentor: false,
+  shortBio: "Na Konservatoriju za glasbo in balet Ljubljana (KGBL) se v razredu prof. Matjaža Jevšnikarja izobražuje na smeri trobenta. Deluje kot prvi trobentač Slovenskega mladinskega orkestra ter se udejstvuje tudi na področju izvajanja stare glasbe.",
+  fullBio: `Martin Tavčar je trobentač, ki se z glasbo ukvarja od sedmega leta. Začel je na Glasbeni šoli Franca Šturma pri prof. Martinu Dukariću, nadaljeval pri prof. Kristjanu Zupanu, trenutno pa obiskuje 3. letnik Konservatorija za glasbo in balet Ljubljana v razredu prof. Matjaža Jevšnikarja.
+
+  Na državnih in mednarodnih tekmovanjih je prejel vrsto najvišjih priznanj, med drugim 1. nagrado in zlato plaketo s pohvalo žirije na mednarodnem tekmovanju BOLERO (2022), 1. nagrado in zlato plaketo s posebno nagrado za najboljšo izvedbo obvezne skladbe na tekmovanju TEMSIG (2020), zlato priznanje na TEMSIG (2023) ter več drugih zlatih priznanj doma in v tujini.
+
+  Trenutno deluje kot prvi trobentač Slovenskega mladinskega orkestra pod vodstvom Žive Ploj Peršuh. Z orkestrom je nastopal na mednarodnih gostovanjih v Nemčiji, Avstriji in Romuniji ter na festivalih in turnejah po Sloveniji. Sodeluje tudi v pihalnem in simfoničnem orkestru KGBL ter v orkestru Youth Orchestra Alpe Adria.
+
+  Leta 2025 je sodeloval v projektu Royal Concertgebouw Orchestra Young, kjer je nastopil v dvoranah Concertgebouw Amsterdam in Elbphilharmonie Hamburg, istega leta pa je imel tudi samostojni recital v Cankarjevem domu. Izpopolnjeval se je na seminarjih pri številnih priznanih domačih in mednarodnih pedagogih ter orkestrskih glasbenikih.
+
+  Skupaj z baročnim orkestrom Nova akademija je z baročnim inštrumentom sodeloval na koncertih v ljubljanski stolnici in v cerkvi sv. Petra v Radovljici.`
+  },
+  {
   slug: "neza-gorup",
   name: "Neža Gorup",
   role: "Glasbenica",
