@@ -17,21 +17,6 @@ export interface Event {
 
 export const upcomingEvents: Event[] = [
   {
-    slug: "vivaldi-vs-telemann-radovljica-2026",
-    title: "Vivaldi vs. Telemann – SM Kreativa",
-    date: "Sobota, 16. maj 2026",
-    isoDate: "2026-05-16",
-    time: "19:30",
-    location: "Baročna dvorana, Radovljica",
-    description: "Orkester Nova akademija",
-    program: "A. Vivaldi, G. P. Telemann, M. Zahnhausen, J. van Eyck",
-    conductor: "Solista: Erazem Žganjar, Urban Klančar",
-    admission: "Vstop prost!",
-    cta: "OGLEJTE SI LOKACIJO",
-    link: "https://maps.app.goo.gl/LqBVXjDnAJ7kJ3w1A",
-    reservation: false,
-  },
-  {
     slug: "skrivnosti-baroka-kranj-2026",
     title: "Skrivnosti baroka",
     date: "Jesenski meseci 2026",
@@ -61,6 +46,21 @@ export const upcomingEvents: Event[] = [
   link: "https://tartinifestival.org",
   reservation: false,
 },
+{
+    slug: "vivaldi-vs-telemann-radovljica-2026",
+    title: "Vivaldi vs. Telemann – SM Kreativa - PRESTAVLJENO",
+    date: "Sobota, 19. september 2026",
+    isoDate: "2026-05-16",
+    time: "19:30",
+    location: "Baročna dvorana, Radovljica",
+    description: "Orkester Nova akademija",
+    program: "A. Vivaldi, G. P. Telemann, M. Zahnhausen, J. van Eyck",
+    conductor: "Solista: Erazem Žganjar, Urban Klančar",
+    admission: "Vstop prost!",
+    cta: "OGLEJTE SI LOKACIJO",
+    link: "https://maps.app.goo.gl/LqBVXjDnAJ7kJ3w1A",
+    reservation: false,
+  },
 {
   slug: "od-corellija-do-tartinija-ljubljana-2026",
   title: "Od Corellija do Tartinija - TARTINI FESTIVAL ",
