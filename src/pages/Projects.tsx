@@ -186,38 +186,73 @@ const Projects = () => {
           </div>
         </section>
 
-        {/* RESEARCH SECTION */}
+{/* RESEARCH SECTION */}
         <section>
           <div className="flex items-center gap-3 mb-8">
             <h2 className="text-4xl font-bold text-foreground">Raziskovalni projekti</h2>
           </div>
 
-          <Card className="p-8 bg-card border-border">
-            <h3 className="text-2xl font-bold text-accent mb-4">
-              Digitalizacija notnega arhiva v cerkvi svetega Kancijana, Kranj
-            </h3>
+          <div className="space-y-6">
+            <Card className="p-8 bg-card border-border">
+              <h3 className="text-2xl font-bold text-accent mb-4">
+                Digitalizacija notnega arhiva v cerkvi svetega Kancijana, Kranj
+              </h3>
 
-            <div className="space-y-4 mb-6">
-              <p className="text-muted-foreground leading-relaxed text-justify">
-                Po dolgoletnem delovanju različnih zborov v zgodovini Župnije Kranj se je njihova aktivnost močno ohranila v obliki notnih partitur, pisem skladateljev, prepisov in raznih zapiskov. Vsa ta dokumentacija je dolgo ležala na kranjskem koru, v zadnjih letih pa so jo prenesli v Župnijski urad. Ob preučevanju gradiva smo hitro opazili, kako bogata je bila liturgična glasba v 19. in 20. stoletju v župnijski cerkvi. Mnoge partiture, parti in celotni zapisi o izvajanju dokazujejo redno sodelovanje vsaj 30-članskega zbora in ob praznikih celo orkestra, vključno s pihali, trobili in tolkali. Po pogovoru z župnikom Andrejem Nagličem smo se dogovorili, da dokumentacijo skrbno preučimo in jo digitaliziramo ter na ta način širši javnosti predstavimo bogato kulturno dediščino kranjske župnije.
+              <div className="space-y-4 mb-6">
+                <p className="text-muted-foreground leading-relaxed text-justify">
+                  Po dolgoletnem delovanju različnih zborov v zgodovini Župnije Kranj se je njihova aktivnost močno ohranila v obliki notnih partitur, pisem skladateljev, prepisov in raznih zapiskov. Vsa ta dokumentacija je dolgo ležala na kranjskem koru, v zadnjih letih pa so jo prenesli v Župnijski urad. Ob preučevanju gradiva smo hitro opazili, kako bogata je bila liturgična glasba v 19. in 20. stoletju v župnijski cerkvi. Mnoge partiture, parti in celotni zapisi o izvajanju dokazujejo redno sodelovanje vsaj 30-članskega zbora in ob praznikih celo orkestra, vključno s pihali, trobili in tolkali. Po pogovoru z župnikom Andrejem Nagličem smo se dogovorili, da dokumentacijo skrbno preučimo in jo digitaliziramo ter na ta način širši javnosti predstavimo bogato kulturno dediščino kranjske župnije.
+                </p>
+
+                <div>
+                  <h4 className="font-semibold text-foreground mb-2">Odgovorni za projekt:</h4>
+                  <p className="text-muted-foreground">Urban Klančar, Franc Jerala.</p>
+                </div>
+              </div>
+
+              <Button
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={() => navigate("/podprite-nas")}
+              >
+                PODPRITE RAZISKOVALNI PROJEKT
+              </Button>
+            </Card>
+
+            <Card className="p-8 bg-card border-border">
+              <h3 className="text-2xl font-bold text-accent mb-4">
+                Arhiv baročnih skladateljev — interaktivne časovnice
+              </h3>
+
+              <p className="text-muted-foreground leading-relaxed mb-6 text-justify">
+                V okviru društva razvijamo spletno aplikacijo za sodelovalno katalogizacijo baročnih skladateljev in izvajalcev. Vsak profil prikazuje interaktivno časovnico življenjskih in ustvarjalnih dogodkov, povezano z zemljevidom potovanj po evropskih glasbenih središčih. Arhiv gradijo člani in raziskovalci skupaj, kar omogoča sprotno preverjanje in dopolnjevanje zgodovinskih podatkov.
               </p>
 
-              <div>
-                <h4 className="font-semibold text-foreground mb-2">Odgovorni za projekt:</h4>
-                <p className="text-muted-foreground">Urban Klančar, Franc Jerala.</p>
-              </div>
-            </div>
+              <Button
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={() => window.open("https://timelines.nova-akademija.si", "_blank")}
+              >
+                ODPRI ARHIV SKLADATELJEV
+              </Button>
+            </Card>
 
-            <Button
-              className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-              onClick={() => navigate("/podprite-nas")}
-            >
-              PODPRITE RAZISKOVALNI PROJEKT
-            </Button>
-          </Card>
+            <Card className="p-8 bg-card border-border">
+              <h3 className="text-2xl font-bold text-accent mb-4">
+                Aplikacija za zgodovinske uglasitve
+              </h3>
+
+              <p className="text-muted-foreground leading-relaxed mb-6 text-justify">
+                Razvijamo spletno orodje za uglaševanje inštrumentov v različnih zgodovinskih temperamentih, prilagojenih baročni in starejši glasbi. Trenutno je aplikacija primarno namenjena uglaševanju inštrumentov s tipkami (čembalo, orgle, klavikord), v prihodnje pa jo načrtujemo razširiti tudi na druge inštrumente.
+              </p>
+
+              <Button
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={() => window.open("https://urban1223.github.io/Historical-tunings/", "_blank")}
+              >
+                ODPRI APLIKACIJO ZA UGLASITVE
+              </Button>
+            </Card>
+          </div>
         </section>
       </div>
-
       <ContactFormDialog
         open={contactDialogOpen}
         onOpenChange={setContactDialogOpen}
