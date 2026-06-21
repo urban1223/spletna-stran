@@ -223,7 +223,7 @@ const Projects = () => {
               </h3>
 
               <p className="text-muted-foreground leading-relaxed mb-6 text-justify">
-                V okviru društva razvijamo spletno aplikacijo za sodelovalno katalogizacijo baročnih skladateljev in izvajalcev. Vsak profil prikazuje interaktivno časovnico življenjskih in ustvarjalnih dogodkov, povezano z zemljevidom potovanj po evropskih glasbenih središčih. Arhiv gradijo člani in raziskovalci skupaj, kar omogoča sprotno preverjanje in dopolnjevanje zgodovinskih podatkov.
+                V okviru društva razvijamo spletno aplikacijo za sodelovalno katalogizacijo baročnih skladateljev in izvajalcev. Vsak profil prikazuje interaktivno časovnico življenjskih in ustvarjalnih dogodkov, povezano z zemljevidom potovanj po evropskih glasbenih središčih. Arhiv gradijo člani in raziskovalci skupaj, kar omogoča sprotno preverjanje in dopolnjevanje zgodovinskih podatkov. Aplikacijo lahko deluje kot samostojna aplikacija na telefonu ali računalniku. 
               </p>
 
               <Button
@@ -240,7 +240,7 @@ const Projects = () => {
               </h3>
 
               <p className="text-muted-foreground leading-relaxed mb-6 text-justify">
-                Razvijamo spletno orodje za uglaševanje inštrumentov v različnih zgodovinskih temperamentih, prilagojenih baročni in starejši glasbi. Trenutno je aplikacija primarno namenjena uglaševanju inštrumentov s tipkami (čembalo, orgle, klavikord), v prihodnje pa jo načrtujemo razširiti tudi na druge inštrumente.
+                Razvijamo spletno orodje za uglaševanje inštrumentov v različnih zgodovinskih temperamentih, prilagojenih baročni in starejši glasbi. Trenutno je aplikacija primarno namenjena uglaševanju inštrumentov s tipkami (čembalo, orgle, klavikord), v prihodnje pa jo načrtujemo razširiti tudi na druge inštrumente. Aplikacijo lahko po naložite na telefon ali računalnik in jo uporabljate brez internetne povezave.
               </p>
 
               <Button
