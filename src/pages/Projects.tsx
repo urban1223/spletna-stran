@@ -245,7 +245,7 @@ const Projects = () => {
 
               <Button
                 className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                onClick={() => window.open("https://urban1223.github.io/Historical-tunings/", "_blank")}
+                onClick={() => window.open("https://historical-tunings.nova-akademija.si", "_blank")}
               >
                 ODPRI APLIKACIJO ZA UGLASITVE
               </Button>
