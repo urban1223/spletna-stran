@@ -3,12 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>Nova Akademija - Historical Tuner</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Uglaševalnik z zgodovinskimi temperamenti in referenčnimi višinami za staro glasbo.">
 
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#141b29">
+    <meta name="theme-color" content="#141a24">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Uglaševalec">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 
     <link rel="stylesheet" href="style.css">
 
@@ -71,16 +76,6 @@
 
         </div>
     </div>
-
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('App ready for seamless offline use!', reg))
-                    .catch(err => console.log('App loading error:', err));
-            });
-        }
-    </script>
 
 </body>
 </html>
