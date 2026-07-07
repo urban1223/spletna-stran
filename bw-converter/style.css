@@ -1,0 +1,251 @@
+/* ==========================================================================
+   Faksimile pretvornik — postavitev (barve/tipografija/gumbi so v shared-style.css)
+   ========================================================================== */
+
+body {
+    display: flex;
+    height: 100vh;
+    position: relative;
+}
+
+.app-container { display: flex; width: 100vw; height: 100vh; z-index: 1; }
+
+/* ==================== Sidebar ==================== */
+
+.sidebar {
+    width: 320px;
+    background: var(--panel);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+.brand { text-align: center; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
+.brand-logo { font-family: "Georgia", serif; font-size: 20px; font-weight: 700; color: var(--amber); letter-spacing: 1px; }
+.sidebar-footer { text-align: center; font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; padding-top: 12px; margin-top: 10px; border-top: 1px solid var(--border-color); }
+
+.upload-section {
+    border: 2px dashed #445;
+    padding: 15px;
+    border-radius: 15px;
+    text-align: center;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.upload-section:hover, .upload-section.dragover { border-color: var(--amber); background: rgba(242, 204, 90, 0.05); }
+.upload-label { color: var(--amber); font-weight: bold; display: block; margin-bottom: 4px; }
+.upload-hint { display: block; font-size: 10px; color: var(--text-muted); }
+#fileInput { display: none; }
+
+.thumbnails-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; padding-right: 5px; }
+.thumb-card { background: transparent; border: 1px solid var(--border-color); border-radius: 12px; padding: 8px; cursor: pointer; position: relative; user-select: none; }
+.thumb-card.active { border-color: var(--amber); box-shadow: 0 0 10px rgba(242, 204, 90, 0.2); }
+.thumb-card.dragging { opacity: 0.5; border: 2px dashed var(--amber); }
+.thumb-canvas-wrapper { width: 100%; height: 200px; display: flex; justify-content: center; align-items: center; border-radius: 8px; overflow: hidden; }
+.thumb-canvas-wrapper canvas { width: 100%; height: 100%; object-fit: cover; }
+.thumb-info { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 11px; color: var(--text-muted); }
+
+/* ==================== Glavno okno ==================== */
+
+/* Kontrolniki so vedno ob desnem robu (tudi pri ležečih straneh) — zaslon je skoraj
+   vedno širši kot visok, zato je za stranski panel dovolj prostora ne glede na obliko strani. */
+.main-content { flex: 1; display: flex; flex-direction: row; padding: 20px; box-sizing: border-box; height: 100vh; }
+
+/* Osrednji del: zunanji panel ostane temno moder (barva panela), znotraj njega pa je
+   črn pravokotnik (.cropper-box) s samo stranjo — enako kot v Obrezovalniku manuskriptov. */
+.preview-window { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.preview-header { flex: none; display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 10px; min-height: 24px; }
+.cropper-viewport { position: relative; flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+/* Velikost .cropper-box (in s tem prikaza) izračuna JS (fitPreviewBox), da se cela stran
+   vedno v celoti prilega vidnemu delu — brez tega bi platno z max-width:100% preraslo
+   višino in bilo spodaj odrezano. */
+.cropper-box { position: relative; background: #050505; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); }
+#mainCanvas { display: block; width: 100%; height: 100%; box-shadow: 0 10px 35px rgba(0,0,0,0.6); background: white; }
+
+/* Dokler ni naložena nobena stran, je osrednji del prazen (brez črnega kvadrata,
+   puščic in stikala) — vse to se pojavi šele ob uvozu strani. */
+.preview-window:not(.has-page) .cropper-box,
+.preview-window:not(.has-page) .nav-arrow,
+.preview-window:not(.has-page) .preview-header { display: none; }
+
+/* ==================== Uvodno sporočilo (dokler ni naložena nobena stran) ====================
+   Prikazano na sredini osrednjega dela; skrije se, čim je izbrana prva stran (.has-page). */
+.welcome-screen {
+    max-width: 520px;
+    margin: auto;
+    padding: 40px;
+    text-align: center;
+    color: var(--text);
+    animation: welcomeFade 0.5s ease both;
+}
+.preview-window.has-page .welcome-screen { display: none; }
+
+@keyframes welcomeFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.welcome-mark { font-size: 56px; line-height: 1; color: var(--amber); margin-bottom: 18px; filter: drop-shadow(0 4px 14px rgba(242, 204, 90, 0.25)); }
+.welcome-title { font-size: 30px; letter-spacing: 1px; margin: 0 0 16px; }
+.welcome-text { font-size: 14px; line-height: 1.7; color: var(--text-muted); margin: 0 0 26px; }
+.welcome-text strong { color: var(--text); font-weight: 600; }
+
+.welcome-steps { list-style: none; padding: 0; margin: 0 0 26px; display: flex; flex-direction: column; gap: 12px; text-align: left; }
+.welcome-steps li { display: flex; align-items: flex-start; gap: 12px; font-size: 13px; line-height: 1.5; color: var(--text); }
+.welcome-step-num {
+    flex: none;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: rgba(242, 204, 90, 0.12);
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    font-size: 12px; font-weight: 700;
+    display: grid; place-items: center;
+}
+.welcome-cta { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; color: var(--amber); margin: 0; }
+
+/* Puščici za pomikanje med stranmi — ob skrajnem levem/desnem robu vidnega dela (v praznem
+   prostoru ob strani), da ne prekrivata dejanske slike. */
+.nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(20, 27, 41, 0.9);
+    border: 1px solid var(--border-color);
+    color: var(--amber);
+    font-size: 24px;
+    display: grid;
+    place-items: center;
+    z-index: 30;
+    pointer-events: auto;
+    cursor: pointer;
+    padding: 0;
+}
+.nav-arrow:hover { border-color: var(--amber); box-shadow: 0 0 10px rgba(242, 204, 90, 0.3); }
+.nav-arrow:disabled { opacity: 0.25; cursor: not-allowed; box-shadow: none; }
+.nav-arrow.left { left: 0; }
+.nav-arrow.right { right: 0; }
+
+/* Ročka za spreminjanje širine kontrolnega panela */
+.panel-resizer { flex: none; position: relative; height: 100%; width: 18px; cursor: col-resize; }
+.panel-resizer::after { content: ""; position: absolute; background: var(--border-color); border-radius: 3px; transition: background 0.15s; top: 50%; left: 50%; height: 60px; width: 4px; transform: translate(-50%, -50%); }
+.panel-resizer:hover::after, .panel-resizer.dragging::after { background: var(--amber); }
+
+/* ==================== PRO Kontrolni Panel ==================== */
+
+.controls-panel { flex: none; width: 340px; display: flex; flex-direction: column; gap: 24px; padding: 24px 30px; overflow-y: auto; }
+
+.controls-groups { display: flex; flex-direction: column; gap: 24px; flex: 1; min-height: 0; }
+/* min-height:0 + overflow-y:auto na VSAKI skupini — brez tega bi preobilna vsebina
+   (npr. veliko čipov) prerasla svoj prostor in se vizualno prelila čez akcijsko
+   vrstico spodaj, kar je tudi prestrezalo klike nanjo. */
+.control-group { flex: none; min-width: 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+
+/* Tipografija in hierarhija znotraj panela — oba stolpca sta simetrična: naslov,
+   nato drsnik+številka (edini prikaz odstotka), nato podrejena vrstica spodaj. */
+.group-title { display: flex; align-items: center; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin: 0 0 16px; }
+.sub-label { display: flex; align-items: center; font-size: 10px; color: #889; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: bold; margin-top: 16px; }
+
+/* Vrstica, ki je nadomestila statični napis "Local Zones": levo dinamična
+   opomba/seznam con, desno gumb za dodajanje — simetrično s "Presets" spodaj levo. */
+.sub-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 16px; }
+.sub-row .chip-list { flex: 1; }
+
+.control-inline { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+
+/* Minimalistični vnosi in gumbi */
+.minimal-input { background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); color: var(--text); border-radius: 6px; padding: 8px 12px; font-size: 13px; outline: none; transition: border-color 0.2s; text-align: center; width: 64px; flex: none; }
+.minimal-input:focus { border-color: var(--amber); }
+
+.btn-text { background: transparent; border: none; color: var(--amber); font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: background 0.2s, color 0.2s; }
+.btn-text:hover, #zoneBtn.active { background: rgba(242, 204, 90, 0.15); color: var(--amber); box-shadow: none; }
+
+/* Pro Drsniki */
+input[type="range"] { -webkit-appearance: none; width: 100%; flex: 1; background: #2a3441; height: 4px; border-radius: 2px; outline: none; padding: 0; border: none; min-width: 60px; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--amber); cursor: pointer; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4); }
+input:disabled, input[type="range"]:disabled, button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Oznake (Chips) */
+.chip-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 26px; align-items: center; }
+.chip-hint { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+.chip { background: #1c2333; border: 1px solid #334; color: var(--text); padding: 4px 6px 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: normal; }
+.chip:hover { border-color: var(--amber); }
+.chip.active { border-color: var(--amber); color: var(--amber); background: rgba(242, 204, 90, 0.08); }
+.chip.chip-add { border-style: dashed; color: var(--text-muted); padding: 4px 10px; }
+.chip.chip-add:hover { border-color: var(--amber); color: var(--amber); }
+.chip-del { color: var(--text-muted); font-weight: bold; padding: 0 2px; }
+.chip-del:hover { color: var(--danger-color); }
+
+/* Združena akcijska vrstica — pripeta na dno panela, elementi zloženi navpično čez celo širino. */
+.action-bar { flex: none; display: flex; flex-direction: column-reverse; align-items: stretch; gap: 16px; padding-top: 16px; border-top: 1px solid var(--border-color); margin-top: auto; }
+.export-controls { display: flex; flex-direction: column; gap: 8px; background: transparent; }
+.export-controls #pageRange { width: 100%; border: 1px solid var(--border-color); border-radius: 6px; background: rgba(0, 0, 0, 0.25); text-align: left; }
+.btn-primary { background: var(--amber); color: #111; border: none; padding: 10px 24px; font-weight: bold; font-size: 13px; cursor: pointer; transition: opacity 0.2s; border-radius: 6px; width: 100%; }
+.btn-primary:hover { opacity: 0.85; box-shadow: none; }
+
+.status-badge { font-family: monospace; font-size: 11px; color: var(--green); text-shadow: 0 0 5px var(--green); text-align: right; }
+
+/* ==================== Dialog: izbira ločljivosti izvoza ==================== */
+
+.dpi-option-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+.dpi-option { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: 0.15s; }
+.dpi-option:hover { border-color: var(--amber); }
+.dpi-option:has(input:checked) { border-color: var(--amber); background: rgba(242, 204, 90, 0.08); }
+.dpi-option input[type="radio"] { width: auto; flex: none; accent-color: var(--amber); }
+.dpi-option-label { flex: 1; font-size: 13px; }
+.dpi-option-recommended { color: var(--amber); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; display: block; margin-top: 2px; }
+.dpi-option-size { color: var(--text-muted); font-family: monospace; font-size: 12px; white-space: nowrap; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.modal-content-sm { max-width: 360px; }
+.modal-content-sm label { margin-bottom: 8px; }
+
+/* ==================== Pomoč: ikone "?" + plavajoči oblaček ====================
+   Enaka zasnova kot v Obrezovalniku manuskriptov: ikona "?" je z margin-left:auto
+   poravnana na desni rob naslova, oblaček pa je position:fixed (lego izračuna JS)
+   in se odpre/zapre s klikom. */
+
+.help-icon {
+    margin-left: auto;
+    width: 16px; height: 16px;
+    flex: none;
+    display: inline-grid; place-items: center;
+    border-radius: 50%;
+    border: 1px solid var(--text-muted);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 10px; font-weight: 900;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    transition: 0.15s;
+}
+.help-icon:hover, .help-icon.active { border-color: var(--amber); color: var(--amber); box-shadow: 0 0 8px rgba(242, 204, 90, 0.3); background: transparent; }
+
+.help-bubble {
+    position: fixed;
+    z-index: 250;
+    width: 260px;
+    max-width: calc(100vw - 24px);
+    background: var(--panel);
+    border: 1px solid var(--amber);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--text);
+}
+.help-bubble.hidden { display: none; }
+.help-bubble h4 { font-family: "Georgia", serif; color: var(--amber); font-size: 14px; margin: 0 0 6px; }
+.help-bubble p { margin: 0 0 8px; }
+.help-bubble p:last-child { margin-bottom: 0; }
+.help-bubble strong { color: var(--amber); font-weight: 700; }
+
+@media (max-width: 900px) {
+    .app-container { flex-direction: column; height: auto; }
+    .sidebar { width: 100%; height: 260px; }
+    .main-content { height: auto; }
+}

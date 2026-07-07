@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pythagorean</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="panel">
+    <div class="panel-title">Pythagorean</div>
+
+    <div class="gauge-container">
+        <div id="markers"></div>
+        <div class="needle" id="needle"></div>
+    </div>
+
+    <div class="big-note" id="note-name">--</div>
+
+    <div class="stats-row">
+        <div class="cents-val" id="cents-display">0.0 ¢</div>
+        <div class="hz-display" id="hz-display">0.00 Hz</div>
+    </div>
+
+    <button id="mic-btn" class="mic-btn">TURN ON MIC</button>
+
+    <div class="settings-bar">
+        <div class="setting-item">
+            <label>Reference A</label>
+            <input type="number" id="a-ref" value="415" step="0.1" min="350" max="560">
+        </div>
+        <div class="setting-item">
+            <label>Waveform</label>
+            <select id="wave-type">
+                <option value="triangle" selected>Triangle</option>
+                <option value="sine">Sine</option>
+                <option value="sawtooth">Sawtooth</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="keyboard-panel" id="keyboard-panel">
+        <div class="keyboard-panel-header">
+            <button class="expand-btn" id="expand-btn">Expand</button>
+        </div>
+        <div class="keyboard" id="kb"></div>
+    </div>
+</div>
+
+<script src="tuner.js"></script>
+<script>
+initTuner({
+    noteNames: ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "B♭", "B"],
+    cents: [0, 113.69, 204.00, 294.11, 407.82, 498.20, 611.75, 701.96, 815.63, 906.00, 996.13, 1109.87]
+});
+</script>
+</body>
+</html>

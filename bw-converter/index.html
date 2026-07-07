@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Akademija — Facsimile Converter</title>
+    
+    <!-- PWA povezave -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a1a">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <link rel="stylesheet" href="shared-style.css">
+    <link rel="stylesheet" href="style.css">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker pripravljen!'))
+                    .catch(err => console.error('Napaka pri SW:', err));
+            });
+        }
+    </script>
+</head>
+<body class="themed-bg">
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="brand">
+                <div class="brand-logo">Color Converter</div>
+            </div>
+            <div class="upload-section" id="uploadSection">
+                <span class="upload-label">+ Load PDF</span>
+                <span class="upload-hint">Drag files here or click · multiple files supported</span>
+            </div>
+            <input type="file" id="fileInput" accept="application/pdf" multiple>
+            <div class="thumbnails-container" id="thumbContainer"></div>
+            <div class="sidebar-footer">Association Nova Akademija</div>
+        </div>
+        <div class="main-content">
+            <div class="preview-window panel" id="previewWindow">
+                <div class="preview-header">
+                    <button class="btn-text" id="toggleColorBtn">Show original</button>
+                </div>
+                <div class="cropper-viewport">
+                    <div class="welcome-screen" id="welcomeScreen">
+                        <div class="welcome-mark" aria-hidden="true">◑</div>
+                        <h2 class="welcome-title">Facsimile Converter</h2>
+                        <p class="welcome-text">Turn colour scans of old books, manuscripts and sheet music into clean, high-contrast <strong>black &amp; white</strong> PDFs — ready for print or archiving. The converter removes yellowed paper, stains and show-through while keeping every stroke of the text.</p>
+                        <ol class="welcome-steps">
+                            <li><span class="welcome-step-num">1</span> Load one or more PDFs from the panel on the left.</li>
+                            <li><span class="welcome-step-num">2</span> A threshold is auto-detected for each page — fine-tune it globally or per zone.</li>
+                            <li><span class="welcome-step-num">3</span> Export the cleaned document at your chosen resolution.</li>
+                        </ol>
+                        <p class="welcome-cta">← Start by loading a PDF</p>
+                    </div>
+                    <button class="nav-arrow left" id="prevPageBtn" aria-label="Previous page">&#8249;</button>
+                    <button class="nav-arrow right" id="nextPageBtn" aria-label="Next page">&#8250;</button>
+                    <div class="cropper-box">
+                        <canvas id="mainCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-resizer" id="panelResizer" title="Drag to resize"></div>
+                <div class="controls-panel panel">
+                    <div class="controls-groups">
+                        <section class="control-group">
+                            <label class="group-title">Global Threshold <button type="button" class="help-icon" data-help="threshold" aria-label="What is this?">?</button></label>
+                            <div class="control-inline">
+                                <input type="range" id="thresholdCtrl" min="0" max="255" step="1" value="191">
+                                <input type="number" id="thresholdNumInput" min="0" max="100" value="75" class="minimal-input">
+                            </div>
+                            <label class="sub-label">Presets <button type="button" class="help-icon" data-help="presets" aria-label="What is this?">?</button></label>
+                            <div class="chip-list" id="presetChipList"></div>
+                        </section>
+
+                        <section class="control-group">
+                            <label class="group-title">Zone Threshold <button type="button" class="help-icon" data-help="zone" aria-label="What is this?">?</button></label>
+                            <div class="control-inline">
+                                <input type="range" id="zoneThresholdCtrl" min="0" max="255" step="1" value="191" disabled>
+                                <input type="number" id="zoneThresholdNum" min="0" max="100" value="75" class="minimal-input" disabled>
+                            </div>
+                            <div class="sub-row">
+                                <div class="chip-list" id="zoneChipList"><span class="chip-hint">No active zones.</span></div>
+                                <button class="btn-text" id="zoneBtn">+ Add Zone</button>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="action-bar">
+                        <span class="status-badge" id="statusDisplay">Load files to get started.</span>
+                        <div class="export-controls">
+                            <input type="text" id="pageRange" class="minimal-input" placeholder="Pages (e.g. 1-3)" title="Leave blank to export all">
+                            <button id="exportBtn" class="btn-primary">Export PDF</button>
+                        </div>
+                    </div>
+                </div>
+        </div>
+    </div>
+
+    <div class="modal-bg hidden" id="presetModalBg">
+        <div class="modal-content modal-content-sm">
+            <h3>Save preset</h3>
+            <label>Preset name</label>
+            <input type="text" id="presetNameInput" placeholder="e.g. Brown paper 1700" maxlength="60">
+            <div class="modal-actions">
+                <button class="secondary" id="presetCancelBtn">Cancel</button>
+                <button id="presetSaveBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-bg hidden" id="exportModalBg">
+        <div class="modal-content">
+            <h3>Choose export resolution</h3>
+            <div class="dpi-option-list" id="dpiOptionList"></div>
+            <div class="modal-actions">
+                <button class="secondary" id="exportCancelBtn">Cancel</button>
+                <button id="exportConfirmBtn">Export</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="help-bubble hidden" id="helpBubble" role="dialog"></div>
+
+<script src="script.js"></script>
+</body>
+</html>

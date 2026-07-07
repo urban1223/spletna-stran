@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Just Intonation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="panel">
+    <div class="panel-title">Just Intonation</div>
+
+    <div class="gauge-container">
+        <div id="markers"></div>
+        <div class="needle" id="needle"></div>
+    </div>
+
+    <div class="big-note" id="note-name">--</div>
+
+    <div class="stats-row">
+        <div class="cents-val" id="cents-display">0.0 ¢</div>
+        <div class="hz-display" id="hz-display">0.00 Hz</div>
+    </div>
+
+    <button id="mic-btn" class="mic-btn">TURN ON MIC</button>
+
+    <div class="settings-bar has-refresh">
+        <div class="setting-item">
+            <label>Reference A</label>
+            <input type="number" id="a-ref" value="415" step="0.1" min="350" max="560">
+        </div>
+        <div class="setting-item">
+            <label>Waveform</label>
+            <select id="wave-type">
+                <option value="triangle" selected>Triangle</option>
+                <option value="sine">Sine</option>
+                <option value="sawtooth">Sawtooth</option>
+            </select>
+        </div>
+        <div class="setting-item">
+            <label>System</label>
+            <button class="refresh-btn" id="refresh-btn">Refresh</button>
+        </div>
+    </div>
+
+    <div class="enharmonic-container" id="enharmonic-container"></div>
+
+    <div class="keyboard-panel" id="keyboard-panel">
+        <div class="keyboard-panel-header">
+            <button class="expand-btn" id="expand-btn">Expand</button>
+        </div>
+        <div class="keyboard" id="kb"></div>
+    </div>
+</div>
+
+<script src="tuner.js"></script>
+<script>
+initTuner({
+    noteNames: ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "G♯", "A", "B♭", "B"],
+    cents: [0.00, 70.67, 183.31, 315.64, 384.36, 498.04, 563.38, 701.96, 772.63, 884.36, 990.37, 1088.27],
+    enharmonic: [
+        { idx: 1, options: [{ label: 'C♯', cents: 70.67 }, { label: 'D♭', cents: 111.73 }] },
+        { idx: 3, options: [{ label: 'E♭', cents: 315.64 }, { label: 'D♯', cents: 274.58 }] },
+        { idx: 6, options: [{ label: 'F♯', cents: 563.38 }, { label: 'G♭', cents: 590.22 }] },
+        { idx: 8, options: [{ label: 'G♯', cents: 772.63 }, { label: 'A♭', cents: 813.69 }] },
+        { idx: 10, options: [{ label: 'B♭', cents: 990.37 }, { label: 'A♯', cents: 976.54 }] }
+    ]
+});
+</script>
+</body>
+</html>
