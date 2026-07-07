@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Nova Akademija — Manuscript Cropper</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link rel="stylesheet" href="shared-style.css">
+    <link rel="stylesheet" href="style.css">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Obrezovalnik manuskriptov: SW uspešno registriran!'))
+                    .catch(err => console.error('Obrezovalnik manuskriptov: Napaka pri SW:', err));
+            });
+        }
+    </script>
+</head>
+<body class="themed-bg">
+  <div class="app-container">
+    <div class="sidebar">
+      <div class="brand"><div class="brand-logo">Manuscript Cropper</div></div>
+
+      <div class="upload-section" id="uploadSection">
+        <span class="upload-label">+ Load PDF</span>
+        <span class="upload-hint">Drag files here or click · multiple files supported</span>
+      </div>
+      <input type="file" id="fileInput" accept=".pdf,image/png,image/jpeg" multiple hidden>
+
+      <div class="thumbnails-container" id="thumbGrid"></div>
+      <div class="sidebar-footer">Association Nova Akademija</div>
+    </div>
+
+    <div class="main-content">
+      <div class="preview-window panel">
+        <div class="editor-header">
+          <span id="editorTitle"></span>
+          <span class="badge-side hidden" id="sideBadge"></span>
+        </div>
+        <div class="cropper-viewport empty" id="cropperViewport">
+          <div class="welcome-screen">
+            <div class="welcome-mark" aria-hidden="true">&#9974;</div>
+            <h2 class="welcome-title">Manuscript Cropper</h2>
+            <p class="welcome-text">Automatically crop scanned or PDF manuscript pages. The tool detects the page edges (even on a table or with a visible cover), the music&#47;text content, and whether a page is a left- or right-hand page &mdash; giving you clean, evenly cropped pages ready to <strong>print or archive</strong>. Everything runs locally in your browser; nothing is uploaded.</p>
+            <ol class="welcome-steps">
+              <li><span class="welcome-num">1</span><span><strong>Load</strong> your PDF or scanned images (drag in or click <em>+ Load PDF</em>). Each page is analysed and cropped automatically.</span></li>
+              <li><span class="welcome-num">2</span><span><strong>Review &amp; adjust</strong> the crop on the center canvas &mdash; drag the frame or its corner handles. One manual fix is copied to the following pages of the same side.</span></li>
+              <li><span class="welcome-num">3</span><span><strong>Export</strong> to a print-ready A4 PDF or a ZIP of images, at the resolution you choose.</span></li>
+            </ol>
+            <p class="welcome-cta">&larr; Start by loading a PDF</p>
+          </div>
+          <button class="nav-arrow left" id="prevPageBtn" aria-label="Previous page">&#8249;</button>
+          <button class="nav-arrow right" id="nextPageBtn" aria-label="Next page">&#8250;</button>
+          <div class="cropper-box empty" id="cropperBox">
+            <canvas id="editorCanvas"></canvas>
+            <div class="overlay" id="overlay"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-panel panel">
+        <div class="controls-groups">
+          <section class="control-group">
+            <label class="group-title">Current page <button type="button" class="help-icon" data-help="currentPage" aria-label="What is this?">?</button></label>
+            <div class="control-inline">
+              <select id="typeSelect">
+                <option value="Music">Music</option>
+                <option value="Title Page">Title page</option>
+                <option value="Preface">Preface</option>
+                <option value="Skip">Skip</option>
+              </select>
+            </div>
+            <div class="stacked-actions">
+              <button class="secondary" id="rotatePageBtn">Rotate 90&#176;</button>
+            </div>
+          </section>
+
+          <section class="control-group">
+            <label class="group-title">Safety margin <button type="button" class="help-icon" data-help="margin" aria-label="What is this?">?</button></label>
+            <div class="control-inline">
+              <input id="paddingSlider" type="range" min="0" max="30" step="1" value="4">
+              <input id="paddingNumInput" type="number" min="0" max="30" value="4" class="minimal-input">
+            </div>
+          </section>
+
+          <section class="control-group">
+            <label class="group-title">Batch tools <button type="button" class="help-icon" data-help="batch" aria-label="What is this?">?</button></label>
+            <div class="stacked-actions">
+              <button class="secondary" id="applyMasterBtn">Apply this crop to all pages</button>
+              <button class="secondary" id="setPageSideBtn">Mark left/right page</button>
+              <button class="secondary btn-delete" id="clearAllBtn">Delete all imported pages</button>
+            </div>
+          </section>
+        </div>
+
+        <div class="action-bar">
+          <div class="export-controls">
+            <button class="btn-primary" id="exportBtn">Export PDF</button>
+          </div>
+          <span class="status-badge" id="globalStatus">Load files to get started.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Left/right page modal -->
+  <div class="modal-bg hidden" id="sideModal">
+    <div class="modal-content">
+      <h3>Mark left/right page</h3>
+      <p>
+        The selected page will be marked as a <strong>right-hand</strong> or <strong>left-hand</strong> page.
+        From this page onward, pages will alternate automatically.<br><br>
+        <strong>Right-hand page</strong> = more margin on the left (inner/spine) side, less on the right (outer) side.<br>
+        <strong>Left-hand page</strong> = more margin on the right (inner/spine) side, less on the left (outer) side.<br><br>
+        The tool also slightly adjusts the top margin automatically (right-hand pages usually sit a touch higher, left-hand pages a touch lower).
+      </p>
+      <p id="sideModalInfo" class="modal-note"></p>
+      <div class="modal-row">
+        <button id="sideSetLeftBtn">This page is left-hand</button>
+        <button id="sideSetRightBtn">This page is right-hand</button>
+        <button class="secondary" id="sideCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export resolution modal -->
+  <div class="modal-bg hidden" id="exportModalBg">
+    <div class="modal-content">
+      <h3>Choose export resolution</h3>
+      <div class="field">
+        <label>Export as</label>
+        <div class="radio-row">
+          <label><input type="radio" name="exportFormat" value="pdf" checked> PDF document</label>
+          <label><input type="radio" name="exportFormat" value="zip"> Images (ZIP)</label>
+        </div>
+      </div>
+      <div class="dpi-option-list" id="dpiOptionList"></div>
+      <div class="modal-actions">
+        <button class="secondary" id="exportCancelBtn">Cancel</button>
+        <button id="exportConfirmBtn">Export</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF metadata modal -->
+  <div class="modal-bg hidden" id="metaModal">
+    <div class="modal-content">
+      <h3>PDF export settings</h3>
+      <div class="field"><label>Composer</label><input id="composerInput" type="text" placeholder="e.g. Heinrich Sch&#252;tz"></div>
+      <div class="field"><label>Title</label><input id="titleInput" type="text" placeholder="e.g. Psalmen Davids"></div>
+      <div class="field"><label>File name</label><input id="filenameInput" type="text" value="manuscript"></div>
+      <div class="field">
+        <label>Color mode</label>
+        <div class="radio-row">
+          <label><input type="radio" name="colorMode" value="original" checked> Original colors</label>
+          <label><input type="radio" name="colorMode" value="grayscale"> Black &amp; white</label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Page size</label>
+        <div class="radio-row">
+          <label><input type="radio" name="pageSize" value="a4" checked> Fit to A4 (recommended for printing)</label>
+          <label><input type="radio" name="pageSize" value="original"> Original crop size</label>
+        </div>
+      </div>
+      <div class="stats-box" id="fileStatsBox"></div>
+      <div class="modal-row">
+        <button class="secondary" id="cancelMetaBtn">Cancel</button>
+        <button id="confirmMetaBtn">Generate PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="modal-bg hidden" id="loadingOverlay">
+    <div class="modal-content">
+      <h3 id="loadingHeading">Processing...</h3>
+      <div id="loadingText">Please wait...</div>
+      <div class="progress-track"><div class="progress-fill" id="loadingFill"></div></div>
+    </div>
+  </div>
+
+  <!-- Floating help bubble (positioned by JS) -->
+  <div class="help-bubble hidden" id="helpBubble" role="dialog"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+
+  <script type="module">
+    import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.mjs";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.mjs";
+
+    // ── Detection core ───────────────────────────────────────────────────────
+    // Content is intentionally duplicated from lib/detection-core.mjs (instead
+    // of importing it) because browsers block ES-module imports of local files
+    // when this page is opened directly via file:// (every file:// document is
+    // its own isolated origin). When changing this logic, fix and verify it
+    // first in lib/detection-core.mjs (node tests/run.mjs), then copy it here.
+    const mmToIn = mm => mm / 25.4;
+    const clamp = (v, mn, mx) => Math.max(mn, Math.min(mx, v));
+
+    const BASE_RATIOS = {
+      l: { desna: 1.6, leva: 0.5 },
+      r: { desna: 0.5, leva: 1.6 },
+      t: { desna: 0.8, leva: 1.2 },
+      b: { desna: 1.0, leva: 1.0 }
+    };
+    const baseRatio = (edge, isDesna) => BASE_RATIOS[edge][isDesna ? "desna" : "leva"];
+
+    function detectContentBounds(d, w, h, pageRect) {
+      const sx = pageRect.x + Math.round(pageRect.w * 0.03);
+      const ex = pageRect.x + pageRect.w - Math.round(pageRect.w * 0.03);
+      const sy = pageRect.y + Math.round(pageRect.h * 0.02);
+      const ey = pageRect.y + pageRect.h - Math.round(pageRect.h * 0.02);
+      const step = w > 2000 ? 4 : 2;
+      if (ex - sx < 10 || ey - sy < 10) return { valid: false, _reason: "region-too-small" };
+
+      let paperR = 0, paperG = 0, paperB = 0, count = 0;
+      for (let y = sy; y < ey; y += step) {
+        for (let x = sx; x < ex; x += step) {
+          const i = (y * w + x) * 4;
+          if (d[i] < 55 && d[i + 1] < 55 && d[i + 2] < 55) continue;
+          paperR += d[i]; paperG += d[i + 1]; paperB += d[i + 2]; count++;
+        }
+      }
+      if (!count) return { valid: false, _reason: "no-paper-samples" };
+      const paperLum = (paperR + paperG + paperB) / (count * 3);
+      const inkThresh = Math.max(20, paperLum - 30);
+      const isInk = (x, y) => {
+        const i = (y * w + x) * 4;
+        const lum = (d[i] + d[i + 1] + d[i + 2]) / 3;
+        return lum < inkThresh;
+      };
+
+      const rowDensity = new Array(ey).fill(0);
+      for (let y = sy; y < ey; y++) {
+        let c = 0;
+        for (let x = sx; x < ex; x += step) { if (isInk(x, y)) c++; }
+        rowDensity[y] = c / ((ex - sx) / step);
+      }
+
+      const rowThresh = 0.018;
+      const qualRows = [];
+      for (let y = sy; y < ey; y++) { if (rowDensity[y] > rowThresh) qualRows.push(y); }
+      if (!qualRows.length) return { valid: false, _reason: "no-qual-rows" };
+
+      const mergeGapPx = Math.max(4, Math.round(pageRect.h * 0.012));
+      const clusters = [];
+      let curStart = qualRows[0], curEnd = qualRows[0];
+      for (let i = 1; i < qualRows.length; i++) {
+        const y = qualRows[i];
+        if (y - curEnd <= mergeGapPx) curEnd = y;
+        else { clusters.push({ start: curStart, end: curEnd }); curStart = y; curEnd = y; }
+      }
+      clusters.push({ start: curStart, end: curEnd });
+
+      const top = clusters[0].start;
+      let bottom = clusters[clusters.length - 1].end;
+      let hasFooter = false;
+
+      if (clusters.length >= 2) {
+        const last = clusters[clusters.length - 1];
+        const prev = clusters[clusters.length - 2];
+        const gapBeforeLast = last.start - prev.end;
+        const earlierGaps = [];
+        for (let i = 1; i < clusters.length - 1; i++) earlierGaps.push(clusters[i].start - clusters[i - 1].end);
+        const sortedGaps = earlierGaps.slice().sort((a, b) => a - b);
+        const medianGap = sortedGaps.length ? sortedGaps[Math.floor(sortedGaps.length / 2)] : 0;
+        const lastSpan = last.end - last.start;
+        const footerZoneY = pageRect.y + pageRect.h * 0.8;
+        const isOutlierGap = gapBeforeLast > Math.max(medianGap * 1.8, pageRect.h * 0.02);
+        const isSmall = lastSpan <= pageRect.h * 0.08;
+        const isBottomish = last.start >= footerZoneY;
+        if (isOutlierGap && isSmall && isBottomish) {
+          hasFooter = true;
+          bottom = prev.end;
+        }
+      }
+
+      const colDensity = new Array(ex).fill(0);
+      const cTop = Math.max(sy, top) + 1, cBottom = Math.min(ey, bottom) - 1;
+      for (let y = cTop; y < cBottom; y++) {
+        if (rowDensity[y] < 0.02) continue;
+        for (let x = sx; x < ex; x += step) {
+          if (isInk(x, y - 1) || isInk(x, y) || isInk(x, y + 1)) colDensity[x] += rowDensity[y];
+        }
+      }
+      const maxCol = Math.max(0, ...colDensity.slice(sx, ex));
+      if (maxCol <= 0) return { valid: false, _clusters: clusters, _hasFooter: hasFooter };
+      const colCut = maxCol * 0.08;
+      let left = sx, right = ex - 1;
+      for (let x = sx; x < ex; x++) { if (colDensity[x] > colCut) { left = x; break; } }
+      for (let x = ex - 1; x >= sx; x--) { if (colDensity[x] > colCut) { right = x; break; } }
+
+      if (right - left < pageRect.w * 0.2 || bottom - top < pageRect.h * 0.2) return { valid: false, _reason: "bounds-too-small" };
+      return { valid: true, rawLeft: left, rawRight: right, rawTop: top, rawBottom: bottom, hasFooter, inkThresh, _clusters: clusters };
+    }
+
+    function computeCropWithSide(rawLeft, rawRight, rawTop, rawBottom, imgW, imgH, isDesna, paddingMm) {
+      const pxPad = Math.round(mmToIn(paddingMm) * 300);
+      const padLeft = Math.round(pxPad * baseRatio("l", isDesna));
+      const padRight = Math.round(pxPad * baseRatio("r", isDesna));
+      const padTop = Math.round(pxPad * baseRatio("t", isDesna));
+      const padBottom = Math.round(pxPad * baseRatio("b", isDesna));
+      const x = clamp(rawLeft - padLeft, 0, imgW - 1);
+      const y = clamp(rawTop - padTop, 0, imgH - 1);
+      const x2 = clamp(rawRight + padRight, 1, imgW);
+      const y2 = clamp(rawBottom + padBottom, 1, imgH);
+      return { x, y, w: x2 - x, h: y2 - y };
+    }
+
+    function detectKeySignatureJS(d, w, h, region, staffTopY, staffGap) {
+      if (!staffGap || staffGap < 2) return false;
+      const keyW = Math.max(12, Math.round(region.w * 0.1));
+      const keyH = Math.round(staffGap * 5.5);
+      const x0 = region.x + Math.round(region.w * 0.02);
+      const y0 = Math.round(staffTopY - staffGap * 0.3);
+      let ink = 0, total = 0;
+      for (let y = y0; y < y0 + keyH; y++) {
+        for (let x = x0; x < x0 + keyW; x++) {
+          if (x < 0 || y < 0 || x >= w || y >= h) continue;
+          total++;
+          const i = (y * w + x) * 4;
+          const lum = (d[i] + d[i + 1] + d[i + 2]) / 3;
+          if (lum < 120) ink++;
+        }
+      }
+      return total > 0 && ink / total > 0.04;
+    }
+
+    function suggestPageType({ hasStaff, hasKey, leadingNonMusicSeen, firstMusicSeen }) {
+      if (firstMusicSeen) return "Music";
+      if (hasStaff && hasKey) return "Music";
+      if (hasStaff && !hasKey) return leadingNonMusicSeen === 0 ? "Title Page" : "Preface";
+      return leadingNonMusicSeen === 0 ? "Title Page" : "Preface";
+    }
+
+    const { jsPDF } = window.jspdf;
+
+    const TYPE_LABELS = { Music: "Music", "Title Page": "Title page", Preface: "Preface", Skip: "Skip" };
+    const TYPE_BADGE_CLASS = { Music: "badge-music", "Title Page": "badge-title", Preface: "badge-preface", Skip: "badge-skip" };
+
+    const state = {
+      pages: [], selectedId: null, masterProfile: null, paddingMm: 4, exportDpi: 300,
+      drag: null, uiReady: false, needsRender: false,
+      cvAvailable: false, cvChecked: false,
+      sideMaster: { desna: null, leva: null },
+      leadingNonMusicSeen: 0, firstMusicSeen: false
+    };
+
+    const el = {
+      uploadSection: document.getElementById("uploadSection"),
+      fileInput: document.getElementById("fileInput"), clearAllBtn: document.getElementById("clearAllBtn"),
+      thumbGrid: document.getElementById("thumbGrid"), editorCanvas: document.getElementById("editorCanvas"),
+      overlay: document.getElementById("overlay"), cropperBox: document.getElementById("cropperBox"),
+      cropperViewport: document.getElementById("cropperViewport"),
+      magnifier: null, magnifierCanvas: null,
+      prevPageBtn: document.getElementById("prevPageBtn"), nextPageBtn: document.getElementById("nextPageBtn"),
+      editorTitle: document.getElementById("editorTitle"), sideBadge: document.getElementById("sideBadge"),
+      typeSelect: document.getElementById("typeSelect"),
+      rotatePageBtn: document.getElementById("rotatePageBtn"),
+      applyMasterBtn: document.getElementById("applyMasterBtn"),
+      exportBtn: document.getElementById("exportBtn"),
+      paddingSlider: document.getElementById("paddingSlider"), paddingNumInput: document.getElementById("paddingNumInput"),
+      globalStatus: document.getElementById("globalStatus"),
+      exportModalBg: document.getElementById("exportModalBg"), dpiOptionList: document.getElementById("dpiOptionList"),
+      exportCancelBtn: document.getElementById("exportCancelBtn"), exportConfirmBtn: document.getElementById("exportConfirmBtn"),
+      metaModal: document.getElementById("metaModal"), composerInput: document.getElementById("composerInput"),
+      titleInput: document.getElementById("titleInput"), filenameInput: document.getElementById("filenameInput"),
+      fileStatsBox: document.getElementById("fileStatsBox"), cancelMetaBtn: document.getElementById("cancelMetaBtn"),
+      confirmMetaBtn: document.getElementById("confirmMetaBtn"), loadingOverlay: document.getElementById("loadingOverlay"),
+      loadingText: document.getElementById("loadingText"), loadingFill: document.getElementById("loadingFill"),
+      setPageSideBtn: document.getElementById("setPageSideBtn"),
+      sideModal: document.getElementById("sideModal"), sideModalInfo: document.getElementById("sideModalInfo"),
+      sideSetRightBtn: document.getElementById("sideSetRightBtn"), sideSetLeftBtn: document.getElementById("sideSetLeftBtn"),
+      sideCancelBtn: document.getElementById("sideCancelBtn"),
+      helpBubble: document.getElementById("helpBubble"),
+    };
+
+    // Magnifier is created lazily and attached to <body> so it can float above everything.
+    (function initMagnifier() {
+      const m = document.createElement("div");
+      m.className = "magnifier"; m.id = "magnifier";
+      m.innerHTML = `<canvas id="magnifierCanvas" width="140" height="140"></canvas>`;
+      document.body.appendChild(m);
+      el.magnifier = m;
+      el.magnifierCanvas = document.getElementById("magnifierCanvas");
+    })();
+
+    let idSeed = 1;
+    const setStatus = text => el.globalStatus.textContent = text;
+
+    function setLoading(active, text = "Loading...", progress = 0) {
+      el.loadingOverlay.classList.toggle("hidden", !active);
+      el.loadingText.textContent = text;
+      el.loadingFill.style.width = `${clamp(Math.round(progress * 100), 0, 100)}%`;
+    }
+
+    // ── OpenCV.js (optional, with a safe fallback to the plain-JS heuristic) ────
+    let cvReadyPromise = null;
+    function loadOpenCV() {
+      if (cvReadyPromise) return cvReadyPromise;
+      cvReadyPromise = new Promise((resolve) => {
+        if (window.cv && window.cv.Mat) { resolve(true); return; }
+        const timeout = setTimeout(() => resolve(false), 20000);
+        try {
+          const script = document.createElement("script");
+          script.src = "https://docs.opencv.org/4.9.0/opencv.js";
+          script.async = true;
+          script.onerror = () => { clearTimeout(timeout); resolve(false); };
+          script.onload = () => {
+            const check = () => {
+              if (window.cv && window.cv.Mat) { clearTimeout(timeout); resolve(true); }
+              else if (window.cv) { window.cv["onRuntimeInitialized"] = () => { clearTimeout(timeout); resolve(true); }; }
+              else setTimeout(check, 50);
+            };
+            check();
+          };
+          document.head.appendChild(script);
+        } catch (e) { clearTimeout(timeout); resolve(false); }
+      });
+      return cvReadyPromise;
+    }
+
+    async function ensureCV() {
+      if (state.cvChecked) return state.cvAvailable;
+      state.cvAvailable = await loadOpenCV();
+      state.cvChecked = true;
+      return state.cvAvailable;
+    }
+
+    // ── Page edge detection (table surface / book cover in the background) ─────
+    function boundingRectOfMask(mask, w, h) {
+      const contours = new cv.MatVector();
+      const hierarchy = new cv.Mat();
+      let rect = null;
+      try {
+        cv.findContours(mask, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+        let bestArea = 0, bestIdx = -1;
+        for (let i = 0; i < contours.size(); i++) {
+          const area = cv.contourArea(contours.get(i));
+          if (area > bestArea) { bestArea = area; bestIdx = i; }
+        }
+        if (bestIdx >= 0) {
+          const r = cv.boundingRect(contours.get(bestIdx));
+          rect = { x: r.x, y: r.y, w: r.width, h: r.height };
+        }
+      } finally {
+        contours.delete(); hierarchy.delete();
+      }
+      return rect;
+    }
+
+    function detectPageRectCV(canvas) {
+      if (!state.cvAvailable) return null;
+      const w = canvas.width, h = canvas.height;
+      let src, gray, blurred, thresh, inv;
+      try {
+        src = cv.imread(canvas);
+        gray = new cv.Mat();
+        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+        blurred = new cv.Mat();
+        cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
+        thresh = new cv.Mat();
+        cv.threshold(blurred, thresh, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
+        inv = new cv.Mat();
+        cv.bitwise_not(thresh, inv);
+
+        const rectBright = boundingRectOfMask(thresh, w, h);
+        const rectDark = boundingRectOfMask(inv, w, h);
+        const areaFrac = r => r ? (r.w * r.h) / (w * h) : 0;
+        const qualifies = r => r && areaFrac(r) > 0.3 && areaFrac(r) < 0.93;
+
+        let candidate = null;
+        if (qualifies(rectBright) && qualifies(rectDark)) candidate = areaFrac(rectBright) > areaFrac(rectDark) ? rectBright : rectDark;
+        else if (qualifies(rectBright)) candidate = rectBright;
+        else if (qualifies(rectDark)) candidate = rectDark;
+
+        if (candidate) {
+          const insetX = Math.round(candidate.w * 0.01), insetY = Math.round(candidate.h * 0.01);
+          const nx = clamp(candidate.x + insetX, 0, w - 2);
+          const ny = clamp(candidate.y + insetY, 0, h - 2);
+          const nw = clamp(candidate.w - insetX * 2, 10, w - nx);
+          const nh = clamp(candidate.h - insetY * 2, 10, h - ny);
+          candidate = { x: nx, y: ny, w: nw, h: nh };
+        }
+        return candidate && candidate.w > 10 && candidate.h > 10 ? candidate : null;
+      } catch (err) {
+        return null;
+      } finally {
+        if (src) src.delete();
+        if (gray) gray.delete();
+        if (blurred) blurred.delete();
+        if (thresh) thresh.delete();
+        if (inv) inv.delete();
+      }
+    }
+
+    // ── Staff-line detection (Hough transform) ──────────────────────────────────
+    function detectStaffCV(canvas, region) {
+      if (!state.cvAvailable || region.w < 20 || region.h < 20) return null;
+      let src, roi, gray, edges, lines;
+      try {
+        src = cv.imread(canvas);
+        roi = src.roi(new cv.Rect(region.x, region.y, region.w, region.h));
+        gray = new cv.Mat();
+        cv.cvtColor(roi, gray, cv.COLOR_RGBA2GRAY);
+        edges = new cv.Mat();
+        cv.Canny(gray, edges, 50, 150);
+        lines = new cv.Mat();
+        const minLen = Math.max(20, Math.round(region.w * 0.45));
+        cv.HoughLinesP(edges, lines, 1, Math.PI / 180, 60, minLen, 6);
+
+        const ys = [];
+        for (let i = 0; i < lines.rows; i++) {
+          const x1 = lines.data32S[i * 4], y1 = lines.data32S[i * 4 + 1];
+          const x2 = lines.data32S[i * 4 + 2], y2 = lines.data32S[i * 4 + 3];
+          const dx = Math.abs(x2 - x1), dy = Math.abs(y2 - y1);
+          if (dx === 0) continue;
+          const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+          if (angle <= 3) ys.push(Math.round((y1 + y2) / 2));
+        }
+        ys.sort((a, b) => a - b);
+        const merged = [];
+        for (const y of ys) { if (!merged.length || y - merged[merged.length - 1] > 3) merged.push(y); }
+
+        let found = null;
+        for (let i = 0; i + 4 < merged.length; i++) {
+          const seg = merged.slice(i, i + 5);
+          const gaps = [];
+          for (let j = 1; j < seg.length; j++) gaps.push(seg[j] - seg[j - 1]);
+          const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+          if (avgGap < 2) continue;
+          const maxDev = Math.max(...gaps.map(g => Math.abs(g - avgGap)));
+          if (maxDev < avgGap * 0.4) { found = { topY: seg[0], gap: avgGap }; break; }
+        }
+        if (!found) return null;
+        return { hasStaff: true, topY: region.y + found.topY, gap: found.gap };
+      } catch (err) {
+        return null;
+      } finally {
+        if (src) src.delete();
+        if (roi) roi.delete();
+        if (gray) gray.delete();
+        if (edges) edges.delete();
+        if (lines) lines.delete();
+      }
+    }
+
+    // ── Left/right page detection, based on ink density near the edges ─────────
+    function detectSide(d, w, h, pageRect, content) {
+      const step = w > 2000 ? 4 : 2;
+      const bandW = Math.floor(pageRect.w * 0.12);
+      const sy = content.rawTop, ey = content.rawBottom;
+      const isInkAt = (x, y) => { const i = (y * w + x) * 4; return d[i] > 55 && (d[i] + d[i + 1] + d[i + 2]) / 3 < content.inkThresh; };
+      let leftInk = 0, rightInk = 0;
+      for (let y = sy; y < ey; y += step) {
+        for (let bx = 0; bx < bandW; bx += step) {
+          const lx = clamp(pageRect.x + bx, 0, w - 1);
+          const rx = clamp(pageRect.x + pageRect.w - 1 - bx, 0, w - 1);
+          if (isInkAt(lx, y)) leftInk++;
+          if (isInkAt(rx, y)) rightInk++;
+        }
+      }
+      return rightInk < leftInk;
+    }
+
+    // ── Main per-page analysis pipeline ─────────────────────────────────────────
+    function analyzePage(canvas, paddingMm) {
+      const w = canvas.width, h = canvas.height;
+      let pageRect = detectPageRectCV(canvas);
+      if (!pageRect) pageRect = { x: 0, y: 0, w, h };
+
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      const full = ctx.getImageData(0, 0, w, h);
+      const content = detectContentBounds(full.data, w, h, pageRect);
+
+      if (!content.valid) {
+        const rl = pageRect.x, rr = pageRect.x + pageRect.w - 1, rt = pageRect.y, rb = pageRect.y + pageRect.h - 1;
+        const crop = computeCropWithSide(rl, rr, rt, rb, w, h, true, paddingMm);
+        return { isDesna: true, _rawLeft: rl, _rawRight: rr, _rawTop: rt, _rawBottom: rb, _hasFooter: false, _hasStaff: false, _hasKey: false, ...crop };
+      }
+
+      const isDesna = detectSide(full.data, w, h, pageRect, content);
+      const staffRegion = {
+        x: content.rawLeft, y: content.rawTop,
+        w: content.rawRight - content.rawLeft,
+        h: Math.max(20, Math.round((content.rawBottom - content.rawTop) * 0.55))
+      };
+      const staff = detectStaffCV(canvas, staffRegion);
+
+      let rawTop = content.rawTop;
+      let hasKey = false;
+      if (staff && staff.hasStaff) {
+        const margin = Math.round(staff.gap * 2.2);
+        rawTop = Math.min(rawTop, Math.max(pageRect.y, staff.topY - margin));
+        hasKey = detectKeySignatureJS(full.data, w, h, staffRegion, staff.topY, staff.gap);
+      }
+
+      const crop = computeCropWithSide(content.rawLeft, content.rawRight, rawTop, content.rawBottom, w, h, isDesna, paddingMm);
+      return {
+        isDesna, _rawLeft: content.rawLeft, _rawRight: content.rawRight, _rawTop: rawTop, _rawBottom: content.rawBottom,
+        _hasFooter: content.hasFooter, _hasStaff: !!(staff && staff.hasStaff), _hasKey: hasKey,
+        ...crop
+      };
+    }
+
+    // Title/preface pages come before the first real music page (staff lines +
+    // key signature); after the first such page, everything else counts as music.
+    function suggestType(autoCrop) {
+      const type = suggestPageType({
+        hasStaff: autoCrop._hasStaff, hasKey: autoCrop._hasKey,
+        leadingNonMusicSeen: state.leadingNonMusicSeen, firstMusicSeen: state.firstMusicSeen
+      });
+      if (type === "Music") state.firstMusicSeen = true;
+      else state.leadingNonMusicSeen++;
+      return type;
+    }
+
+    function renumberPages() { state.pages.forEach((p, i) => p.pageNum = i + 1); }
+
+    let sortableInit = false;
+    function ensureSortable() {
+      if (sortableInit) return;
+      sortableInit = true;
+      new Sortable(el.thumbGrid, {
+        animation: 150, ghostClass: "thumb-ghost", delay: 200, delayOnTouchOnly: false,
+        filter: "select, button", preventOnFilter: false,
+        onEnd: (evt) => {
+          if (evt.oldIndex == null || evt.newIndex == null || evt.oldIndex === evt.newIndex) return;
+          const moved = state.pages.splice(evt.oldIndex, 1)[0];
+          state.pages.splice(evt.newIndex, 0, moved);
+          renumberPages();
+          renderThumbnails(); requestEditorDraw();
+        }
+      });
+    }
+
+    const fromPercentCrop = (pct, w, h) => ({
+      x: clamp(Math.round(pct.x * w), 0, w - 1), y: clamp(Math.round(pct.y * h), 0, h - 1),
+      w: clamp(Math.round(pct.w * w), 20, w),     h: clamp(Math.round(pct.h * h), 20, h)
+    });
+    const toPercentCrop = (crop, w, h) => ({ x: crop.x/w, y: crop.y/h, w: crop.w/w, h: crop.h/h });
+
+    function createPage(imageCanvas, sourceName, pdfSource) {
+      const thumb = document.createElement("canvas");
+      thumb.width = 150;
+      thumb.height = Math.round((imageCanvas.height / imageCanvas.width) * 150);
+      thumb.getContext("2d").drawImage(imageCanvas, 0, 0, thumb.width, thumb.height);
+      const autoCrop = analyzePage(imageCanvas, state.paddingMm);
+      const side = autoCrop.isDesna ? "desna" : "leva";
+      const master = state.sideMaster[side];
+      const crop = master
+        ? fromPercentCrop(master, imageCanvas.width, imageCanvas.height)
+        : { x: autoCrop.x, y: autoCrop.y, w: autoCrop.w, h: autoCrop.h };
+      return {
+        id: idSeed++, sourceName, imageCanvas, thumbCanvas: thumb,
+        pdfSource: pdfSource || null, rotationDeg: 0,
+        type: suggestType(autoCrop), crop, autoCrop,
+        isDesna: autoCrop.isDesna,
+        sideManual: false,
+        sideLocked: !!master,
+        manuallyEdited: false,
+        pageNum: 0
+      };
+    }
+
+    // Apply a manual left/right assignment starting from the selected page.
+    function applyPageSideFrom(startId, startIsDesna) {
+      const startIdx = state.pages.findIndex(p => p.id === startId);
+      if (startIdx === -1) return;
+      let isDesna = startIsDesna;
+      for (let i = startIdx; i < state.pages.length; i++) {
+        const page = state.pages[i];
+        page.isDesna = isDesna;
+        page.sideManual = true;
+        if (!page.manuallyEdited) {
+          const side = isDesna ? "desna" : "leva";
+          const master = state.sideMaster[side];
+          if (master) {
+            page.crop = fromPercentCrop(master, page.imageCanvas.width, page.imageCanvas.height);
+            page.sideLocked = true;
+          } else {
+            const a = page.autoCrop;
+            page.crop = computeCropWithSide(a._rawLeft, a._rawRight, a._rawTop, a._rawBottom,
+              page.imageCanvas.width, page.imageCanvas.height, isDesna, state.paddingMm);
+            page.sideLocked = false;
+          }
+        }
+        isDesna = !isDesna;
+      }
+      const count = state.pages.length - startIdx;
+      setStatus(`Left/right marked from page ${startIdx+1} (${count} pages).`);
+    }
+
+    // ── One shared crop per side (left/right) ───────────────────────────────────
+    // When the user manually corrects the crop on one page, that crop (as a
+    // fraction of the page dimensions) becomes binding for EVERY other page on
+    // the same (left/right) side — not just an approximation, the exact same
+    // placement.
+    // A manual crop correction only ever affects pages that come AFTER the
+    // edited one — never pages already passed, so earlier work is never
+    // silently rewritten by a later correction.
+    function setSideMasterFromPage(page) {
+      const side = page.isDesna ? "desna" : "leva";
+      state.sideMaster[side] = toPercentCrop(page.crop, page.imageCanvas.width, page.imageCanvas.height);
+      const anchorIdx = state.pages.findIndex(p => p.id === page.id);
+      const count = applySideMaster(side, anchorIdx);
+      const sideLabel = page.isDesna ? "right-hand" : "left-hand";
+      setStatus(`This crop now applies to the following ${sideLabel} pages (${count} pages).`);
+    }
+
+    function applySideMaster(side, fromIndex = -1) {
+      const pct = state.sideMaster[side];
+      if (!pct) return 0;
+      let count = 0;
+      state.pages.forEach((p, idx) => {
+        if (idx <= fromIndex) return;
+        if (p.manuallyEdited || p.type === "Skip") return;
+        if ((p.isDesna ? "desna" : "leva") !== side) return;
+        p.crop = fromPercentCrop(pct, p.imageCanvas.width, p.imageCanvas.height);
+        p.sideLocked = true;
+        count++;
+      });
+      renderThumbnails(); requestEditorDraw();
+      return count;
+    }
+
+    function renderThumbnails() {
+      const fragment = document.createDocumentFragment();
+      el.thumbGrid.innerHTML = "";
+      for (const page of state.pages) {
+        const card = document.createElement("div");
+        card.className = `thumb ${page.manuallyEdited ? 'manual' : ''} ${page.id === state.selectedId ? 'active' : ''}`;
+        card.dataset.pageId = String(page.id);
+
+        const cnv = document.createElement("canvas");
+        cnv.width = page.thumbCanvas.width; cnv.height = page.thumbCanvas.height;
+        const tctx = cnv.getContext("2d");
+        tctx.drawImage(page.thumbCanvas, 0, 0);
+        const scaleX = cnv.width / page.imageCanvas.width;
+        const scaleY = cnv.height / page.imageCanvas.height;
+        tctx.strokeStyle = page.manuallyEdited ? "#ff8a2f" : "#f2cc5a";
+        tctx.lineWidth = 2;
+        tctx.strokeRect(page.crop.x*scaleX, page.crop.y*scaleY, page.crop.w*scaleX, page.crop.h*scaleY);
+
+        const shortName = page.sourceName.replace(/^.*[\\/]/, '').replace(/\s*\(p\.\s*\d+\)$/, '');
+        const sideLabel = page.sideManual ? `<span class="badge-side">${page.isDesna ? 'R' : 'L'}</span>` : '';
+
+        const meta = document.createElement("div");
+        meta.className = "thumb-meta";
+        meta.innerHTML = `
+          <div class="thumb-badge-row">
+            <span>#${page.pageNum}</span>
+            <span class="badge ${TYPE_BADGE_CLASS[page.type]}">${TYPE_LABELS[page.type]}</span>
+            ${sideLabel}
+          </div>
+          <div class="thumb-name" title="${page.sourceName}">${shortName}</div>
+        `;
+
+        card.appendChild(cnv);
+        card.appendChild(meta);
+        let _pdX, _pdY;
+        card.addEventListener("pointerdown", (e) => { _pdX = e.clientX; _pdY = e.clientY; });
+        card.addEventListener("pointerup", (e) => {
+          if (Math.abs(e.clientX - _pdX) < 8 && Math.abs(e.clientY - _pdY) < 8) selectPage(page.id);
+        });
+        fragment.appendChild(card);
+      }
+      el.thumbGrid.appendChild(fragment);
+    }
+
+    function requestEditorDraw() {
+      if (!state.needsRender) { state.needsRender = true; requestAnimationFrame(drawEditor); }
+    }
+
+    function drawEditor() {
+      state.needsRender = false;
+      const page = state.pages.find(p => p.id === state.selectedId);
+      if (!page) {
+        el.editorCanvas.width = 0; el.editorCanvas.height = 0;
+        el.cropperBox.style.width = ""; el.cropperBox.style.height = "";
+        el.cropperBox.classList.add("empty");
+        el.cropperViewport.classList.add("empty");
+        el.overlay.innerHTML = "";
+        el.editorTitle.textContent = "";
+        el.sideBadge.classList.add("hidden");
+        return;
+      }
+      el.cropperBox.classList.remove("empty");
+      el.cropperViewport.classList.remove("empty");
+      const origW = page.imageCanvas.width, origH = page.imageCanvas.height;
+      const maxW = Math.max(200, el.cropperViewport.clientWidth - 4);
+      const maxH = Math.max(200, el.cropperViewport.clientHeight - 4);
+      // No upper cap on scale, and the box itself (not just the canvas inside
+      // it) is sized to the fitted dimensions — so the box hugs the page's own
+      // proportions and fills its viewport edge-to-edge on whichever axis is
+      // the binding constraint, for both landscape and portrait pages, instead
+      // of leaving letterboxing bars inside an oversized fixed-shape box.
+      const scale = Math.min(maxW / origW, maxH / origH);
+      const cw = Math.max(1, Math.round(origW * scale)), ch = Math.max(1, Math.round(origH * scale));
+      el.cropperBox.style.width = cw + "px";
+      el.cropperBox.style.height = ch + "px";
+      if (el.editorCanvas.width !== cw || el.editorCanvas.height !== ch) {
+        el.editorCanvas.width = cw; el.editorCanvas.height = ch;
+      }
+      el.editorCanvas.getContext("2d").drawImage(page.imageCanvas, 0, 0, cw, ch);
+
+      const manualTag = page.manuallyEdited ? ` <span class="manual-tag">&#9998; manual</span>` : '';
+      el.editorTitle.innerHTML =
+        `<strong>Page ${page.pageNum} / ${state.pages.length}</strong> ` +
+        `<span class="badge ${TYPE_BADGE_CLASS[page.type]}">${TYPE_LABELS[page.type]}</span>${manualTag}` +
+        `<div class="thumb-name" title="${page.sourceName}">${page.sourceName}</div>`;
+      el.typeSelect.value = page.type;
+
+      if (page.sideManual) {
+        el.sideBadge.textContent = page.isDesna ? "Right-hand page" : "Left-hand page";
+        el.sideBadge.classList.remove("hidden");
+      } else {
+        el.sideBadge.classList.add("hidden");
+      }
+
+      drawOverlayForCrop(page.crop, origW, origH, cw, ch, page.manuallyEdited);
+    }
+
+    function drawOverlayForCrop(crop, imgW, imgH, cw, ch, isManual) {
+      el.overlay.style.left = el.editorCanvas.offsetLeft + "px";
+      el.overlay.style.top = el.editorCanvas.offsetTop + "px";
+      el.overlay.style.width = cw + "px";
+      el.overlay.style.height = ch + "px";
+
+      const sx = cw/imgW, sy = ch/imgH;
+      const x = crop.x*sx, y = crop.y*sy, w = crop.w*sx, h = crop.h*sy;
+      el.overlay.innerHTML = "";
+      const rect = document.createElement("div");
+      rect.className = `crop-rect ${isManual ? 'manual' : ''}`;
+      rect.style.cssText = `left:${x}px; top:${y}px; width:${w}px; height:${h}px;`;
+      rect.addEventListener("pointerdown", onCropDragStart);
+      el.overlay.appendChild(rect);
+      const handles = [
+        ["tl",x,y],["tr",x+w,y],["bl",x,y+h],["br",x+w,y+h],
+        ["tm",x+w/2,y],["bm",x+w/2,y+h],["ml",x,y+h/2],["mr",x+w,y+h/2]
+      ];
+      for (const [name,hx,hy] of handles) {
+        const hEl = document.createElement("div");
+        hEl.className = `handle ${isManual ? 'manual' : ''} ${state.drag?.handle===name?'active':''}`;
+        hEl.dataset.handle = name;
+        hEl.style.cssText = `left:${hx}px; top:${hy}px;`;
+        hEl.addEventListener("pointerdown", onHandlePointerDown);
+        el.overlay.appendChild(hEl);
+      }
+    }
+
+    function selectPage(id) { state.selectedId = id; renderThumbnails(); requestEditorDraw(); }
+
+    function onHandlePointerDown(e) {
+      const page = state.pages.find(p => p.id === state.selectedId);
+      if (!page) return;
+      e.preventDefault(); e.stopPropagation();
+      e.currentTarget.classList.add("active");
+      state.drag = { mode: "resize", handle: e.currentTarget.dataset.handle, pointerId: e.pointerId, clientX: e.clientX, clientY: e.clientY };
+      e.currentTarget.setPointerCapture(e.pointerId);
+      el.magnifier.style.display = "block";
+      updateMagnifier(page, e.clientX, e.clientY);
+    }
+
+    function onCropDragStart(e) {
+      const page = state.pages.find(p => p.id === state.selectedId);
+      if (!page) return;
+      e.preventDefault(); e.stopPropagation();
+      state.drag = { mode: "move", pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, origCrop: { ...page.crop } };
+      el.magnifier.style.display = "block";
+      updateMagnifier(page, e.clientX, e.clientY);
+    }
+
+    function onPointerMove(e) {
+      if (!state.drag) return;
+      const page = state.pages.find(p => p.id === state.selectedId);
+      if (!page) return;
+      const rect = el.editorCanvas.getBoundingClientRect();
+      const ix = Math.round((clamp(e.clientX-rect.left,0,rect.width)/rect.width)*page.imageCanvas.width);
+      const iy = Math.round((clamp(e.clientY-rect.top,0,rect.height)/rect.height)*page.imageCanvas.height);
+      const c = { ...page.crop };
+      if (state.drag.mode === "move") {
+        const dx = Math.round(((e.clientX-state.drag.startX)/rect.width)*page.imageCanvas.width);
+        const dy = Math.round(((e.clientY-state.drag.startY)/rect.height)*page.imageCanvas.height);
+        c.x = clamp(state.drag.origCrop.x+dx, 0, page.imageCanvas.width-c.w);
+        c.y = clamp(state.drag.origCrop.y+dy, 0, page.imageCanvas.height-c.h);
+      } else {
+        if (state.drag.handle.includes("l")) { const r=c.x+c.w; c.x=clamp(ix,0,r-20); c.w=r-c.x; }
+        if (state.drag.handle.includes("r")) { c.w=clamp(ix-c.x,20,page.imageCanvas.width-c.x); }
+        if (state.drag.handle.includes("t")) { const b=c.y+c.h; c.y=clamp(iy,0,b-20); c.h=b-c.y; }
+        if (state.drag.handle.includes("b")) { c.h=clamp(iy-c.y,20,page.imageCanvas.height-c.y); }
+      }
+      page.crop = c;
+      page.manuallyEdited = true;
+      updateMagnifier(page, e.clientX, e.clientY);
+      requestEditorDraw();
+    }
+
+    function onPointerUp() {
+      if (!state.drag) return;
+      const pageId = state.selectedId;
+      state.drag = null; el.magnifier.style.display = "none"; renderThumbnails();
+      const page = pageId != null ? state.pages.find(p => p.id === pageId) : null;
+      if (page) setSideMasterFromPage(page);
+    }
+
+    function updateMagnifier(page, clientX, clientY) {
+      const rect = el.editorCanvas.getBoundingClientRect();
+      const imgX = Math.round((clamp(clientX-rect.left,0,rect.width)/rect.width)*page.imageCanvas.width);
+      const imgY = Math.round((clamp(clientY-rect.top,0,rect.height)/rect.height)*page.imageCanvas.height);
+      const mSize = el.magnifierCanvas.width;
+      const srcSize = Math.round(mSize / 2.5);
+      const srcX = clamp(imgX-Math.round(srcSize/2), 0, page.imageCanvas.width-srcSize);
+      const srcY = clamp(imgY-Math.round(srcSize/2), 0, page.imageCanvas.height-srcSize);
+      const mctx = el.magnifierCanvas.getContext("2d");
+      mctx.imageSmoothingEnabled = false;
+      mctx.drawImage(page.imageCanvas, srcX, srcY, srcSize, srcSize, 0, 0, mSize, mSize);
+      mctx.strokeStyle = "rgba(255,255,255,0.9)"; mctx.lineWidth = 1;
+      mctx.beginPath(); mctx.moveTo(mSize/2,0); mctx.lineTo(mSize/2,mSize); mctx.moveTo(0,mSize/2); mctx.lineTo(mSize,mSize/2); mctx.stroke();
+    }
+
+    // Fast ingest: PDF pages are first rendered at a working resolution
+    // (LOAD_SCALE) for quick detection/editing, balanced to stay sharp enough
+    // for accurate auto-cropping while still loading large batches quickly.
+    // Full quality for PDF-sourced pages is only re-rendered at export time,
+    // at the chosen export DPI (see getExportCanvas) — never at ingest time.
+    const LOAD_SCALE = 1.6;
+
+    async function handleFiles(files) {
+      if (!files.length) return;
+      setLoading(true, "Preparing smart detection...", 0.01);
+      try {
+        await ensureCV();
+        setLoading(true, "Loading files...", 0.02);
+        const loaded = [];
+        const failed = [];
+        let idx = 0;
+        for (const file of files) {
+          idx++;
+          setLoading(true, `Processing file ${idx} of ${files.length}`, (idx/files.length)*0.5);
+          // Never let one bad/corrupt/huge file take down the whole batch or
+          // leave the loading overlay stuck forever — report it and move on.
+          try {
+            if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+              const arr = await file.arrayBuffer();
+              const doc = await pdfjsLib.getDocument({ data: arr }).promise;
+              for (let p = 1; p <= doc.numPages; p++) {
+                setLoading(true, `${file.name}: page ${p} of ${doc.numPages}`, (idx/files.length)*0.5);
+                const page = await doc.getPage(p);
+                const viewport = page.getViewport({ scale: LOAD_SCALE });
+                const canvas = document.createElement("canvas");
+                canvas.width = Math.floor(viewport.width); canvas.height = Math.floor(viewport.height);
+                // willReadFrequently: the page canvas is analyzed (getImageData)
+                // right after render, so flag it up front to avoid the browser's
+                // slow-readback warning and a redundant context re-creation.
+                const ctx2 = canvas.getContext("2d", { willReadFrequently: true });
+                ctx2.fillStyle = "#ffffff"; ctx2.fillRect(0,0,canvas.width,canvas.height);
+                await page.render({ canvasContext: ctx2, viewport }).promise;
+                loaded.push(createPage(canvas, `${file.name} (p. ${p})`, { doc, pageNum: p }));
+              }
+            } else if (file.type.startsWith("image/")) {
+              const bmp = await createImageBitmap(file);
+              const canvas = document.createElement("canvas");
+              canvas.width = bmp.width; canvas.height = bmp.height;
+              canvas.getContext("2d", { willReadFrequently: true }).drawImage(bmp, 0, 0);
+              loaded.push(createPage(canvas, file.name));
+            }
+          } catch (fileErr) {
+            console.error("Failed to load file:", file.name, fileErr);
+            failed.push(file.name);
+          }
+        }
+        state.pages.push(...loaded);
+        renumberPages();
+        ensureSortable();
+        renderThumbnails();
+        if (!state.selectedId && state.pages.length) selectPage(state.pages[0].id);
+        setStatus(failed.length
+          ? `Loaded ${loaded.length} pages. Failed: ${failed.join(", ")}.`
+          : `Loaded ${state.pages.length} pages.`);
+      } catch (err) {
+        console.error("handleFiles failed:", err);
+        setStatus(`Error while loading files: ${err.message || err}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Used for the final export: image-sourced pages already have a full
+    // quality working canvas; PDF-sourced pages are re-rendered at the chosen
+    // export DPI.
+    function applyRotation(canvas, deg) {
+      const steps = ((deg % 360) + 360) % 360;
+      if (!steps) return canvas;
+      const swap = steps === 90 || steps === 270;
+      const out = document.createElement("canvas");
+      out.width = swap ? canvas.height : canvas.width;
+      out.height = swap ? canvas.width : canvas.height;
+      const ctx = out.getContext("2d");
+      ctx.translate(out.width / 2, out.height / 2);
+      ctx.rotate(steps * Math.PI / 180);
+      ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+      return out;
+    }
+
+    async function getExportCanvas(page, dpi) {
+      if (!page.pdfSource) return page.imageCanvas;
+      const { doc, pageNum } = page.pdfSource;
+      const pdfPage = await doc.getPage(pageNum);
+      const viewport = pdfPage.getViewport({ scale: dpi / 72 });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.floor(viewport.width));
+      canvas.height = Math.max(1, Math.floor(viewport.height));
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await pdfPage.render({ canvasContext: ctx, viewport }).promise;
+      return applyRotation(canvas, page.rotationDeg || 0);
+    }
+
+    // Returns the cropped canvas at full (export) quality for a given page.
+    async function getExportCrop(page, dpi) {
+      const full = await getExportCanvas(page, dpi);
+      const pct = toPercentCrop(page.crop, page.imageCanvas.width, page.imageCanvas.height);
+      const abs = fromPercentCrop(pct, full.width, full.height);
+      const out = document.createElement("canvas");
+      out.width = abs.w; out.height = abs.h;
+      // willReadFrequently: grayscale export reads this canvas back via
+      // getImageData, so flag it up front to keep the readback fast.
+      out.getContext("2d", { willReadFrequently: true }).drawImage(full, abs.x, abs.y, abs.w, abs.h, 0, 0, abs.w, abs.h);
+      return out;
+    }
+
+    function isGrayscaleSelected() {
+      const checked = document.querySelector('input[name="colorMode"]:checked');
+      return checked ? checked.value === "grayscale" : false;
+    }
+
+    function isA4Selected() {
+      const checked = document.querySelector('input[name="pageSize"]:checked');
+      return checked ? checked.value === "a4" : true;
+    }
+
+    // Standard A4 sheet (210×297mm) instead of a page sized exactly to the crop.
+    // Print dialogs handle a fixed, standard page size far more reliably than a
+    // custom one-off size per page — "fit to page"/scaling behaves as expected.
+    function fitToA4(mmW, mmH, marginMm = 6) {
+      const landscape = mmW > mmH;
+      const pageW = landscape ? 297 : 210;
+      const pageH = landscape ? 210 : 297;
+      const availW = pageW - marginMm * 2;
+      const availH = pageH - marginMm * 2;
+      const scale = Math.min(availW / mmW, availH / mmH);
+      const drawW = mmW * scale, drawH = mmH * scale;
+      return {
+        pageW, pageH, orientation: landscape ? "landscape" : "portrait",
+        drawW, drawH, offsetX: (pageW - drawW) / 2, offsetY: (pageH - drawH) / 2
+      };
+    }
+
+    function toGrayscale(ctx, w, h) {
+      const imgData = ctx.getImageData(0, 0, w, h);
+      for (let j = 0; j < imgData.data.length; j += 4) {
+        const v = 0.299*imgData.data[j] + 0.587*imgData.data[j+1] + 0.114*imgData.data[j+2];
+        imgData.data[j] = imgData.data[j+1] = imgData.data[j+2] = v;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    window.rotatePage = function(pageId) {
+      const page = state.pages.find(p => p.id === pageId);
+      if (!page) return;
+      const src = page.imageCanvas;
+      const dst = document.createElement("canvas");
+      dst.width = src.height; dst.height = src.width;
+      // willReadFrequently: dst becomes the page's working canvas and is
+      // re-analyzed (getImageData) below, so flag it up front.
+      const ctx = dst.getContext("2d", { willReadFrequently: true });
+      ctx.translate(dst.width, 0); ctx.rotate(Math.PI / 2);
+      ctx.drawImage(src, 0, 0);
+      page.imageCanvas = dst;
+      page.rotationDeg = ((page.rotationDeg || 0) + 90) % 360;
+      page.thumbCanvas.width = 150;
+      page.thumbCanvas.height = Math.round((dst.height / dst.width) * 150);
+      page.thumbCanvas.getContext("2d").drawImage(dst, 0, 0, page.thumbCanvas.width, page.thumbCanvas.height);
+      page.autoCrop = analyzePage(dst, state.paddingMm);
+      if (page.sideManual) page.autoCrop.isDesna = page.isDesna; // keep the manual assignment
+      else page.isDesna = page.autoCrop.isDesna;
+      const side = page.isDesna ? "desna" : "leva";
+      const master = state.sideMaster[side];
+      if (master) {
+        page.crop = fromPercentCrop(master, dst.width, dst.height);
+        page.sideLocked = true;
+      } else {
+        page.crop = computeCropWithSide(page.autoCrop._rawLeft, page.autoCrop._rawRight,
+          page.autoCrop._rawTop, page.autoCrop._rawBottom,
+          dst.width, dst.height, page.isDesna, state.paddingMm);
+        page.sideLocked = false;
+      }
+      page.manuallyEdited = false;
+      if (state.selectedId === page.id) requestEditorDraw();
+      renderThumbnails();
+    };
+
+    // ── Events: upload ───────────────────────────────────────────────────────
+    el.fileInput.addEventListener("change", e => handleFiles(Array.from(e.target.files)));
+    el.uploadSection.addEventListener("click", () => el.fileInput.click());
+    ["dragenter", "dragover"].forEach(evt => el.uploadSection.addEventListener(evt, e => {
+      e.preventDefault(); el.uploadSection.classList.add("dragover");
+    }));
+    ["dragleave", "drop"].forEach(evt => el.uploadSection.addEventListener(evt, e => {
+      e.preventDefault(); el.uploadSection.classList.remove("dragover");
+    }));
+    el.uploadSection.addEventListener("drop", e => handleFiles(Array.from(e.dataTransfer.files)));
+    document.addEventListener("dragover", e => e.preventDefault());
+    document.addEventListener("drop", e => { if (e.target !== el.uploadSection) e.preventDefault(); });
+
+    el.applyMasterBtn.addEventListener("click", () => {
+      const page = state.pages.find(p => p.id === state.selectedId);
+      if (!page) { setStatus("Select a page first."); return; }
+      state.masterProfile = toPercentCrop(page.crop, page.imageCanvas.width, page.imageCanvas.height);
+      let count = 0;
+      state.pages.forEach(p => {
+        if (p.id !== page.id && p.type !== "Skip" && !p.manuallyEdited) {
+          p.crop = fromPercentCrop(state.masterProfile, p.imageCanvas.width, p.imageCanvas.height);
+          p.sideLocked = true;
+          count++;
+        }
+      });
+      setStatus(`This crop applied to all pages (${count}), regardless of left/right.`);
+      renderThumbnails(); requestEditorDraw();
+    });
+
+    el.setPageSideBtn.addEventListener("click", () => {
+      const page = state.pages.find(p => p.id === state.selectedId);
+      if (!page) { setStatus("Select a page first."); return; }
+      const idx = state.pages.findIndex(p => p.id === state.selectedId);
+      el.sideModalInfo.textContent = `Selected page: ${idx+1} of ${state.pages.length}. This setting will apply from this page onward.`;
+      el.sideModal.classList.remove("hidden");
+    });
+    el.sideSetRightBtn.addEventListener("click", () => { el.sideModal.classList.add("hidden"); applyPageSideFrom(state.selectedId, true); renderThumbnails(); requestEditorDraw(); });
+    el.sideSetLeftBtn.addEventListener("click", () => { el.sideModal.classList.add("hidden"); applyPageSideFrom(state.selectedId, false); renderThumbnails(); requestEditorDraw(); });
+    el.sideCancelBtn.addEventListener("click", () => { el.sideModal.classList.add("hidden"); });
+
+    // ── Export resolution dialog ─────────────────────────────────────────────
+    function getDpiCandidates() {
+      return [
+        { dpi: 150, label: "150 DPI · draft" },
+        { dpi: 300, label: "300 DPI · archival", recommended: true },
+        { dpi: 600, label: "600 DPI · highest quality" }
+      ];
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + " KB";
+      return (bytes / 1024 / 1024).toFixed(1) + " MB";
+    }
+
+    // Approximate size for one (representative) page at a given DPI — actually
+    // renders, crops and JPEG-compresses the page through the same pipeline
+    // used by the real export.
+    async function estimatePageBytes(page, dpi) {
+      const out = await getExportCrop(page, dpi);
+      const ctx = out.getContext("2d");
+      if (isGrayscaleSelected()) toGrayscale(ctx, out.width, out.height);
+      const url = out.toDataURL("image/jpeg", 0.9);
+      return Math.round((url.length - url.indexOf(",") - 1) * 3 / 4);
+    }
+
+    async function openExportDialog() {
+      const valid = state.pages.filter(p => p.type !== "Skip");
+      if (!valid.length) { setStatus("No pages to export."); return; }
+      const candidates = getDpiCandidates();
+      const sample = valid[0];
+
+      el.dpiOptionList.innerHTML = candidates.map(c => `
+        <label class="dpi-option">
+          <input type="radio" name="dpiChoice" value="${c.dpi}" ${c.recommended ? "checked" : ""}>
+          <span class="dpi-option-label">${c.label}${c.recommended ? '<span class="dpi-option-recommended">Recommended</span>' : ''}</span>
+          <span class="dpi-option-size" data-dpi="${c.dpi}">calculating&hellip;</span>
+        </label>
+      `).join("");
+      el.exportModalBg.classList.remove("hidden");
+
+      for (const c of candidates) {
+        try {
+          const totalBytes = await estimatePageBytes(sample, c.dpi) * valid.length;
+          const sizeEl = el.dpiOptionList.querySelector(`.dpi-option-size[data-dpi="${c.dpi}"]`);
+          if (sizeEl) sizeEl.textContent = `~${formatBytes(totalBytes)}`;
+        } catch {
+          const sizeEl = el.dpiOptionList.querySelector(`.dpi-option-size[data-dpi="${c.dpi}"]`);
+          if (sizeEl) sizeEl.textContent = "?";
+        }
+      }
+    }
+
+    function closeExportDialog() { el.exportModalBg.classList.add("hidden"); }
+
+    el.exportBtn.addEventListener("click", () => openExportDialog());
+    el.exportCancelBtn.addEventListener("click", closeExportDialog);
+    el.exportModalBg.addEventListener("click", e => { if (e.target === el.exportModalBg) closeExportDialog(); });
+    el.exportConfirmBtn.addEventListener("click", () => {
+      const checked = el.dpiOptionList.querySelector('input[name="dpiChoice"]:checked');
+      state.exportDpi = checked ? parseInt(checked.value) : 300;
+      const format = document.querySelector('input[name="exportFormat"]:checked')?.value || "pdf";
+      closeExportDialog();
+      if (format === "zip") {
+        runZipExport();
+        return;
+      }
+      const valid = state.pages.filter(p => p.type !== "Skip");
+      el.fileStatsBox.textContent = `${valid.length} pages to export (${state.pages.length - valid.length} skipped) · export resolution: ${state.exportDpi} DPI`;
+      el.metaModal.classList.remove("hidden");
+    });
+
+    el.cancelMetaBtn.addEventListener("click", () => { el.metaModal.classList.add("hidden"); });
+
+    el.confirmMetaBtn.addEventListener("click", async () => {
+      el.metaModal.classList.add("hidden");
+      const valid = state.pages.filter(p => p.type !== "Skip");
+      if (!valid.length) { setStatus("No pages to export."); return; }
+      setLoading(true, "Generating PDF file...", 0.05);
+      const grayscale = isGrayscaleSelected();
+      const fitA4 = isA4Selected();
+      const dpi = state.exportDpi;
+      try {
+        let pdf = null;
+        for (let i = 0; i < valid.length; i++) {
+          setLoading(true, `Page ${i+1} / ${valid.length} (full quality)`, 0.05 + (i/valid.length)*0.9);
+          const p = valid[i];
+          const out = await getExportCrop(p, dpi);
+          const ctx = out.getContext("2d");
+          if (grayscale) toGrayscale(ctx, out.width, out.height);
+          const mmW = (out.width * 25.4) / dpi;
+          const mmH = (out.height * 25.4) / dpi;
+          const imgData = out.toDataURL("image/jpeg", 0.92);
+
+          let pageFormat, orientation, drawX = 0, drawY = 0, drawW = mmW, drawH = mmH;
+          if (fitA4) {
+            const fit = fitToA4(mmW, mmH);
+            pageFormat = [fit.pageW, fit.pageH]; orientation = fit.orientation;
+            drawW = fit.drawW; drawH = fit.drawH; drawX = fit.offsetX; drawY = fit.offsetY;
+          } else {
+            pageFormat = [mmW, mmH]; orientation = mmW > mmH ? "landscape" : "portrait";
+          }
+
+          if (i === 0) {
+            pdf = new jsPDF({ orientation, unit: "mm", format: pageFormat, compress: true });
+            pdf.setProperties({ title: el.titleInput.value || "", author: el.composerInput.value || "" });
+          } else {
+            pdf.addPage(pageFormat, orientation);
+          }
+          pdf.addImage(imgData, "JPEG", drawX, drawY, drawW, drawH, undefined, "FAST");
+        }
+        await new Promise(r => setTimeout(r, 30));
+        pdf.save(`${el.filenameInput.value || "manuscript"}.pdf`);
+      } catch (err) { alert("Error: " + err.message); }
+      setLoading(false);
+    });
+
+    async function runZipExport() {
+      const valid = state.pages.filter(p => p.type !== "Skip");
+      if (!valid.length) { setStatus("No pages to export."); return; }
+      setLoading(true, "Building ZIP archive...", 0.05);
+      try {
+        const zip = new JSZip();
+        for (let i = 0; i < valid.length; i++) {
+          setLoading(true, `Page ${i+1} / ${valid.length} (full quality)`, 0.05 + (i/valid.length)*0.9);
+          const p = valid[i];
+          const out = await getExportCrop(p, state.exportDpi);
+          const b64 = out.toDataURL("image/jpeg", 0.92).split(",")[1];
+          zip.file(`page_${String(p.pageNum).padStart(3,"0")}_${p.type.toLowerCase().replace(/ /g,"_")}.jpg`, b64, { base64: true });
+        }
+        const blob = await zip.generateAsync({ type: "blob" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "cropped_pages.zip"; a.click();
+      } catch (err) { alert("Error: " + err.message); }
+      setLoading(false);
+    }
+
+    el.clearAllBtn.addEventListener("click", () => {
+      state.pages = []; state.selectedId = null; state.masterProfile = null;
+      state.sideMaster = { desna: null, leva: null };
+      state.leadingNonMusicSeen = 0; state.firstMusicSeen = false;
+      el.fileInput.value = "";
+      setStatus("Load files to get started.");
+      renderThumbnails(); requestEditorDraw();
+    });
+
+    function setPaddingMm(mm) {
+      state.paddingMm = clamp(Math.round(Number(mm)) || 0, 0, 30);
+      el.paddingSlider.value = state.paddingMm;
+      el.paddingNumInput.value = state.paddingMm;
+      state.pages.forEach(p => {
+        if (p.manuallyEdited || p.sideLocked) return;
+        const a = p.autoCrop;
+        if (!a || a._rawRight == null) return;
+        p.crop = computeCropWithSide(a._rawLeft, a._rawRight, a._rawTop, a._rawBottom,
+          p.imageCanvas.width, p.imageCanvas.height, p.isDesna, state.paddingMm);
+      });
+      renderThumbnails(); requestEditorDraw();
+    }
+    el.paddingSlider.addEventListener("input", () => setPaddingMm(el.paddingSlider.value));
+    el.paddingNumInput.addEventListener("input", () => setPaddingMm(el.paddingNumInput.value));
+
+    el.cropperBox.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("resize", requestEditorDraw);
+
+    el.prevPageBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const idx = state.pages.findIndex(p => p.id === state.selectedId);
+      if (idx > 0) selectPage(state.pages[idx-1].id);
+    });
+    el.nextPageBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const idx = state.pages.findIndex(p => p.id === state.selectedId);
+      if (idx < state.pages.length-1) selectPage(state.pages[idx+1].id);
+    });
+
+    el.rotatePageBtn.addEventListener("click", () => { if (state.selectedId) window.rotatePage(state.selectedId); });
+    el.typeSelect.addEventListener("change", () => {
+      const page = state.pages.find(p => p.id === state.selectedId);
+      if (!page) return;
+      page.type = el.typeSelect.value;
+      requestEditorDraw();
+      renderThumbnails();
+    });
+
+    // ── Help bubbles (?) ──────────────────────────────────────────────────────
+    const HELP_TEXTS = {
+      currentPage: {
+        title: "Current page",
+        html: `<p>Each page is auto-classified as <strong>Music</strong>, <strong>Title page</strong>, <strong>Preface</strong> or <strong>Skip</strong> — you can override it here.</p>
+               <p><strong>Skip</strong> leaves the page out of the export entirely.</p>
+               <p><strong>Rotate 90°</strong> turns a sideways scan upright (also rotates it in the export).</p>`
+      },
+      margin: {
+        title: "Safety margin",
+        html: `<p>Extra breathing room kept around the detected content, in millimetres.</p>
+               <p>Larger values keep more of the surrounding paper; <strong>0</strong> crops tight to the ink.</p>
+               <p>Left- and right-hand pages automatically get a little more margin on the spine (inner) side, so facing pages stay symmetrical.</p>`
+      },
+      batch: {
+        title: "Batch tools",
+        html: `<p><strong>Apply this crop to all pages</strong> — copies the current page's crop onto every other page, regardless of side.</p>
+               <p><strong>Mark left/right page</strong> — tells the tool which side this page is; the margins mirror correctly and alternate automatically from there on.</p>
+               <p><strong>Delete all imported pages</strong> — clears everything and starts over.</p>`
+      }
+    };
+
+    let activeHelpIcon = null;
+
+    function positionHelpBubble(iconRect) {
+      const b = el.helpBubble;
+      const margin = 10;
+      const bw = b.offsetWidth, bh = b.offsetHeight;
+      // Prefer placing the bubble to the LEFT of the icon (toward screen center,
+      // since these controls live in the right panel). Fall back to the right.
+      let left = iconRect.left - bw - margin;
+      if (left < margin) left = iconRect.right + margin;
+      // Vertically align near the icon, then clamp fully inside the viewport so
+      // the bubble never forces horizontal or vertical scrolling.
+      let top = iconRect.top - 6;
+      left = clamp(left, margin, window.innerWidth - bw - margin);
+      top = clamp(top, margin, window.innerHeight - bh - margin);
+      b.style.left = left + "px";
+      b.style.top = top + "px";
+    }
+
+    function showHelp(icon) {
+      const key = icon.dataset.help;
+      const data = HELP_TEXTS[key];
+      if (!data) return;
+      el.helpBubble.innerHTML = `<h4>${data.title}</h4>${data.html}`;
+      el.helpBubble.classList.remove("hidden");
+      positionHelpBubble(icon.getBoundingClientRect());
+      icon.classList.add("active");
+      activeHelpIcon = icon;
+    }
+
+    function hideHelp() {
+      el.helpBubble.classList.add("hidden");
+      if (activeHelpIcon) activeHelpIcon.classList.remove("active");
+      activeHelpIcon = null;
+    }
+
+    document.querySelectorAll(".help-icon").forEach(icon => {
+      icon.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (activeHelpIcon === icon) { hideHelp(); return; }
+        showHelp(icon);
+      });
+    });
+    // Dismiss on any outside click, Escape, resize or scroll.
+    document.addEventListener("click", (e) => {
+      if (activeHelpIcon && !el.helpBubble.contains(e.target) && !e.target.classList.contains("help-icon")) hideHelp();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideHelp(); });
+    window.addEventListener("resize", () => { if (activeHelpIcon) positionHelpBubble(activeHelpIcon.getBoundingClientRect()); });
+  </script>
+</body>
+</html>

@@ -16,6 +16,7 @@ import Support from "./pages/Support";
 import NotFound from "./pages/NotFound";
 import EventDetail from "./pages/EventDetail";
 import MemberDetail from "./pages/MemberDetail";
+import Tools from "./pages/Tools";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/clani" element={<Members />} />
               <Route path="/dogodki" element={<Events />} />
               <Route path="/projekti" element={<Projects />} />
+              <Route path="/orodja" element={<Tools />} />
               <Route path="/galerija" element={<Gallery />} />
               <Route path="/podprite-nas" element={<Support />} />
               <Route path="*" element={<NotFound />} />

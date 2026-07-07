@@ -10,6 +10,7 @@ const Navigation = () => {
     { to: "/", label: "DOMOV" },
     { to: "/dogodki", label: "KONCERTI" },
     { to: "/projekti", label: "PROJEKTI IN IZOBRAŽEVANJA" },
+    { to: "/orodja", label: "ORODJA" },
     { to: "/clani", label: "ČLANI IN MENTORJI" },
     { to: "/galerija", label: "GALERIJA" },
     { to: "/o-nas", label: "O NAS" },
