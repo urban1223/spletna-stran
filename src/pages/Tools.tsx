@@ -7,21 +7,21 @@ const TOOLS = [
     title: "Pretvornik faksimilov",
     description:
       "Zdi se nam pomembno, da staro glasbo beremo in izvajamo iz originalnih zapisov ter faksimilov, saj nam ti ponujajo najbolj pristen vpogled v glasbeno misel tistega časa. Ker pa so originalni rokopisi v barvah kdaj neprijazni za tisk, smo razvili orodje, ki barvne skene pretvori v čiste, visokokontrastne črno-bele oblike, ki so bolj primerne za tiskanje.",
-    link: "/bw converter/",
+    link: "/bw-converter/",
   },
   {
     id: "uglasevalec",
     title: "Zgodovinski uglaševalec",
     description:
       "V preteklosti so glasbeniki inštrumente s tipkami uglaševali precej drugače kot današnji moderni klavir. Skozi stoletja so različni teoretiki razvili svoje sisteme uglasitev, da bi poudarili določene zvočne barve. Ker so kopije zgodovinskih inštrumentov danes grajene in igrane s tem ozirom, smo za lažje uglaševanje razvili aplikacijo, ki ponuja širok nabor zgodovinskih temperamentov in referenčnih višin.",
-    link: "/Historical tuner/",
+    link: "/Historical-tuner/",
   },
   {
     id: "obrezovalnik",
     title: "Obrezovalnik manuskriptov",
     description:
       "Rokopisi in faksimili, iz katerih se trudimo igrati, so ob digitalizaciji običajno skenirani z velikimi, nepotrebnimi robovi. Ti zavzamejo preveč prostora na zaslonu in niso prijazni, če bi želeli gradivo natisniti. Zato smo razvili preprosto orodje, s katerim lahko hitro in natančno obrežete ter poravnate strani rokopisov za lažje branje.",
-    link: "/manuscript cropper/",
+    link: "/manuscript-cropper/",
   },
   {
     id: "casovnice",
