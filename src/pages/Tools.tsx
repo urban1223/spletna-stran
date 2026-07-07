@@ -1,7 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 
-const TOOLS = [
+const TOOLS: {
+  id: string;
+  title: string;
+  description: string;
+  link: string;
+  external?: boolean;
+}[] = [
   {
     id: "pretvornik",
     title: "Pretvornik faksimilov",
@@ -28,7 +34,8 @@ const TOOLS = [
     title: "Časovnice skladateljev",
     description:
       "Vsak, ki se začne ukvarjati s staro glasbo, hitro spozna, da je ta svet veliko večji in bogatejši, kot se zdi na prvi pogled. Da bi dobili čim boljšo predstavo in širši vpogled v kronologijo skladateljev iz preteklosti, smo razvili interaktivno časovnico. Ta vam pomaga umestiti glasbenike v pravi zgodovinski kontekst in raziskati, kdo je ustvarjal v istem času.",
-    link: "/skladatelji/",
+    link: "https://timelines.nova-akademija.si/",
+    external: true,
   },
 ];
 
@@ -60,6 +67,9 @@ const Tools = () => {
                 <div className="mt-8 pt-6 border-t border-border">
                   <a
                     href={tool.link}
+                    {...(tool.external
+                      ? { target: "_blank", rel: "noopener noreferrer" }
+                      : {})}
                     className="inline-flex items-center gap-2 text-accent font-semibold hover:opacity-80 transition-opacity"
                   >
                     Odpri
