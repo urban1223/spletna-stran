@@ -13,7 +13,7 @@ const TOOLS: {
     id: "pretvornik",
     title: "Pretvornik faksimilov",
     description:
-      "Zdi se nam pomembno, da staro glasbo beremo in izvajamo iz originalnih zapisov ter faksimilov, saj nam ti ponujajo najbolj pristen vpogled v glasbeno misel tistega časa. Ker pa so originalni rokopisi v barvah kdaj neprijazni za tisk, smo razvili orodje, ki barvne skene pretvori v čiste, visokokontrastne črno-bele oblike, ki so bolj primerne za tiskanje.",
+      "Zdi se nam pomembno, da staro glasbo beremo in izvajamo iz originalnih zapisov ter faksimilov, saj nam ti ponujajo najbolj pristen vpogled v glasbeno misel tistega časa. Ker pa so originalni rokopisi v barvah kdaj neprijazni za tisk, smo razvili orodje, ki barvne skene pretvori v čiste, visokokontrastne črno-bele oblike, ki so bolj primerne za tiskanje. Aplikacija je primerna za uporabo na računalniku.",
     link: "/bw-converter/",
   },
   {
@@ -27,7 +27,7 @@ const TOOLS: {
     id: "obrezovalnik",
     title: "Obrezovalnik manuskriptov",
     description:
-      "Rokopisi in faksimili, iz katerih se trudimo igrati, so ob digitalizaciji običajno skenirani z velikimi, nepotrebnimi robovi. Ti zavzamejo preveč prostora na zaslonu in niso prijazni, če bi želeli gradivo natisniti. Zato smo razvili preprosto orodje, s katerim lahko hitro in natančno obrežete ter poravnate strani rokopisov za lažje branje.",
+      "Rokopisi in faksimili, iz katerih se trudimo igrati, so ob digitalizaciji običajno skenirani z velikimi, nepotrebnimi robovi. Ti zavzamejo preveč prostora na zaslonu in niso prijazni, če bi želeli gradivo natisniti. Zato smo razvili preprosto orodje, s katerim lahko hitro in natančno obrežete ter poravnate strani rokopisov za lažje branje. Aplikacija je primerna za uporabo na računalniku.",
     link: "/manuscript-cropper/",
   },
   {
@@ -40,9 +40,9 @@ const TOOLS: {
   },
   {
     id: "prstni-redi",
-    title: "Prstni redi za traverso",
+    title: "Tabela za prstne rede na pihalih",
     description:
-      "Prstni redi na baročni prečni flavti (traverso) se od tona do tona in od inštrumenta do inštrumenta pogosto razlikujejo, zato je koristno imeti pri roki lastno referenčno tabelo. S tem preprostim orodjem sestavite prstni red za posamezni ton, ga poimenujete in shranite, na koncu pa celotno zbirko izvozite ter natisnete. Vaši prstni redi ostanejo shranjeni v brskalniku, orodje pa deluje tudi brez internetne povezave.",
+      "Prstni redi se na zgodovinskih pihalih lahko razlikujejo od inštrumenta do inštrumenta, zato je koristno sestaviti lastno referenčno tabelo. Orodje, ki smo ga razvili, lahko sestavite prstni red za posamezni ton, ga poimenujete in shranite, na koncu pa celotno zbirko izvozite ter natisnete. Aplikacijo lahko namestite tudi na vaš telefon.",
     link: "/prstni-redi/",
   },
 ];
