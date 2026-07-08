@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prstni-redi-v1';
+const CACHE_NAME = 'prstni-redi-v2';
 
 // Vse datoteke so lokalne — aplikacija deluje popolnoma brez povezave.
 const CORE_ASSETS = [
