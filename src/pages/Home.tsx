@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import Seo from "@/components/Seo";
 import urbanImage from "@/assets/members/urban-klancar.jpg";
 import barbaraImage from "@/assets/members/barbara-kepic.jpg";
 import lauraImage from "@/assets/members/laura-calligaris.jpg";
@@ -31,7 +32,10 @@ const Home = () => {
 
   return (
     <div className="min-h-screen">
-
+      <Seo
+        title="Društvo za širjenje stare glasbe"
+        path="/"
+      />
 
       {/* Hero Section */}
       <section 

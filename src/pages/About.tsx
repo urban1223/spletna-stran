@@ -1,10 +1,16 @@
 import { Card } from "@/components/ui/card";
+import Seo from "@/components/Seo";
 import { Mail, MapPin, Instagram, Facebook, Youtube } from "lucide-react";
 import { SOCIAL_MEDIA, CONTACT } from "@/lib/constants";
 
 const About = () => {
   return (
     <div className="min-h-screen py-20">
+      <Seo
+        title="O nas"
+        path="/o-nas"
+        description="Spoznajte Novo akademijo – društvo za širjenje stare glasbe. Naše poslanstvo, vizija in zgodovinsko ozaveščeno izvajanje glasbe 16.–18. stoletja."
+      />
       <div className="container mx-auto px-4">
         <h1 className="text-5xl font-bold mb-16 text-accent text-center">
           O NAS

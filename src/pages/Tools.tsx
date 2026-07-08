@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
+import Seo from "@/components/Seo";
 
 const TOOLS: {
   id: string;
@@ -37,11 +38,23 @@ const TOOLS: {
     link: "https://timelines.nova-akademija.si/",
     external: true,
   },
+  {
+    id: "prstni-redi",
+    title: "Prstni redi za traverso",
+    description:
+      "Prstni redi na baročni prečni flavti (traverso) se od tona do tona in od inštrumenta do inštrumenta pogosto razlikujejo, zato je koristno imeti pri roki lastno referenčno tabelo. S tem preprostim orodjem sestavite prstni red za posamezni ton, ga poimenujete in shranite, na koncu pa celotno zbirko izvozite ter natisnete. Vaši prstni redi ostanejo shranjeni v brskalniku, orodje pa deluje tudi brez internetne povezave.",
+    link: "/prstni-redi/",
+  },
 ];
 
 const Tools = () => {
   return (
     <div className="min-h-screen py-20">
+      <Seo
+        title="Naša orodja"
+        path="/orodja"
+        description="Brezplačna spletna orodja Nove akademije za glasbenike stare glasbe: pretvornik faksimilov, zgodovinski uglaševalec, obrezovalnik manuskriptov, časovnice skladateljev in prstni redi."
+      />
       <div className="container mx-auto px-4">
         <h1 className="text-5xl font-bold mb-16 text-accent text-center">
           NAŠA ORODJA

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Seo from "@/components/Seo";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ContactFormDialog from "@/components/ContactFormDialog";
@@ -10,6 +11,11 @@ const Projects = () => {
 
   return (
     <div className="min-h-screen py-20">
+      <Seo
+        title="Projekti"
+        path="/projekti"
+        description="Projekti Nove akademije – raziskovanje, izobraževanje in izvajanje zgodovinsko ozaveščene stare glasbe."
+      />
       <div className="container mx-auto px-4">
         <h1 className="text-5xl font-bold mb-16 text-accent text-center">
           PROJEKTI IN IZOBRAŽEVANJA

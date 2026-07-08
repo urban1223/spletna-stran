@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Seo from "@/components/Seo";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -80,6 +81,11 @@ const Members = () => {
 
   return (
     <div className="min-h-screen py-20">
+      <Seo
+        title="Člani in mentorji"
+        path="/clani"
+        description="Člani in mentorji ansambla Nova akademija – glasbeniki, ki izvajajo staro glasbo na historičnih inštrumentih."
+      />
       <div className="container mx-auto px-4">
         <h1 className="text-5xl font-bold mb-6 text-accent text-center">
           ČLANI IN MENTORJI DRUŠTVA

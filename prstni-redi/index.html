@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Nova akademija — Prstni redi</title>
+    <meta name="description" content="Interaktivna referenčna tabela prstnih redov za traverso. Sestavi, shrani in natisni svoje prstne rede.">
+
+    <!-- PWA povezave -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#141a24">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Prstni redi">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <link rel="stylesheet" href="shared-style.css">
+    <link rel="stylesheet" href="style.css">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker pripravljen!'))
+                    .catch(err => console.error('Napaka pri SW:', err));
+            });
+        }
+    </script>
+</head>
+<body class="themed-bg">
+<div class="wrap">
+    <header class="page-header">
+        <h1>Prstni redi — traverso</h1>
+        <p>osebna referenčna tabela</p>
+    </header>
+
+    <div class="builder panel">
+        <div class="flute">
+            <div class="holes-row">
+                <div id="holesRow"></div>
+                <div class="keyflap" id="keyflap"></div>
+            </div>
+        </div>
+        <div class="name-row">
+            <input type="text" id="noteName" placeholder="ime tona (npr. d', fis'')" />
+            <button id="addBtn" title="dodaj">+</button>
+        </div>
+        <div class="hint">klik: odprto → zaprto → polodprto · tipkovnica: številka + / za polodprto</div>
+    </div>
+
+    <div class="list" id="list"></div>
+
+    <div class="toolbar">
+        <button class="export-btn secondary" id="exportBtn">izvozi tabelo</button>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

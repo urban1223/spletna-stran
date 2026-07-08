@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import Seo from "@/components/Seo";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
@@ -14,6 +15,11 @@ const Support = () => {
 
   return (
     <div className="min-h-screen py-20">
+      <Seo
+        title="Podprite nas"
+        path="/podprite-nas"
+        description="Podprite Novo akademijo – postanite član ali donator in pomagajte širiti staro glasbo v Sloveniji."
+      />
       <div className="container mx-auto px-4">
         <h1 className="text-5xl font-bold mb-6 text-accent text-center">
           PODPRITE NAS

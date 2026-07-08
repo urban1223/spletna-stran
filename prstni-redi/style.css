@@ -1,0 +1,228 @@
+/* ==========================================================================
+   PRSTNI REDI — traverso
+   Samo postavitev/specifika; barve, tipografija in gumbi so v shared-style.css.
+   ========================================================================== */
+
+.wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 16px 80px;
+}
+
+/* ==================== Glava ==================== */
+
+.page-header {
+    text-align: center;
+    margin-bottom: 36px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 22px;
+}
+.page-header h1 {
+    font-size: 1.9rem;
+    letter-spacing: 0.02em;
+    margin: 0 0 8px;
+}
+.page-header p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ==================== Sestavljalnik ==================== */
+
+.builder {
+    margin-bottom: 32px;
+}
+
+.flute {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 22px;
+}
+
+.holes-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 24px 32px;
+    background: var(--bg);
+    border-radius: 40px;
+    border: 1px solid var(--border-color);
+}
+
+#holesRow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.hole {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 2px solid var(--amber);
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+}
+.hole:hover { box-shadow: 0 0 8px var(--amber); }
+.hole.closed { background: var(--amber); }
+.hole.half { background: linear-gradient(90deg, var(--amber) 50%, transparent 50%); }
+.hole.gap-before { margin-top: 22px; }
+.hole::after {
+    content: attr(data-n);
+    position: absolute;
+    top: 50%;
+    left: -26px;
+    transform: translateY(-50%);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+
+.keyflap {
+    width: 26px;
+    height: 46px;
+    border-radius: 6px;
+    border: 2px solid var(--amber);
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    padding: 0;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.keyflap:hover { box-shadow: 0 0 8px var(--amber); }
+.keyflap.closed { background: var(--amber); }
+.keyflap::after {
+    content: "7";
+    position: absolute;
+    top: 50%;
+    left: -26px;
+    transform: translateY(-50%);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.hint {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 30px;
+    font-style: italic;
+}
+
+/* ==================== Vnos imena ==================== */
+
+.name-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+.name-row input {
+    flex: 1;
+}
+.name-row button {
+    font-size: 1.3rem;
+    line-height: 1;
+    width: 46px;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+/* ==================== Seznam shranjenih ==================== */
+
+.list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 10px;
+}
+
+.entry {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 4px 8px;
+    min-width: 0;
+    transition: border-color 0.2s;
+}
+.entry:hover { border-color: var(--amber); }
+
+.entry-name {
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--amber);
+    text-align: center;
+    word-break: break-word;
+}
+
+.mini-holes {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.mini-hole {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 1.5px solid var(--amber);
+}
+.mini-hole.closed { background: var(--amber); }
+.mini-hole.half { background: linear-gradient(90deg, var(--amber) 50%, transparent 50%); }
+.mini-hole.gap-before { margin-top: 8px; }
+.mini-key {
+    width: 9px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1.5px solid var(--amber);
+    margin-top: 4px;
+}
+.mini-key.closed { background: var(--amber); }
+
+.delete-btn {
+    margin-top: 8px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 5px;
+    box-shadow: none;
+    font-weight: normal;
+}
+.delete-btn:hover {
+    color: var(--red);
+    background: var(--bg);
+    box-shadow: none;
+}
+
+/* ==================== Orodna vrstica ==================== */
+
+.toolbar {
+    display: flex;
+    justify-content: center;
+    margin: 28px 0 10px;
+}
+.export-btn {
+    letter-spacing: 0.03em;
+}
+
+.empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 24px 0;
+    font-size: 0.9rem;
+}

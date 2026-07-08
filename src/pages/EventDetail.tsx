@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Music, ArrowLeft, Ticket } from "lucide-react";
 import { allEvents } from "@/data/events-data";
 import ReservationFormDialog from "@/components/ReservationFormDialog";
+import Seo from "@/components/Seo";
 
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -11,52 +12,6 @@ const EventDetail = () => {
   const [reservationOpen, setReservationOpen] = useState(false);
 
   const event = allEvents.find((e) => e.slug === slug);
-
-  useEffect(() => {
-    if (event) {
-      document.title = `${event.title} – Nova akademija`;
-
-      const meta = document.querySelector('meta[name="description"]');
-      if (meta) {
-        meta.setAttribute(
-          "content",
-          `${event.title} – ${event.date}, ${event.location}. Program: ${event.program}. ${event.admission ?? ""}`
-        );
-      }
-
-      // JSON-LD structured data
-      const script = document.createElement("script");
-      script.type = "application/ld+json";
-      script.id = "event-jsonld";
-      script.text = JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "MusicEvent",
-        "name": event.title,
-        "description": `${event.description}. Program: ${event.program}`,
-        "startDate": `${event.isoDate}T${event.time}:00`,
-        "location": {
-          "@type": "Place",
-          "name": event.location,
-          "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "Ljubljana",
-            "addressCountry": "SI"
-          }
-        },
-        "organizer": {
-          "@type": "Organization",
-          "name": "Nova akademija",
-          "url": "https://nova-akademija.si"
-        },
-        "isAccessibleForFree": event.admission?.toLowerCase().includes("prost") ?? false,
-      });
-      document.head.appendChild(script);
-
-      return () => {
-        document.getElementById("event-jsonld")?.remove();
-      };
-    }
-  }, [event]);
 
   if (!event) {
     return (
@@ -72,6 +27,35 @@ const EventDetail = () => {
 
   return (
     <div className="min-h-screen py-20">
+      <Seo
+        title={event.title}
+        path={`/dogodki/${event.slug}`}
+        type="article"
+        description={`${event.title} – ${event.date}, ${event.location}. Program: ${event.program}. ${event.admission ?? ""}`.trim()}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "MusicEvent",
+          name: event.title,
+          description: `${event.description}. Program: ${event.program}`,
+          startDate: `${event.isoDate}T${event.time}:00`,
+          location: {
+            "@type": "Place",
+            name: event.location,
+            address: {
+              "@type": "PostalAddress",
+              addressLocality: "Ljubljana",
+              addressCountry: "SI",
+            },
+          },
+          organizer: {
+            "@type": "Organization",
+            name: "Nova akademija",
+            url: "https://nova-akademija.si",
+          },
+          isAccessibleForFree:
+            event.admission?.toLowerCase().includes("prost") ?? false,
+        }}
+      />
       <div className="container mx-auto px-4 max-w-2xl">
 
         {/* Nazaj */}

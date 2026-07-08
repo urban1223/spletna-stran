@@ -9,7 +9,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "serve": "vite serve"
+    "serve": "vite serve",
+    "sync:styles": "node scripts/sync-shared-style.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

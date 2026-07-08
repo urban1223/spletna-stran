@@ -1,9 +1,9 @@
-import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { members } from "@/data/members-data";
+import Seo from "@/components/Seo";
 
 import urbanImage from "@/assets/members/urban-klancar.jpg";
 import lauraImage from "@/assets/members/laura-calligaris.jpg";
@@ -51,43 +51,6 @@ const MemberDetail = () => {
 
   const member = members.find((m) => m.slug === slug);
 
-  useEffect(() => {
-    if (member) {
-      document.title = `${member.name} – Nova akademija`;
-
-      const meta = document.querySelector('meta[name="description"]');
-      if (meta) {
-        meta.setAttribute(
-          "content",
-          `${member.name} – ${member.role}. Inštrumenti: ${member.instruments}. ${member.shortBio}`
-        );
-      }
-
-      // JSON-LD structured data
-      const script = document.createElement("script");
-      script.type = "application/ld+json";
-      script.id = "member-jsonld";
-      script.text = JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "Person",
-        "name": member.name,
-        "description": member.shortBio,
-        "jobTitle": member.role,
-        "memberOf": {
-          "@type": "Organization",
-          "name": "Nova akademija",
-          "url": "https://nova-akademija.si"
-        },
-        "url": `https://nova-akademija.si/clani/${member.slug}`,
-      });
-      document.head.appendChild(script);
-
-      return () => {
-        document.getElementById("member-jsonld")?.remove();
-      };
-    }
-  }, [member]);
-
   if (!member) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6">
@@ -105,6 +68,25 @@ const MemberDetail = () => {
 
   return (
     <div className="min-h-screen py-20">
+      <Seo
+        title={member.name}
+        path={`/clani/${member.slug}`}
+        type="profile"
+        description={`${member.name} – ${member.role}. Inštrumenti: ${member.instruments}. ${member.shortBio}`}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Person",
+          name: member.name,
+          description: member.shortBio,
+          jobTitle: member.role,
+          memberOf: {
+            "@type": "Organization",
+            name: "Nova akademija",
+            url: "https://nova-akademija.si",
+          },
+          url: `https://nova-akademija.si/clani/${member.slug}`,
+        }}
+      />
       <div className="container mx-auto px-4 max-w-2xl">
 
         {/* Nazaj */}

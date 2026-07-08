@@ -1,5 +1,6 @@
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
+import Seo from "@/components/Seo";
 
 const NotFound = () => {
   const location = useLocation();
@@ -10,6 +11,7 @@ const NotFound = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center">
+      <Seo title="Stran ni najdena" noindex />
       <div className="text-center">
         <h1 className="mb-4 text-6xl font-bold text-accent">404</h1>
         <p className="mb-6 text-xl text-muted-foreground">Stran ni bila najdena</p>

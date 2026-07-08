@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Seo from "@/components/Seo";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,11 @@ const Gallery = () => {
 
   return (
     <div className="min-h-screen py-20">
+      <Seo
+        title="Galerija"
+        path="/galerija"
+        description="Fotogalerija koncertov in dogodkov ansambla Nova akademija."
+      />
       <div className="container mx-auto px-4">
         <h1 className="text-5xl font-bold mb-16 text-accent text-center">
           GALERIJA
