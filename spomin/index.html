@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Nova akademija — Glasbeni spomin</title>
+    <meta name="description" content="Igra spomin s skladatelji, inštrumenti in pojmi stare glasbe. Igraj sam ali prek spleta izzovi prijatelja.">
+
+    <!-- PWA povezave -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#141a24">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Spomin">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <link rel="stylesheet" href="shared-style.css">
+    <link rel="stylesheet" href="style.css">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker ready!'))
+                    .catch(err => console.error('SW error:', err));
+            });
+        }
+    </script>
+</head>
+<body class="themed-bg">
+<div class="wrap">
+    <header class="page-header">
+        <h1>Glasbeni spomin</h1>
+        <p>skladatelji · inštrumenti · pojmi stare glasbe</p>
+    </header>
+
+    <!-- ===== Meni ===== -->
+    <section class="panel screen" id="menuScreen">
+        <div class="field">
+            <label for="nameInput">Tvoje ime</label>
+            <input type="text" id="nameInput" maxlength="20" placeholder="npr. Barbara" autocomplete="nickname">
+        </div>
+
+        <div class="field">
+            <label>Velikost igre</label>
+            <div class="size-row" id="sizeRow">
+                <button type="button" class="size-btn" data-pairs="8">8 parov</button>
+                <button type="button" class="size-btn active" data-pairs="12">12 parov</button>
+                <button type="button" class="size-btn" data-pairs="16">16 parov</button>
+            </div>
+        </div>
+
+        <div class="menu-actions">
+            <button type="button" id="soloBtn">Igraj sam</button>
+            <button type="button" id="createBtn">Ustvari igro za dva</button>
+            <button type="button" class="secondary" id="openJoinBtn">Pridruži se s kodo</button>
+        </div>
+        <p class="status-msg hidden" id="menuStatus"></p>
+    </section>
+
+    <!-- ===== Pridružitev ===== -->
+    <section class="panel screen hidden" id="joinScreen">
+        <button type="button" class="link-btn" id="joinBackBtn">← nazaj</button>
+        <h2 class="screen-title">Pridruži se igri</h2>
+        <div class="field">
+            <label for="codeInput">Koda igre</label>
+            <input type="text" id="codeInput" maxlength="4" placeholder="npr. KLMN" autocapitalize="characters" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="menu-actions">
+            <button type="button" id="joinBtn">Pridruži se</button>
+        </div>
+        <p class="status-msg hidden" id="joinStatus"></p>
+    </section>
+
+    <!-- ===== Čakalnica ===== -->
+    <section class="panel screen hidden" id="lobbyScreen">
+        <h2 class="screen-title">Igra je pripravljena!</h2>
+        <p class="lobby-hint">Prijatelju pošlji kodo ali povezavo — igra se začne, ko se pridruži.</p>
+        <div class="lobby-code" id="lobbyCode" title="Klikni za kopiranje kode"></div>
+        <div class="menu-actions">
+            <button type="button" class="secondary" id="shareBtn">Kopiraj povezavo</button>
+            <button type="button" class="secondary" id="cancelLobbyBtn">Prekliči</button>
+        </div>
+        <p class="waiting-msg">Čakam nasprotnika<span class="dots"></span></p>
+        <p class="status-msg hidden" id="lobbyStatus"></p>
+    </section>
+
+    <!-- ===== Igra ===== -->
+    <section class="screen hidden" id="gameScreen">
+        <div class="status-bar" id="statusBar"></div>
+        <p class="turn-hint" id="turnHint"></p>
+        <div class="board" id="board"></div>
+        <div class="game-actions">
+            <button type="button" class="secondary btn-sm" id="leaveBtn">Zapusti igro</button>
+        </div>
+    </section>
+</div>
+
+<!-- ===== Rezultat ===== -->
+<div class="modal-bg hidden" id="resultModal">
+    <div class="modal-content result-content">
+        <h2 id="resultTitle">Konec igre!</h2>
+        <p id="resultText"></p>
+        <div class="menu-actions">
+            <button type="button" id="rematchBtn">Nova igra</button>
+            <button type="button" class="secondary" id="resultLeaveBtn">Nazaj na meni</button>
+        </div>
+    </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

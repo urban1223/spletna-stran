@@ -283,4 +283,11 @@
     <priority>0.5</priority>
   </url>
 
+  <url>
+    <loc>https://nova-akademija.si/spomin/</loc>
+    <lastmod>2026-07-09</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
 </urlset>
