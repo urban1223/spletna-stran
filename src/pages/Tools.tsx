@@ -39,13 +39,6 @@ const TOOLS: {
     external: true,
   },
   {
-    id: "spomin",
-    title: "Glasbeni spomin",
-    description:
-      "Tudi pri stari glasbi ne sme manjkati igrivost! Za trenutke sprostitve smo pripravili igro spomin, v kateri iščete pare skladateljev, inštrumentov in glasbenih pojmov iz sveta stare glasbe. Igrate lahko sami, še bolj zabavno pa je, če prek spleta izzovete prijatelja: ustvarite igro, mu pošljete kodo in preverite, kdo si zapomni več. Aplikacijo lahko namestite tudi na vaš telefon.",
-    link: "/spomin/",
-  },
-  {
     id: "prstni-redi",
     title: "Tabela za prstne rede na pihalih",
     description:
@@ -60,7 +53,7 @@ const Tools = () => {
       <Seo
         title="Naša orodja"
         path="/orodja"
-        description="Brezplačna spletna orodja Nove akademije za glasbenike stare glasbe: pretvornik faksimilov, zgodovinski uglaševalec, obrezovalnik manuskriptov, časovnice skladateljev, prstni redi in glasbeni spomin."
+        description="Brezplačna spletna orodja Nove akademije za glasbenike stare glasbe: pretvornik faksimilov, zgodovinski uglaševalec, obrezovalnik manuskriptov, časovnice skladateljev in prstni redi."
       />
       <div className="container mx-auto px-4">
         <h1 className="text-5xl font-bold mb-16 text-accent text-center">
