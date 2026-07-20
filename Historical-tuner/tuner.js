@@ -10,6 +10,12 @@ function initTuner(config) {
     let activeOscs = {};
     let noteOctaves = new Array(noteNames.length).fill(3);
 
+    // Dial geometry: a ±25-cent sweep mapped onto ±50° of needle travel.
+    // Needle physics below stay in cents; only the rendered angle is scaled,
+    // so the finer dial does not make the motion any more nervous.
+    const DEG_PER_CENT = 2;
+    const DIAL_RANGE_CENTS = 25;
+
     // Analog flow-mode variables and needle physics
     let currentNeedleAngle = 0;
     let targetCents = 0;
@@ -30,9 +36,8 @@ function initTuner(config) {
     let idxCandidate = 0;
     let idxAgreeCount = 0;
 
-    let pitchHistory = new Array(5).fill(null);
+    let pitchHistory = new Array(3).fill(null);
     let pitchHistIdx = 0;
-    let smoothedTarget = 0;
 
     const els = {
         aRef: document.getElementById('a-ref'),
@@ -51,16 +56,18 @@ function initTuner(config) {
     };
 
     function initMarkers() {
-        for (let i = -50; i <= 50; i += 10) {
+        // Sparse ClearTune-style scale — five reference marks read at a glance
+        for (const c of [-25, -10, 0, 10, 25]) {
+            const deg = c * DEG_PER_CENT;
             const m = document.createElement('div');
-            m.className = 'marker' + (i === 0 ? ' zero' : '');
-            m.style.transform = `translateX(-50%) rotate(${i}deg) translateY(-165px)`;
+            m.className = 'marker' + (c === 0 ? ' zero' : '');
+            m.style.transform = `translateX(-50%) rotate(${deg}deg) translateY(-165px)`;
             els.markers.appendChild(m);
 
             const l = document.createElement('div');
             l.className = 'marker-label';
-            l.innerText = i === 0 ? "0" : (i > 0 ? "+" + i : i);
-            l.style.transform = `translateX(-50%) rotate(${i}deg) translateY(-135px)`;
+            l.innerText = c === 0 ? "0" : (c > 0 ? "+" + c : c);
+            l.style.transform = `translateX(-50%) rotate(${deg}deg) translateY(-135px)`;
             els.markers.appendChild(l);
         }
     }
@@ -200,7 +207,11 @@ function initTuner(config) {
         }
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         try {
-            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: {
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false
+            }});
             const source = audioCtx.createMediaStreamSource(micStream);
 
             // Highpass first — removes sub-40Hz rumble (handling noise, HVAC,
@@ -215,7 +226,7 @@ function initTuner(config) {
             lowPassFilter.frequency.setValueAtTime(3500, audioCtx.currentTime);
 
             analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 8192;
+            analyser.fftSize = 4096;
 
             source.connect(highPassFilter);
             highPassFilter.connect(lowPassFilter);
@@ -275,15 +286,23 @@ function initTuner(config) {
 
         if (maxP <= 0 || maxP >= n - 1) return -1;
 
-        // Octave correction — instruments with a strong 2nd harmonic (harpsichord,
-        // oboe, cornetto) can make the algorithm lock onto the harmonic's period
-        // instead of the true fundamental. If the period at double the lag (half
-        // the frequency) is nearly as strong, it is almost certainly the real
-        // fundamental, so prefer it.
-        const fundamentalP = maxP * 2;
-        if (fundamentalP < n - 1 && correlations[fundamentalP] > maxV * 0.90) {
-            maxP = fundamentalP;
-            maxV = correlations[fundamentalP];
+        // Octave disambiguation — every multiple of the true period produces a
+        // nearly equally strong correlation peak, and on sustained harmonic-rich
+        // tones (clavichord, harpsichord) the peak at DOUBLE the true period can
+        // win outright, reading an octave too low. Correlation at HALF the true
+        // period, by contrast, is weak unless even harmonics utterly dominate.
+        // So: if a nearly-as-strong peak exists at half the winning lag, the
+        // shorter period is the real fundamental — prefer it.
+        const halfP = Math.round(maxP / 2);
+        if (halfP > d) {
+            let hV = -1, hP = -1;
+            for (let i = Math.max(d, halfP - 3); i <= halfP + 3; i++) {
+                if (correlations[i] > hV) { hV = correlations[i]; hP = i; }
+            }
+            if (hV > maxV * 0.85) {
+                maxP = hP;
+                maxV = hV;
+            }
         }
 
         // Require sufficient confidence — rejects noise and harmonic aliases
@@ -313,6 +332,9 @@ function initTuner(config) {
         let freq = autoCorrelate(buffer, audioCtx.sampleRate);
 
         if (freq > 0 && isFinite(freq)) {
+            // A fresh attack after a pause should show its note immediately —
+            // the anti-flicker hysteresis only matters mid-stream
+            const freshAttack = idleShown || silenceMs > 200;
             silenceMs = 0;
             idleShown = false;
 
@@ -348,7 +370,7 @@ function initTuner(config) {
                 idxCandidate = closestIdx;
                 idxAgreeCount = 1;
             }
-            if (idxAgreeCount >= 3) displayedIdx = closestIdx;
+            if (freshAttack || idxAgreeCount >= 2) displayedIdx = closestIdx;
 
             els.hz.textContent = freq.toFixed(2) + " Hz";
             els.note.textContent = noteNames[displayedIdx];
@@ -371,25 +393,19 @@ function initTuner(config) {
             }
         }
 
-        let diff = Math.abs(targetCents - smoothedTarget);
-        let speed = diff > 15 ? 0.35 : 0.10;
-        smoothedTarget += (targetCents - smoothedTarget) * speed * dt;
-        currentNeedleAngle += (smoothedTarget - currentNeedleAngle) * 0.60 * dt;
+        let d = targetCents - currentNeedleAngle;
+        let alpha = Math.min(1, 0.14 + Math.abs(d) * 0.02);
+        currentNeedleAngle += d * Math.min(1, alpha * dt);
 
         if (Math.abs(currentNeedleAngle) < 0.05) currentNeedleAngle = 0;
 
-        let displayAngle = Math.max(-50, Math.min(50, currentNeedleAngle));
+        const maxDeg = DIAL_RANGE_CENTS * DEG_PER_CENT;
+        let displayAngle = Math.max(-maxDeg, Math.min(maxDeg, currentNeedleAngle * DEG_PER_CENT));
         els.needle.style.transform = `translateX(-50%) rotate(${displayAngle}deg)`;
 
-        if (Math.abs(currentNeedleAngle) <= 2.0) {
-            els.note.style.color = "var(--green)";
-            els.needle.style.background = "var(--green)";
-            els.needle.style.boxShadow = "0 0 15px var(--green)";
-        } else {
-            els.note.style.color = "var(--amber)";
-            els.needle.style.background = "var(--amber)";
-            els.needle.style.boxShadow = "0 0 10px var(--amber)";
-        }
+        const inTune = Math.abs(currentNeedleAngle) <= 2.0;
+        els.needle.classList.toggle('in-tune', inTune);
+        els.note.classList.toggle('in-tune', inTune);
 
         els.cents.textContent =
             (currentNeedleAngle > 0 ? "+" : "") + currentNeedleAngle.toFixed(1) + " ¢";
