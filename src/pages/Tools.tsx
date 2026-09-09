@@ -21,7 +21,8 @@ const TOOLS: {
     title: "Zgodovinski uglaševalec",
     description:
       "V preteklosti so glasbeniki inštrumente s tipkami uglaševali precej drugače kot današnji moderni klavir. Skozi stoletja so različni teoretiki razvili svoje sisteme uglasitev, da bi poudarili določene zvočne barve. Ker so kopije zgodovinskih inštrumentov danes grajene in igrane s tem ozirom, smo za lažje uglaševanje razvili aplikacijo, ki ponuja širok nabor zgodovinskih temperamentov in referenčnih višin.",
-    link: "/Historical-tuner/",
+    link: "https://historical-tunings.nova-akademija.si/",
+    external: true,
   },
   {
     id: "obrezovalnik",
