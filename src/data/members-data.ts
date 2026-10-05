@@ -168,6 +168,24 @@ export const members: Member[] = [
 
   Nova akademija ga je spomladi povabila k sodelovanju pri izvedbi dveh koncertov, ki sta uspešno zazvenela v Radovljici in v ljubljanski stolnici.`
   },
+    {
+    slug: "vesna-gostic",
+    name: "Vesna Gostič",
+    role: "Glasbenica",
+    instruments: "Violina, baročna violina",
+    imageKey: "vesna-gostic",
+    isMentor: false,
+    shortBio: "Na Akademiji za glasbo v Ljubljani (AG LJ) je študirala violino pri prof. Vasiliju Meljnikovu, leta 2023 diplomirala, poleti 2026 pa magistrirala na Univerzi Mozarteum Salzburg (MOZ) pri priv.doz. Anneliese-Clare Gahl. V času magistrskega študija se je izpopolnjevala tudi na področju baročne violine.",
+    fullBio: `Vesna Gostič (2001), rojena v Ljubljani, je po zaključku izobraževanja na GCEW in Konservatoriju za glasbo in balet v Ljubljani pri prof. Roku Zgoncu nadaljevala študij violine na Akademiji za glasbo v Ljubljani v razredu prof. Vasilija Meljnikova, kjer je diplomirala leta 2023. Na Univerzi Mozarteum v Salzburgu je poleti 2026 magistrirala pod mentorstvom priv.doz. Anneliese-Clare Gahl.
+
+  Po uspešni avdiciji na Akademiji za glasbo v Ljubljani je Vesna v koncertni sezoni 2022/23 z Simfoničnim orkestrom RTV Slovenije izvedla Koncert za violino Maxa Brucha. Za ta nastop je prejela Prešernovo nagrado Akademije v Ljubljani. Novembra 2022 je kot solistka nastopila na Mednarodnem violinskem festivalu Memorial Franjo Krežma v Osijeku na Hrvaškem z violinskim recitalom. 
+
+  Vesna je članica klavirskega tria, ki deluje v Avstriji, aktivna pa je tudi v drugih komornih skupinah. Med leti 2023 in 2025 je večkrat sodelovala z orkestrom Philharmonie Salzburg. Spomladi 2024 je opravila avdicijo za MYO (Mediterranean Youth Orchestra) in sodelovala na njihovi poletni turneji po Franciji in Angliji. Po uspešni avdiciji leta 2025 je sodelovala z Luxembourg Youth Orchestra pri njihovem spomladanskem projektu. 
+
+  Z baročno violino se je Vesna začela ukvarjati tekom svojega magistrskega študija, kjer je dve leti obiskovala predmet baročne violine pri prof. Angelovi Boženi, ter sodelovala pri več projektih baročnega orkestra Univerze Mozarteum. Udeležuje se tudi različnih izobraževanj na temo historične izvajalske prakse. V Radovljici je v okviru Slovenskega mladega abonmaja nastopila v Orkestru Nova akademija, s katerimi je nastopila z deli Telemanna in Vivaldija.
+
+  Trenutno aktivno nastopa predvsem v Sloveniji in Avstriji.`
+  },
 
   // === MENTOR ===
   {

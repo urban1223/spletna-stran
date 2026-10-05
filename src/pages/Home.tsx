@@ -18,16 +18,16 @@ const Home = () => {
 
   const galleryImages = [
     { id: 1, src: '/images/slika-1.jpg', alt: 'Baročni ansambel Nova akademija' },
-    { id: 2, src: '/images/slika-2.jpg', alt: 'Nova akademija Ilirska bistrica 1' },
-    { id: 3, src: '/images/slika-3.jpg', alt: 'Slika po koncertu v Ilirski Bistrici' },
-    { id: 4, src: '/images/slika-4.jpg', alt: 'Čembalo' },
-    { id: 5, src: '/images/slika-5.jpg', alt: 'Pokoncertna slika' },
+    { id: 2, src: '/images/slika-2.jpg', alt: 'Vaja v Stolnici Ljubljana' },
+    { id: 3, src: '/images/slika-3.jpg', alt: 'Tartini junior' },
+    { id: 4, src: '/images/slika-4.jpg', alt: 'Te Deum pihalci' },
+    { id: 5, src: '/images/slika-5.jpg', alt: 'Koncert v Kranju' },
     { id: 6, src: '/images/slika-6.jpg', alt: 'Baročni orkester Nova akademija' },
-    { id: 7, src: '/images/slika-7.jpg', alt: 'Alta capella' },
-    { id: 8, src: '/images/slika-8.jpg', alt: 'Baročna oboa' },
-    { id: 9, src: '/images/slika-9.jpg', alt: 'Historični inštrumenti' },
-    { id: 10, src: '/images/slika-10.jpg', alt: 'Klavikord' },
-    { id: 11, src: '/images/slika-11.jpg', alt: 'Klavikord 2' },
+    { id: 7, src: '/images/slika-7.jpg', alt: 'Koncert v Kranju' },
+    { id: 8, src: '/images/slika-8.jpg', alt: 'Ansambel Nova akademija' },
+    { id: 9, src: '/images/slika-9.jpg', alt: 'Komorna glasba' },
+    { id: 10, src: '/images/slika-10.jpg', alt: 'Violinistka na koncertu' },
+    { id: 11, src: '/images/slika-11.jpg', alt: 'Tartini v Ljubljani' },
   ];
 
   return (

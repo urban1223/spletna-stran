@@ -12,6 +12,15 @@ interface GalleryProject {
 
 const galleryData: GalleryProject[] = [
   {
+    title: "Koncert Tartini v Ljubljani",
+    images: [
+      { src: "/images/Tartini v Ljubljani/1.jpg", alt: "Tartini v Ljubljani 1" },
+      { src: "/images/Tartini v Ljubljani/2.jpg", alt: "Tartini v Ljubljani 2" },
+      { src: "/images/Tartini v Ljubljani/3.jpg", alt: "Tartini v Ljubljani 3" },
+    ],
+    instagramLink: "https://www.instagram.com/novaakademija?utm_source=ig_web_button_share_sheet&stkn=ZDNlZDc0MzIxNw==",
+  },
+  {
     title: "Koncert Tartini junior",
     images: [
       { src: "/images/Tartini junior/1.jpg", alt: "Tartini junior 1" },
