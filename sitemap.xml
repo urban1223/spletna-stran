@@ -11,6 +11,69 @@
 
   <!-- Seznam vseh koncertov -->
   <url>
+  <loc>https://nova-akademija.si/dogodki/bozicni-oratorij-ljubljana-2026</loc>
+  <lastmod>2026-12-27</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.95</priority>
+</url>
+
+<url>
+  <loc>https://nova-akademija.si/dogodki/bozicni-oratorij-radovljica-2026</loc>
+  <lastmod>2026-12-28</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.95</priority>
+</url>
+
+<url>
+  <loc>https://nova-akademija.si/dogodki/bozicni-oratorij-maribor-2026</loc>
+  <lastmod>2026-12-29</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.95</priority>
+</url>
+
+<url>
+  <loc>https://nova-akademija.si/dogodki/skrivnosti-baroka-kranj-2026</loc>
+  <lastmod>2026-10-01</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.95</priority>
+</url>
+
+<url>
+  <loc>https://nova-akademija.si/dogodki/missa-nativitatis-domini-ljubljana-2027</loc>
+  <lastmod>2027-01-03</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.95</priority>
+</url>
+
+<url>
+  <loc>https://nova-akademija.si/dogodki/bach-po-bachu-ljubljana-2027</loc>
+  <lastmod>2027-01-22</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.95</priority>
+</url>
+
+<url>
+  <loc>https://nova-akademija.si/dogodki/biseri-sakralne-zakladnice-2027</loc>
+  <lastmod>2027-08-29</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.95</priority>
+</url>
+
+<url>
+  <loc>https://nova-akademija.si/dogodki/miserere-mei-deus-te-deum-2027</loc>
+  <lastmod>2027-09-26</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.95</priority>
+</url>
+
+<url>
+  <loc>https://nova-akademija.si/dogodki/mesija-2027</loc>
+  <lastmod>2027-12-26</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.95</priority>
+</url>
+
+  <url>
     <loc>https://nova-akademija.si/dogodki</loc>
     <lastmod>2026-04-09</lastmod>
     <changefreq>weekly</changefreq>
@@ -52,20 +115,6 @@
   <changefreq>monthly</changefreq>
   <priority>0.8</priority>
 </url>
-
-  <url>
-    <loc>https://nova-akademija.si/dogodki/biseri-baroka-pirnice-2026</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://nova-akademija.si/dogodki/resonanca-renesanse-pirnice-2026</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
 
   <url>
     <loc>https://nova-akademija.si/dogodki/skrivnosti-baroka-kranj-2026</loc>
@@ -218,6 +267,35 @@
     <changefreq>yearly</changefreq>
     <priority>0.7</priority>
   </url>
+
+  <url>
+  <loc>https://nova-akademija.si/clani/martin-tavcar</loc>
+  <lastmod>2026-04-09</lastmod>
+  <changefreq>yearly</changefreq>
+  <priority>0.7</priority>
+</url>
+
+<url>
+  <loc>https://nova-akademija.si/clani/neza-gorup</loc>
+  <lastmod>2026-04-09</lastmod>
+  <changefreq>yearly</changefreq>
+  <priority>0.7</priority>
+</url>
+
+<url>
+  <loc>https://nova-akademija.si/clani/luka-poljanec</loc>
+  <lastmod>2026-04-09</lastmod>
+  <changefreq>yearly</changefreq>
+  <priority>0.7</priority>
+</url>
+
+  <url>
+  <loc>https://nova-akademija.si/clani/vesna-gostic</loc>
+  <lastmod>2026-04-09</lastmod>
+  <changefreq>yearly</changefreq>
+  <priority>0.7</priority>
+</url>
+
   <url>
     <loc>https://nova-akademija.si/clani/branimir-rezic</loc>
     <lastmod>2026-04-09</lastmod>
