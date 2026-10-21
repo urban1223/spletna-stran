@@ -16,7 +16,37 @@ export interface Event {
 }
 
 export const upcomingEvents: Event[] = [
+  {
+    slug: "prepletanje-barocnih-melodij-vipava-2026",
+    title: "Prepletanje baročnih melodij",
+    date: "Torek, 3. november 2026",
+    isoDate: "2026-11-03",
+    time: "11:00",
+    location: "DSO Pristan, Vipava",
+    description: "Duo Nova akademija",
+    program: "J. van Eyck, G.P. Telemann, G. Händel",
+    conductor: "",
+    admission: "Vstop prost!",
+    cta: "OGLEJTE SI LOKACIJO",
+    link: "https://maps.app.goo.gl/tWT7soCGV4kTzVbZ9",
+    reservation: false,
+    },
     {
+    slug: "onse-vader-2026",
+    title: "Onse Vader",
+    date: "Petek, 7. november 2026",
+    isoDate: "2026-11-07",
+    time: "18:30",
+    location: "Župnijska cerkev sv. štefana, Vipava",
+    description: "Duo Nova Akademija",
+    program: "J. van Eyck, G.P. Telemann, G.F. Händel, J.M. Hotteterre",
+    conductor: "",
+    admission: "Vstop prost!",
+    cta: "OGLEJTE SI LOKACIJO",
+    link: "https://maps.app.goo.gl/nhowjgZmhoikJaqAA",
+    reservation: false,
+  },  
+  {
     slug: "bozicni-oratorij-ljubljana-2026",
     title: "Božični oratorij",
     date: "Nedelja, 27. december 2026",
