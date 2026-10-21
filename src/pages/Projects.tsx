@@ -8,6 +8,7 @@ import ContactFormDialog from "@/components/ContactFormDialog";
 const Projects = () => {
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
   const navigate = useNavigate();
+const [dialogType, setDialogType] = useState<"continua" | "prigode">("continua");
 
   return (
     <div className="min-h-screen py-20">
@@ -189,8 +190,51 @@ const Projects = () => {
 
 
             </Card>
-          </div>
+
+                        {/* === DELAVNICA: PRIGODE PALČKA PIŠČALČKA IN PTIČKE SINIČKE === */}
+            <Card className="p-8 bg-card border-border flex flex-col h-full">
+              <div className="flex-grow">
+                <h3 className="text-2xl font-bold text-accent mb-4">
+                 Delavnica za otroke: Prigode palčka Piščalčka in ptičke Siničke
+                </h3>
+                <p className="text-muted-foreground leading-relaxed mb-6 text-justify">
+                  Delavnica je namenjena otrokom v osnovni šoli. Vključuje poslušanje zgodbe, spoznavanje različnih zgodovinskih inštrumentov, učenje pesmi, risanje, spoznavanje zgodovine na Slovenskem in krepi socialne veščine. Delavnica traja uro in pol. Primerna je za različne starostne skupine.
+                </p>
+
+                <h4 className="font-semibold text-foreground mb-2">Potek delavnice:</h4>
+                <ul className="list-disc list-inside space-y-2 text-muted-foreground mb-6">
+                  <li>Predstavitev voditeljev in zgodovinskih inštrumentov iz 18. stoletja.</li>
+                  <li>Branje zgodbe ob prepletanju z inštrumentalnimi deli.</li>
+                  <li>Pogovor o zgodbi in kviz o zgodovinskih osebah na Slovenskem.</li>
+                  <li>Ustvarjalni zaključki: risanje prizorov ob spremljavi žive glasbe, ogled inštrumentov in vprašanja.</li>
+                </ul>
+
+                <div className="space-y-2 mb-6">
+                  <p className="font-semibold text-foreground">
+                    Voditelja:
+                    <span className="font-normal text-muted-foreground ml-2">
+                      Urban Klančar in Nika Volčjak
+                    </span>
+                  </p>
+
+                  <p className="text-xs text-muted-foreground leading-normal pt-2 italic">
+                    Delavnico bomo izvedli v novembru v osnovni šoli v Vipavi za učence petega razreda v okviru pouka glasbe. Na osnovni šoli Vižmarje-Brod bomo januarja 2027 izvedi delavnico za učence sedmega razreda. Vsebina zgodbe se v pogovoru z učitelji po potrebi prilagodi.
+                  </p>
+                </div>
+              </div>
+              <Button
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={() => {
+                  setDialogType("prigode");
+                  setContactDialogOpen(true);
+                }}
+              >
+                POŠLJI POVPRAŠEVANJE ZA IZVEDBO DELAVNICE
+</Button>
+            </Card>
+          </div> 
         </section>
+        
 
 {/* RESEARCH SECTION */}
         <section>
@@ -262,6 +306,7 @@ const Projects = () => {
       <ContactFormDialog
         open={contactDialogOpen}
         onOpenChange={setContactDialogOpen}
+        type={dialogType}
       />
     </div>
   );

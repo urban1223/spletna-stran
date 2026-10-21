@@ -27,8 +27,8 @@ export const upcomingEvents: Event[] = [
     program: "J. van Eyck, G.P. Telemann, G. Händel",
     conductor: "",
     admission: "Vstop prost!",
-    cta: "OGLEJTE SI LOKACIJO",
-    link: "https://maps.app.goo.gl/tWT7soCGV4kTzVbZ9",
+    cta: "VEČ O KONCERTU",
+    link: "https://vipava.si/vsebina/utrip-barocne-vipave-prepletanje-barocnih-melodij",
     reservation: false,
     },
     {
@@ -42,8 +42,8 @@ export const upcomingEvents: Event[] = [
     program: "J. van Eyck, G.P. Telemann, G.F. Händel, J.M. Hotteterre",
     conductor: "",
     admission: "Vstop prost!",
-    cta: "OGLEJTE SI LOKACIJO",
-    link: "https://maps.app.goo.gl/nhowjgZmhoikJaqAA",
+    cta: "VEČ O KONCERTU",
+    link: "https://vipava.si/vsebina/utrip-barocne-vipave-barocni-koncert---onse-vader",
     reservation: false,
   },  
   {

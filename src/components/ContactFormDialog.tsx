@@ -16,11 +16,22 @@ import { Send, Loader2 } from "lucide-react";
 interface ContactFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  type?: "continua" | "prigode";
 }
 
 const WEB3FORMS_ACCESS_KEY = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY;
 
-const ContactFormDialog = ({ open, onOpenChange }: ContactFormDialogProps) => {
+const ContactFormDialog = ({ open, onOpenChange, type = "continua" }: ContactFormDialogProps) => {
+  const titles = {
+    continua: "Prijava na tečaj bassa continua",
+    prigode: "Povpraševanje – Prigode palčka Piščalčka",
+  };
+
+  const defaultSubjects = {
+    continua: "Prijava – Tečaj bassa continua",
+    prigode: "Povpraševanje – Prigode palčka Piščalčka",
+  };
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
@@ -45,7 +56,7 @@ const ContactFormDialog = ({ open, onOpenChange }: ContactFormDialogProps) => {
           access_key: WEB3FORMS_ACCESS_KEY,
           name: name.trim(),
           email: email.trim(),
-          subject: subject.trim() || "Prijava – Tečaj bassa continua",
+          subject: subject.trim() || defaultSubjects[type],
           message: message.trim(),
           from_name: "Nova Akademija - Spletna stran",
         }),
@@ -75,7 +86,7 @@ const ContactFormDialog = ({ open, onOpenChange }: ContactFormDialogProps) => {
       <DialogContent className="bg-card border-border sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-accent">
-            Prijava po e-pošti
+            {titles[type]}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
             Izpolnite spodnji obrazec in kliknite "Pošlji". Vaše sporočilo
@@ -119,7 +130,7 @@ const ContactFormDialog = ({ open, onOpenChange }: ContactFormDialogProps) => {
             </Label>
             <Input
               id="contact-subject"
-              placeholder="npr. Prijava na tečaj bassa continua"
+              placeholder={defaultSubjects[type]}
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               className="bg-background border-border text-foreground placeholder:text-muted-foreground"
