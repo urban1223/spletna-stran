@@ -15,4 +15,4 @@ ENV PORT=8080
 
 RUN npm run build
 
-CMD ["npm", "run", "serve"]
+CMD ["npm", "run", "start:local"]

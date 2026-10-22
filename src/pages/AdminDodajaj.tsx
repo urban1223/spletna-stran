@@ -1,30 +1,57 @@
-import { useMemo, useState, type FormEvent, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
+import type { Event } from "@/data/events-data";
+import { getAdminSession, getEvents, loginAdmin, logoutAdmin, saveEvent } from "@/lib/events-api";
 
 type ConcertForm = {
   title: string;
   date: string;
   time: string;
   location: string;
-  composers: string;
+  description: string;
+  program: string;
   conductor: string;
   admission: string;
   cta: string;
   link: string;
   reservation: boolean;
+  past: boolean;
 };
 
-const initialForm: ConcertForm = {
+/** Payload ready to paste into events-data.ts (does not mutate source data). */
+type ConcertExport = {
+  slug: string;
+  title: string;
+  date: string;
+  isoDate: string;
+  time: string;
+  location: string;
+  description: string;
+  program: string;
+  conductor: string;
+  admission: string;
+  cta: string;
+  link: string | null;
+  reservation: boolean;
+  past?: boolean;
+};
+
+const emptyForm: ConcertForm = {
   title: "",
   date: "",
   time: "19:30",
   location: "",
-  composers: "",
+  description: "",
+  program: "",
   conductor: "",
   admission: "Vstop prost!",
-  cta: "",
+  cta: "VEČ O KONCERTU",
   link: "",
   reservation: false,
+  past: false,
 };
+
+const PERSISTENCE_WARNING =
+  "Spremembe se po uspešni objavi trajno shranijo v strežniško podatkovno bazo in so takoj vidne na javni strani.";
 
 const slugify = (value: string) =>
   value
@@ -35,109 +62,222 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-/**
- * Prva, lokalna različica obrazca za dodajanje koncertov.
- * Trenutno samo preveri podatke in pokaže predogled — še ne objavlja na GitHub.
- */
-const EXISTING_LOCATIONS = [
-  "DSO Pristan, Vipava",
-  "Župnijska cerkev sv. štefana, Vipava",
-  "Cerkev sv. Jakoba, Ljubljana",
-  "Župnijska cerkev sv. Petra, Radovljica",
-  "Stolna cerkev, Maribor",
-  "Staro mestno jedro Kranja",
-  "Cerkev sv. Jožefa, Ljubljana",
-  "Evangeličanska cerkev Primoža Trubarja, Ljubljana",
-  "Baročna dvorana, Radovljica",
-  "Atrij ZRC SAZU, Ljubljana",
-  "Župnijska cerkev sv. Marije Vnebovzete, Pirniče",
-  "Atrij Pretorske palače, Koper",
-  "Cerkev sv. Petra, Radovljica",
-  "Stolnica sv. Nikolaja, Ljubljana",
-  "Cerkev Marije pomočnice na Rakovniku, Ljubljana",
-  "Cerkev sv. Kancijana in tovarišev, Kranj",
-  "Cerkev sv. Antona Padovanskega, Ljubljana",
-  "Uršulinska cerkev Sv. Trojice, Ljubljana",
-  "Dvorana Gimnazije Kranj",
-  "Cerkev svetega Kancijana in tovarišev, Kranj",
-  "Cerkev Svetega Petra, Ilirska Bistrica",
-];
-
-const EXISTING_COMPOSERS = [
-  "J. van Eyck", "G. P. Telemann", "G.P. Telemann", "G. Händel", "G.F. Händel",
-  "J. M. Hotteterre", "J. S. Bach", "J.S. Bach", "W. A. Mozart", "D. Buxtehude",
-  "G. Ph. Telemann", "J. D. Zelenka", "J. Gallus", "J. K. Dolar",
-  "M. A. Charpentier", "A. Vivaldi", "M. Zahnhausen", "P. A. Locatelli",
-  "A. Lotti", "J. J. Quantz", "G. Tartini", "G. B. Fontana", "W. Byrd",
-  "T. Morley", "A. Corelli", "I. Posch", "J. L. Bach", "C. P. E. Bach",
-];
-
-const mergeSuggestions = (defaults: string[], saved: string[]) =>
-  [...defaults, ...saved.filter((item) => !defaults.some((known) => known.toLocaleLowerCase("sl-SI") === item.toLocaleLowerCase("sl-SI")))];
-
-const readSuggestions = (key: string): string[] => {
-  try {
-    const value = localStorage.getItem(key);
-    return value ? (JSON.parse(value) as string[]) : [];
-  } catch {
-    return [];
+const formatSlovenianDate = (isoDate: string): string => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate.trim());
+  if (!match) return isoDate;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(year, month - 1, day, 12, 0, 0);
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    return isoDate;
   }
+  const weekday = new Intl.DateTimeFormat("sl-SI", { weekday: "long" }).format(parsed);
+  const monthName = new Intl.DateTimeFormat("sl-SI", { month: "long" }).format(parsed);
+  const capitalizedWeekday = weekday.charAt(0).toLocaleUpperCase("sl-SI") + weekday.slice(1);
+  return `${capitalizedWeekday}, ${day}. ${monthName} ${year}`;
 };
 
-const rememberSuggestion = (key: string, value: string) => {
-  const cleaned = value.trim();
-  if (!cleaned) return;
-  const current = readSuggestions(key);
-  const updated = [cleaned, ...current.filter((item) => item.toLocaleLowerCase("sl-SI") !== cleaned.toLocaleLowerCase("sl-SI"))].slice(0, 30);
-  localStorage.setItem(key, JSON.stringify(updated));
+const eventToForm = (event: Event, isPast: boolean): ConcertForm => ({
+  title: event.title,
+  date: event.isoDate || "",
+  time: event.time || "",
+  location: event.location || "",
+  description: event.description || "",
+  program: event.program || "",
+  conductor: event.conductor || "",
+  admission: event.admission || "",
+  cta: event.cta || "",
+  link: event.link || "",
+  reservation: Boolean(event.reservation),
+  past: isPast || Boolean(event.past),
+});
+
+const buildConcertExport = (
+  form: ConcertForm,
+  slug: string,
+  originalIsoDate: string | null,
+  originalDisplayDate: string | null,
+): ConcertExport => {
+  const isoDate = form.date.trim();
+  const dateUnchanged =
+    originalIsoDate !== null &&
+    originalDisplayDate !== null &&
+    isoDate === originalIsoDate;
+  const date = dateUnchanged ? originalDisplayDate : formatSlovenianDate(isoDate);
+
+  const payload: ConcertExport = {
+    slug,
+    title: form.title.trim(),
+    date,
+    isoDate,
+    time: form.time.trim(),
+    location: form.location.trim(),
+    description: form.description.trim(),
+    program: form.program.trim(),
+    conductor: form.conductor.trim(),
+    admission: form.admission.trim(),
+    cta: form.cta.trim(),
+    link: form.link.trim() ? form.link.trim() : null,
+    reservation: Boolean(form.reservation),
+  };
+
+  if (form.past) {
+    payload.past = true;
+  }
+
+  return payload;
 };
 
-/**
- * Historical venue and composer suggestions are seeded from the current concert
- * archive. New entries are also remembered in this browser for future use.
- */
 export default function AdminDodajaj() {
-  const [form, setForm] = useState<ConcertForm>(initialForm);
-  const [locationSuggestions, setLocationSuggestions] = useState<string[]>(() => mergeSuggestions(EXISTING_LOCATIONS, readSuggestions("nova-akademija-admin-locations")));
-  const [composerSuggestions, setComposerSuggestions] = useState<string[]>(() => mergeSuggestions(EXISTING_COMPOSERS, readSuggestions("nova-akademija-admin-composers")));
-  const [notice, setNotice] = useState("");
+  const [events, setEvents] = useState<Event[]>([]);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<ConcertForm>(emptyForm);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all");
+  const [editingSlug, setEditingSlug] = useState<string | null>(null);
+  const [originalIsoDate, setOriginalIsoDate] = useState<string | null>(null);
+  const [originalDisplayDate, setOriginalDisplayDate] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [composerInputFocused, setComposerInputFocused] = useState(false);
-  const slug = useMemo(() => slugify(form.title), [form.title]);
+  const [notice, setNotice] = useState("");
+  const [copyNotice, setCopyNotice] = useState("");
+
+  useEffect(() => {
+    getAdminSession()
+      .then((session) => {
+        setAuthenticated(session.authenticated);
+        if (session.authenticated) return getEvents().then(setEvents);
+        return undefined;
+      })
+      .catch(() => setLoginError("Povezava s strežnikom ni uspela."))
+      .finally(() => setCheckingSession(false));
+  }, []);
+
+  const pastSlugs = useMemo(() => new Set(events.filter((event) => event.past).map((event) => event.slug)), [events]);
+
+  const visibleEvents = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("sl-SI");
+    return events
+      .filter((event) => {
+        const isPast = pastSlugs.has(event.slug) || Boolean(event.past);
+        if (filter === "past" && !isPast) return false;
+        if (filter === "upcoming" && isPast) return false;
+        if (!query) return true;
+        return (event.title || "").toLocaleLowerCase("sl-SI").includes(query);
+      })
+      .sort((a, b) => (b.isoDate || "").localeCompare(a.isoDate || ""));
+  }, [events, filter, pastSlugs, search]);
+
+  const slug = editingSlug || slugify(form.title);
+
+  const exportPayload = useMemo(
+    () => buildConcertExport(form, slug, originalIsoDate, originalDisplayDate),
+    [form, slug, originalIsoDate, originalDisplayDate],
+  );
+
+  const exportJson = useMemo(() => JSON.stringify(exportPayload, null, 2), [exportPayload]);
 
   const update = (key: keyof ConcertForm, value: string | boolean) => {
     setForm((current) => ({ ...current, [key]: value }));
     setNotice("");
+    setCopyNotice("");
+  };
+
+  const startNew = () => {
+    setForm(emptyForm);
+    setEditingSlug(null);
+    setOriginalIsoDate(null);
+    setOriginalDisplayDate(null);
+    setShowPreview(false);
+    setCopyNotice("");
+    setNotice("Obrazec za nov koncert je pripravljen. Obstoječi koncerti v events-data.ts ostanejo nespremenjeni.");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const editEvent = (event: Event) => {
+    const isPast = pastSlugs.has(event.slug) || Boolean(event.past);
+    setForm(eventToForm(event, isPast));
+    setEditingSlug(event.slug);
+    setOriginalIsoDate(event.isoDate || null);
+    setOriginalDisplayDate(event.date || null);
+    setShowPreview(false);
+    setCopyNotice("");
+    setNotice(`Urejaš koncert »${event.title}«. Obrazec je odprt neposredno pod tem koncertom.`);
+    window.setTimeout(() => {
+      document.getElementById(`admin-event-${event.slug}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setShowPreview(true);
+    setSaving(true);
+    setShowPreview(false);
+    setCopyNotice("");
+    saveEvent(exportPayload, editingSlug || undefined)
+      .then(({ event: savedEvent }) => {
+        setEvents((current) => {
+          const withoutSaved = current.filter((item) => item.slug !== savedEvent.slug);
+          return [...withoutSaved, savedEvent];
+        });
+        setNotice(editingSlug ? "Koncert je uspešno posodobljen in objavljen." : "Koncert je uspešno shranjen in objavljen.");
+        setForm(emptyForm);
+        setEditingSlug(null);
+        setOriginalIsoDate(null);
+        setOriginalDisplayDate(null);
+      })
+      .catch((error: Error) => setNotice(`Objava ni uspela: ${error.message}`))
+      .finally(() => setSaving(false));
+  };
+
+  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoginError("");
+    loginAdmin(username, password)
+      .then(() => {
+        setAuthenticated(true);
+        setPassword("");
+        return getEvents().then(setEvents);
+      })
+      .catch((error: Error) => setLoginError(error.message || "Prijava ni uspela."));
+  };
+
+  const handleLogout = () => {
+    logoutAdmin().finally(() => {
+      setAuthenticated(false);
+      setEvents([]);
+    });
+  };
+
+  const copyJson = async () => {
     try {
-      rememberSuggestion("nova-akademija-admin-locations", form.location);
-      form.composers.split(",").forEach((composer) => rememberSuggestion("nova-akademija-admin-composers", composer));
-      setLocationSuggestions(mergeSuggestions(EXISTING_LOCATIONS, readSuggestions("nova-akademija-admin-locations")));
-      setComposerSuggestions(mergeSuggestions(EXISTING_COMPOSERS, readSuggestions("nova-akademija-admin-composers")));
+      await navigator.clipboard.writeText(exportJson);
+      setCopyNotice("JSON je kopiran v odložišče. Prilepi ga ročno v events-data.ts — to še ne shrani in ne objavi koncerta.");
     } catch {
-      // Preview still works if browser storage is unavailable.
+      setCopyNotice("Kopiranje ni uspelo. Izberi in skopiraj JSON spodaj ročno.");
     }
-    setNotice(
-      "Predogled je pripravljen. To je testna različica: koncert še ni shranjen na GitHub in ni objavljen na spletni strani."
-    );
   };
 
   const inputStyle: CSSProperties = {
     width: "100%",
     boxSizing: "border-box",
-    padding: "12px 13px",
-    borderRadius: 10,
+    padding: "11px 12px",
+    borderRadius: 9,
     border: "1px solid hsl(220 20% 27%)",
     background: "hsl(220 20% 10%)",
     color: "hsl(40 15% 92%)",
     font: "inherit",
     outlineColor: "hsl(45 85% 65%)",
   };
-
   const labelStyle: CSSProperties = {
     display: "grid",
     gap: 7,
@@ -145,175 +285,367 @@ export default function AdminDodajaj() {
     fontSize: 14,
     fontWeight: 600,
   };
-
   const field = (
     label: string,
     key: keyof ConcertForm,
-    options: { required?: boolean; placeholder?: string; type?: string; multiline?: boolean; step?: number; suggestions?: string[]; listId?: string } = {}
+    options: { required?: boolean; type?: string; multiline?: boolean; placeholder?: string } = {},
   ) => (
     <label style={labelStyle}>
-      <span>{label}{options.required ? " *" : ""}</span>
+      <span>
+        {label}
+        {options.required ? " *" : ""}
+      </span>
       {options.multiline ? (
         <textarea
           value={String(form[key])}
           onChange={(e) => update(key, e.target.value)}
-          placeholder={options.placeholder}
           required={options.required}
-          rows={4}
-          style={{ ...inputStyle, resize: "vertical", minHeight: 105 }}
+          placeholder={options.placeholder}
+          rows={3}
+          style={{ ...inputStyle, resize: "vertical" }}
         />
       ) : (
         <input
-          type={options.type ?? "text"}
+          type={options.type || "text"}
           value={String(form[key])}
           onChange={(e) => update(key, e.target.value)}
-          placeholder={options.placeholder}
           required={options.required}
-          step={options.step}
-          list={options.listId}
+          placeholder={options.placeholder}
           style={inputStyle}
         />
-      )}
-      {options.listId && options.suggestions && (
-        <datalist id={options.listId}>
-          {options.suggestions.map((suggestion) => <option value={suggestion} key={suggestion} />)}
-        </datalist>
       )}
     </label>
   );
 
+  if (checkingSession) {
+    return <main style={{ padding: 32 }}>Preverjam prijavo …</main>;
+  }
+
+  if (!authenticated) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          background: "hsl(220 25% 8%)",
+          color: "hsl(40 15% 92%)",
+          padding: 16,
+        }}
+      >
+        <form onSubmit={handleLogin} className="admin-card" style={{ width: "min(100%, 420px)", display: "grid", gap: 16 }}>
+          <h1 style={{ margin: 0 }}>Administracija koncertov</h1>
+          <label style={labelStyle}>
+            Uporabniško ime
+            <input style={inputStyle} value={username} onChange={(e) => setUsername(e.target.value)} required autoComplete="username" />
+          </label>
+          <label style={labelStyle}>
+            Geslo
+            <input
+              style={inputStyle}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
+          </label>
+          {loginError && <div role="alert" style={{ color: "hsl(0 75% 75%)" }}>{loginError}</div>}
+          <button className="admin-button admin-gold" type="submit">Prijava</button>
+        </form>
+      </main>
+    );
+  }
+
+  const editorForm = (
+    <form onSubmit={handleSubmit} className="admin-card" style={{ display: "grid", gap: 20, marginBottom: 18 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+        <h2 style={{ margin: 0, fontSize: 21 }}>{editingSlug ? "Uredi koncert" : "Dodaj koncert"}</h2>
+        {editingSlug && (
+          <button className="admin-button admin-secondary" type="button" onClick={startNew}>
+            Prekliči urejanje
+          </button>
+        )}
+      </div>
+      {editingSlug && (
+        <p style={{ margin: 0, color: "hsl(220 8% 68%)", fontSize: 13 }}>
+          Obstoječi slug je zaklenjen, da se povezava do koncerta ne spremeni po nesreči.
+        </p>
+      )}
+      <section>
+        <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>Osnovni podatki</h3>
+        <div className="admin-grid">
+          {field("Naslov koncerta", "title", { required: true, placeholder: "Npr. Večer klasične glasbe" })}
+          {field("Prizorišče / lokacija", "location", { required: true })}
+          {field("Datum", "date", { required: true, type: "date" })}
+          {field("Ura", "time", { required: true, type: "time" })}
+          {field("Nastopajoči", "description", { multiline: true, placeholder: "Npr. orkester, solisti, zbor …" })}
+          {field("Program / skladatelji", "program", { multiline: true })}
+          {field("Dirigent", "conductor")}
+          {field("Vstopnina", "admission")}
+          {field("Besedilo gumba", "cta", { required: true })}
+          {field("Spletna povezava gumba", "link", {
+            type: "url",
+            placeholder: "https://… (pusti prazno, če ni povezave)",
+          })}
+        </div>
+        <div style={{ marginTop: 15, display: "grid", gap: 12 }}>
+          <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14 }}>
+            <input
+              type="checkbox"
+              checked={form.reservation}
+              onChange={(e) => update("reservation", e.target.checked)}
+            />{" "}
+            Uporabi obrazec za rezervacije
+          </label>
+          <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14 }}>
+            <input type="checkbox" checked={form.past} onChange={(e) => update("past", e.target.checked)} /> Označi
+            kot pretekli koncert
+          </label>
+        </div>
+      </section>
+      <div style={{ borderTop: "1px solid hsl(220 20% 22%)", paddingTop: 16 }}>
+        <div style={{ color: "hsl(220 8% 68%)", fontSize: 12, marginBottom: 6 }}>Slug / naslov povezave</div>
+        <code style={{ color: "hsl(45 85% 65%)", overflowWrap: "anywhere" }}>{slug || "naslov-koncerta"}</code>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+        <button className="admin-button admin-gold" type="submit">
+          {saving ? "Shranjujem …" : "Objavi koncert"}
+        </button>
+        <button className="admin-button admin-secondary" type="button" onClick={startNew}>
+          Počisti / nov koncert
+        </button>
+      </div>
+      {notice && (
+        <div
+          role="status"
+          style={{
+            border: "1px solid hsl(45 60% 35%)",
+            background: "hsl(45 35% 13%)",
+            color: "hsl(45 85% 75%)",
+            borderRadius: 9,
+            padding: 12,
+            lineHeight: 1.5,
+          }}
+        >
+          {notice}
+        </div>
+      )}
+    </form>
+  );
+
   return (
-    <main className="admin-concerts" style={{ minHeight: "100vh", background: "hsl(220 25% 8%)", color: "hsl(40 15% 92%)", padding: "28px 16px 56px", fontFamily: "inherit" }}>
+    <main
+      className="admin-concerts"
+      style={{
+        minHeight: "100vh",
+        background: "hsl(220 25% 8%)",
+        color: "hsl(40 15% 92%)",
+        padding: "28px 16px 56px",
+      }}
+    >
       <style>{`
         .admin-concerts * { box-sizing: border-box; }
-        .admin-concerts .admin-wrap { max-width: 880px; margin: 0 auto; }
-        .admin-concerts .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-        .admin-concerts .admin-card { background: hsl(220 20% 12%); border: 1px solid hsl(220 20% 22%); border-radius: 16px; padding: 22px; }
-        .admin-concerts .admin-full { grid-column: 1 / -1; }
-        .admin-concerts .admin-button { border: 0; border-radius: 10px; padding: 13px 18px; font: inherit; font-weight: 750; cursor: pointer; }
-        .admin-concerts .admin-button:focus-visible { outline: 3px solid hsl(45 85% 65%); outline-offset: 3px; }
-        .admin-concerts .admin-gold { background: hsl(45 85% 65%); color: hsl(220 35% 12%); }
-        .admin-concerts .admin-secondary { background: hsl(220 20% 18%); color: hsl(40 15% 92%); border: 1px solid hsl(220 20% 27%); }
-        .admin-concerts .admin-check { display: flex; gap: 10px; align-items: center; font-size: 14px; }
-        .admin-concerts .admin-check input { width: 18px; height: 18px; accent-color: hsl(45 85% 65%); }
-        @media (max-width: 620px) {
-          .admin-concerts { padding: 18px 12px 36px !important; }
-          .admin-concerts .admin-grid { grid-template-columns: 1fr; gap: 14px; }
-          .admin-concerts .admin-card { padding: 17px; }
-          .admin-concerts .admin-full { grid-column: auto; }
-          .admin-concerts .admin-actions { display: grid !important; grid-template-columns: 1fr; }
-        }
+        .admin-wrap { max-width: 1050px; margin: 0 auto; }
+        .admin-card { background: hsl(220 20% 12%); border: 1px solid hsl(220 20% 22%); border-radius: 15px; padding: 20px; }
+        .admin-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 15px; }
+        .admin-button { border: 0; border-radius: 9px; padding: 11px 15px; font: inherit; font-weight: 750; cursor: pointer; }
+        .admin-gold { background: hsl(45 85% 65%); color: hsl(220 35% 12%); }
+        .admin-secondary { background: hsl(220 20% 18%); color: hsl(40 15% 92%); border: 1px solid hsl(220 20% 27%); }
+        .admin-event { display:flex; flex-wrap:wrap; justify-content:space-between; gap:16px; align-items:center; padding:14px 0; border-bottom:1px solid hsl(220 20% 22%); }
+        .admin-event:last-child { border-bottom:0; }
+        @media(max-width:650px) { .admin-grid { grid-template-columns:1fr; } .admin-event { align-items:flex-start; flex-direction:column; } .admin-concerts { padding:16px 10px 32px !important; } }
       `}</style>
       <div className="admin-wrap">
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ color: "hsl(45 85% 65%)", textTransform: "uppercase", letterSpacing: ".16em", fontSize: 11, fontWeight: 800, marginBottom: 10 }}>NOVA AKADEMIJA · ADMIN</div>
-          <h1 style={{ fontSize: "clamp(28px, 5vw, 40px)", lineHeight: 1.1, margin: "0 0 10px", fontWeight: 750 }}>Dodaj koncert</h1>
-          <p style={{ margin: 0, color: "hsl(220 8% 68%)", lineHeight: 1.6, maxWidth: 620 }}>Izpolni podatke o dogodku. Polja z zvezdico so obvezna. Na tej stopnji lahko obrazec preizkusiš lokalno, brez sprememb na objavljeni spletni strani.</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="admin-card" style={{ display: "grid", gap: 22 }}>
-          <section>
-            <h2 style={{ margin: "0 0 16px", fontSize: 17 }}>Osnovni podatki</h2>
-            <div className="admin-grid">
-              {field("Naslov koncerta", "title", { required: true, placeholder: "Npr. Večer klasične glasbe" })}
-              {field("Prizorišče / lokacija", "location", { required: true, placeholder: "Začni pisati ali izberi prejšnji vnos", listId: "admin-location-suggestions", suggestions: locationSuggestions })}
-              {field("Datum", "date", { required: true, type: "date" })}
-              {field("Ura", "time", { required: true, type: "time", step: 900 })}
-              <p className="admin-full" style={{ margin: "-4px 0 0", color: "hsl(220 8% 65%)", fontSize: 12, lineHeight: 1.5 }}>Privzeto je nastavljena ura 19.30. Uro lahko spremeniš v korakih po 15 minut (npr. 19.45 ali 20.00).</p>
-              <div className="admin-full" style={{ display: "grid", gap: 7 }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>Povezava (slug) — ustvari se samodejno</div>
-                <div style={{ border: "1px solid hsl(220 20% 22%)", background: "hsl(220 20% 10%)", borderRadius: 10, padding: "12px 13px", color: slug ? "hsl(45 85% 65%)" : "hsl(220 8% 55%)", overflowWrap: "anywhere" }}>{slug || "naslov-koncertа"}</div>
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <h2 style={{ margin: "0 0 16px", fontSize: 17 }}>Izvajalci in vstopnina</h2>
-            <div className="admin-grid">
-              <div style={{ position: "relative" }}>
-                <label style={labelStyle}>
-                  <span>Skladatelji</span>
-                  <input
-                    type="text"
-                    value={form.composers}
-                    placeholder="Izberi ali vpiši skladatelja"
-                    autoComplete="off"
-                    onFocus={() => setComposerInputFocused(true)}
-                    onBlur={() => window.setTimeout(() => setComposerInputFocused(false), 150)}
-                    onChange={(e) => update("composers", e.target.value)}
-                    style={inputStyle}
-                    aria-label="Skladatelji, ločeni z vejico"
-                  />
-                </label>
-                {composerInputFocused && (() => {
-                  const parts = form.composers.split(",");
-                  const current = (parts[parts.length - 1] ?? "").trim().toLocaleLowerCase("sl-SI");
-                  const matches = composerSuggestions.filter((item) => !current || item.toLocaleLowerCase("sl-SI").includes(current)).slice(0, 8);
-                  return matches.length ? (
-                    <div role="listbox" aria-label="Predlogi skladateljev" style={{ position: "absolute", zIndex: 10, top: "100%", left: 0, right: 0, marginTop: 4, maxHeight: 220, overflowY: "auto", border: "1px solid hsl(220 20% 27%)", borderRadius: 10, background: "hsl(220 20% 12%)", boxShadow: "0 10px 24px #0006" }}>
-                      {matches.map((composer) => (
-                        <button
-                          key={composer}
-                          type="button"
-                          role="option"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            const prefix = parts.slice(0, -1).map((part) => part.trim()).filter(Boolean);
-                            if (!prefix.some((part) => part.toLocaleLowerCase("sl-SI") === composer.toLocaleLowerCase("sl-SI"))) prefix.push(composer);
-                            update("composers", `${prefix.join(", ")}, `);
-                            setComposerInputFocused(true);
-                            document.querySelector<HTMLInputElement>('input[aria-label="Skladatelji, ločeni z vejico"]')?.focus();
-                          }}
-                          style={{ display: "block", width: "100%", textAlign: "left", border: 0, borderBottom: "1px solid hsl(220 20% 20%)", padding: "10px 12px", background: "transparent", color: "hsl(40 15% 92%)", cursor: "pointer", font: "inherit" }}
-                        >{composer}</button>
-                      ))}
-                    </div>
-                  ) : null;
-                })()}
-                <p style={{ margin: "7px 0 0", color: "hsl(220 8% 68%)", fontSize: 12, lineHeight: 1.6 }}>Po vsakem skladatelju dodaj vejico. Nato se lahko prikažejo predlogi za naslednjega. Nove vnose si obrazec zapomni v tem brskalniku.</p>
-              </div>
-              {field("Dirigent / izvajalci", "conductor", { placeholder: "Neobvezno" })}
-              {field("Vstopnina", "admission", { placeholder: "Vstop prost!" })}
-            </div>
-          </section>
-
-          <section>
-            <h2 style={{ margin: "0 0 16px", fontSize: 17 }}>Povezava in rezervacije</h2>
-            <div className="admin-grid">
-              {field("Besedilo gumba", "cta", { placeholder: "Npr. Rezerviraj vstopnice" })}
-              {field("Spletna povezava gumba", "link", { type: "url", placeholder: "https://..." })}
-              <div className="admin-full">
-                <label className="admin-check">
-                  <input type="checkbox" checked={form.reservation} onChange={(e) => update("reservation", e.target.checked)} />
-                  Za ta koncert uporabimo obrazec za rezervacije na spletni strani
-                </label>
-              </div>
-            </div>
-          </section>
-
-          <div className="admin-actions" style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", borderTop: "1px solid hsl(220 20% 22%)", paddingTop: 20 }}>
-            <button className="admin-button admin-gold" type="submit">Pripravi predogled</button>
-            <button className="admin-button admin-secondary" type="button" onClick={() => { setForm(initialForm); setShowPreview(false); setNotice(""); }}>Počisti obrazec</button>
+        <header style={{ marginBottom: 22 }}>
+          <div
+            style={{
+              color: "hsl(45 85% 65%)",
+              textTransform: "uppercase",
+              letterSpacing: ".15em",
+              fontSize: 11,
+              fontWeight: 800,
+              marginBottom: 8,
+            }}
+          >
+            NOVA AKADEMIJA · ADMIN
           </div>
-          {notice && <div role="status" style={{ border: "1px solid hsl(45 60% 35%)", background: "hsl(45 35% 13%)", color: "hsl(45 85% 75%)", borderRadius: 10, padding: 14, lineHeight: 1.5 }}>{notice}</div>}
-        </form>
+          <h1 style={{ fontSize: "clamp(28px, 5vw, 40px)", margin: "0 0 8px" }}>Upravljanje koncerti</h1>
+          <p style={{ color: "hsl(220 8% 68%)", lineHeight: 1.6, margin: "0 0 12px" }}>
+            Preglej obstoječe koncerte, odpri podatke za urejanje ali pripravi nov koncert.
+          </p>
+          <p
+            role="note"
+            style={{
+              margin: 0,
+              border: "1px solid hsl(45 60% 35%)",
+              background: "hsl(45 35% 13%)",
+              color: "hsl(45 85% 75%)",
+              borderRadius: 9,
+              padding: 12,
+              lineHeight: 1.5,
+              fontSize: 13,
+            }}
+          >
+            {PERSISTENCE_WARNING}
+          </p>
+          <button className="admin-button admin-secondary" type="button" onClick={handleLogout} style={{ marginTop: 12 }}>
+            Odjava
+          </button>
+        </header>
+
+        {!editingSlug && editorForm}
+
+        <section className="admin-card" style={{ marginBottom: 18 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+              marginBottom: 15,
+            }}
+          >
+            <h2 style={{ margin: 0, fontSize: 21 }}>Objavljeni koncerti ({visibleEvents.length})</h2>
+            <button className="admin-button admin-gold" type="button" onClick={startNew}>
+              + Nov koncert
+            </button>
+          </div>
+          <div className="admin-grid" style={{ marginBottom: 12 }}>
+            <label style={labelStyle}>
+              Iskanje po naslovu
+              <input
+                style={inputStyle}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Npr. Božični oratorij …"
+              />
+            </label>
+            <label style={labelStyle}>
+              Prikaži
+              <select
+                style={inputStyle}
+                value={filter}
+                onChange={(e) => setFilter(e.target.value as typeof filter)}
+              >
+                <option value="all">Vse koncerte</option>
+                <option value="upcoming">Prihajajoče koncerte</option>
+                <option value="past">Pretekle koncerte</option>
+              </select>
+            </label>
+          </div>
+          {visibleEvents.length === 0 ? (
+            <p style={{ color: "hsl(220 8% 68%)" }}>Ni zadetkov za izbrano iskanje.</p>
+          ) : (
+            visibleEvents.map((event) => {
+              const isPast = pastSlugs.has(event.slug) || Boolean(event.past);
+              return (
+                <div className="admin-event" id={`admin-event-${event.slug}`} key={event.slug}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ color: "hsl(45 85% 65%)", fontSize: 12, marginBottom: 4 }}>
+                      {event.date} · {event.time}
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 750, overflowWrap: "anywhere" }}>{event.title}</div>
+                    <div style={{ color: "hsl(220 8% 68%)", fontSize: 13, marginTop: 4 }}>{event.location}</div>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        marginTop: 7,
+                        fontSize: 11,
+                        padding: "3px 7px",
+                        borderRadius: 5,
+                        background: isPast ? "hsl(220 15% 20%)" : "hsl(145 35% 18%)",
+                        color: isPast ? "hsl(220 8% 75%)" : "hsl(145 55% 75%)",
+                      }}
+                    >
+                      {isPast ? "Pretekli" : "Prihajajoči"}
+                    </span>
+                  </div>
+                  <button
+                    className="admin-button admin-secondary"
+                    type="button"
+                    onClick={() => editEvent(event)}
+                  >
+                    Uredi koncert
+                  </button>
+                  {editingSlug === event.slug && (
+                    <div style={{ flexBasis: "100%", width: "100%" }}>{editorForm}</div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </section>
 
         {showPreview && (
-          <section className="admin-card" style={{ marginTop: 18 }}>
-            <div style={{ color: "hsl(45 85% 65%)", fontSize: 11, fontWeight: 800, letterSpacing: ".14em", marginBottom: 10 }}>PREDOGLED PODATKOV</div>
-            <h2 style={{ margin: "0 0 12px", fontSize: 24 }}>{form.title || "Brez naslova"}</h2>
-            <p style={{ color: "hsl(220 8% 70%)", margin: "0 0 14px", lineHeight: 1.6 }}>{form.date} {form.time && `· ${form.time}`} {form.location && `· ${form.location}`}</p>
-            {form.composers && <p><strong>Skladatelji:</strong> {form.composers}</p>}
-            {form.conductor && <p><strong>Dirigent / izvajalci:</strong> {form.conductor}</p>}
-            {form.admission && <p><strong>Vstopnina:</strong> {form.admission}</p>}
-            <p style={{ color: "hsl(45 85% 65%)", overflowWrap: "anywhere" }}>Slug: {slug || "—"}</p>
-            <details style={{ marginTop: 16 }}>
-              <summary style={{ cursor: "pointer", color: "hsl(220 8% 72%)" }}>Pokaži podatke kot JSON</summary>
-              <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: 12, lineHeight: 1.5, background: "hsl(220 20% 9%)", padding: 14, borderRadius: 10, marginTop: 10 }}>{JSON.stringify({ title: form.title, slug, date: form.date, isoDate: form.date, time: form.time, location: form.location, program: form.composers, conductor: form.conductor, admission: form.admission, cta: form.cta, link: form.link, reservation: form.reservation, past: false }, null, 2)}</pre>
+          <section id="admin-preview" className="admin-card" style={{ marginTop: 18 }}>
+            <div
+              style={{
+                color: "hsl(45 85% 65%)",
+                fontSize: 11,
+                fontWeight: 800,
+                letterSpacing: ".14em",
+                marginBottom: 10,
+              }}
+            >
+              PREDOGLED
+            </div>
+            <h2 style={{ margin: "0 0 8px", fontSize: 24 }}>{exportPayload.title || "Brez naslova"}</h2>
+            <p style={{ color: "hsl(220 8% 70%)", lineHeight: 1.6 }}>
+              {exportPayload.date} · {exportPayload.time} · {exportPayload.location}
+            </p>
+            {exportPayload.description && <p>{exportPayload.description}</p>}
+            {exportPayload.program && (
+              <p>
+                <strong>Program:</strong> {exportPayload.program}
+              </p>
+            )}
+            {exportPayload.conductor && (
+              <p>
+                <strong>Dirigent:</strong> {exportPayload.conductor}
+              </p>
+            )}
+            {exportPayload.admission && (
+              <p>
+                <strong>Vstopnina:</strong> {exportPayload.admission}
+              </p>
+            )}
+            <p style={{ color: "hsl(45 85% 65%)" }}>
+              Slug: {exportPayload.slug} · {exportPayload.past ? "Pretekli koncert" : "Prihajajoči koncert"}
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, margin: "14px 0" }}>
+              <button className="admin-button admin-gold" type="button" onClick={copyJson}>
+                Kopiraj JSON
+              </button>
+            </div>
+            {copyNotice && (
+              <p role="status" style={{ color: "hsl(45 85% 75%)", fontSize: 13, lineHeight: 1.5 }}>
+                {copyNotice}
+              </p>
+            )}
+            <details open>
+              <summary style={{ cursor: "pointer" }}>Podatki za ročni vnos v events-data.ts (JSON)</summary>
+              <pre
+                style={{
+                  whiteSpace: "pre-wrap",
+                  overflowWrap: "anywhere",
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  background: "hsl(220 20% 9%)",
+                  padding: 12,
+                  borderRadius: 8,
+                  marginTop: 10,
+                }}
+              >
+                {exportJson}
+              </pre>
             </details>
+            <p style={{ marginBottom: 0, color: "hsl(45 85% 75%)", fontSize: 13, lineHeight: 1.5 }}>
+              {PERSISTENCE_WARNING}
+            </p>
           </section>
         )}
-        <p style={{ textAlign: "center", color: "hsl(220 8% 55%)", fontSize: 12, marginTop: 22 }}>Lokalni test · še ni povezano z GitHubom</p>
       </div>
     </main>
   );

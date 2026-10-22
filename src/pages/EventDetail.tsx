@@ -1,17 +1,25 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Music, ArrowLeft, Ticket } from "lucide-react";
-import { allEvents } from "@/data/events-data";
 import ReservationFormDialog from "@/components/ReservationFormDialog";
 import Seo from "@/components/Seo";
+import { getEvent } from "@/lib/events-api";
 
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [reservationOpen, setReservationOpen] = useState(false);
+  const { data: event, isLoading } = useQuery({
+    queryKey: ["event", slug],
+    queryFn: () => getEvent(slug || ""),
+    enabled: Boolean(slug),
+  });
 
-  const event = allEvents.find((e) => e.slug === slug);
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Nalaganje koncerta …</div>;
+  }
 
   if (!event) {
     return (

@@ -1,12 +1,19 @@
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import Seo from "@/components/Seo";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Music } from "lucide-react";
-import { upcomingEvents, pastEvents } from "@/data/events-data";
+import { getEvents } from "@/lib/events-api";
 
 const Events = () => {
   const navigate = useNavigate();
+  const { data: events = [], isLoading, isError } = useQuery({
+    queryKey: ["events"],
+    queryFn: getEvents,
+  });
+  const upcomingEvents = events.filter((event) => !event.past);
+  const pastEvents = events.filter((event) => event.past);
 
   return (
     <div className="min-h-screen py-20">
@@ -20,8 +27,11 @@ const Events = () => {
           KONCERTI
         </h1>
 
+        {isLoading && <p className="text-muted-foreground">Nalaganje koncertov …</p>}
+        {isError && <p className="text-destructive">Koncertov trenutno ni mogoče naložiti.</p>}
+
         {/* Upcoming Events */}
-        <section className="mb-20">
+        {!isLoading && !isError && <section className="mb-20">
           <h2 className="text-3xl font-bold mb-8 text-foreground">
             Prihajajoči koncerti
           </h2>
@@ -81,10 +91,10 @@ const Events = () => {
               </Card>
             ))}
           </div>
-        </section>
+        </section>}
 
         {/* Past Events Archive */}
-        <section>
+        {!isLoading && !isError && <section>
           <h2 className="text-3xl font-bold mb-8 text-foreground">
             Arhiv preteklih koncertov
           </h2>
@@ -127,7 +137,7 @@ const Events = () => {
               </Card>
             ))}
           </div>
-        </section>
+        </section>}
       </div>
     </div>
   );
