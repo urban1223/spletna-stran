@@ -50,6 +50,36 @@ const emptyForm: ConcertForm = {
   past: false,
 };
 
+const composerSuggestions = [
+  "J. S. Bach",
+  "G. P. Telemann",
+  "G. F. Händel",
+  "A. Vivaldi",
+  "J. van Eyck",
+  "A. Corelli",
+  "P. A. Locatelli",
+  "G. Tartini",
+  "J. D. Zelenka",
+  "M. A. Charpentier",
+  "W. A. Mozart",
+  "G. B. Fontana",
+  "W. Byrd",
+  "T. Morley",
+  "J. J. Quantz",
+];
+
+const locationSuggestions = [
+  "Cerkev sv. Jožefa, Ljubljana",
+  "Cerkev sv. Jakoba, Ljubljana",
+  "Stolnica sv. Nikolaja, Ljubljana",
+  "Župnijska cerkev sv. Petra, Radovljica",
+  "Cerkev sv. Kancijana in tovarišev, Kranj",
+  "Dvorana Gimnazije Kranj",
+  "Atrij ZRC SAZU, Ljubljana",
+  "Baročna dvorana, Radovljica",
+  "DSO Pristan, Vipava",
+];
+
 const PERSISTENCE_WARNING =
   "Spremembe se po uspešni objavi trajno shranijo v strežniško podatkovno bazo in so takoj vidne na javni strani.";
 
@@ -193,6 +223,16 @@ export default function AdminDodajaj() {
     setCopyNotice("");
   };
 
+  const addComposerSuggestion = (composer: string) => {
+    const current = form.program.trim();
+    const composers = current
+      .split(",")
+      .map((item) => item.trim().toLocaleLowerCase("sl-SI"))
+      .filter(Boolean);
+    if (composers.includes(composer.toLocaleLowerCase("sl-SI"))) return;
+    update("program", current ? `${current.replace(/,\s*$/, "")}, ${composer}` : composer);
+  };
+
   const startNew = () => {
     setForm(emptyForm);
     setEditingSlug(null);
@@ -304,7 +344,7 @@ export default function AdminDodajaj() {
   const field = (
     label: string,
     key: keyof ConcertForm,
-    options: { required?: boolean; type?: string; multiline?: boolean; placeholder?: string } = {},
+    options: { required?: boolean; type?: string; multiline?: boolean; placeholder?: string; list?: string } = {},
   ) => (
     <label style={labelStyle}>
       <span>
@@ -327,6 +367,7 @@ export default function AdminDodajaj() {
           onChange={(e) => update(key, e.target.value)}
           required={options.required}
           placeholder={options.placeholder}
+          list={options.list}
           style={inputStyle}
         />
       )}
@@ -392,11 +433,34 @@ export default function AdminDodajaj() {
         <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>Osnovni podatki</h3>
         <div className="admin-grid">
           {field("Naslov koncerta", "title", { required: true, placeholder: "Npr. Večer klasične glasbe" })}
-          {field("Prizorišče / lokacija", "location", { required: true })}
+          {field("Prizorišče / lokacija", "location", { required: true, list: "admin-location-suggestions" })}
           {field("Datum", "date", { required: true, type: "date" })}
           {field("Ura", "time", { required: true, type: "time" })}
           {field("Nastopajoči", "description", { multiline: true, placeholder: "Npr. orkester, solisti, zbor …" })}
-          {field("Program / skladatelji", "program", { multiline: true })}
+          <div style={{ display: "grid", gap: 7 }}>
+            {field("Program / skladatelji", "program", { multiline: true, placeholder: "Izberi predlog ali vpiši ročno; več skladateljev loči z vejico." })}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {composerSuggestions.map((composer) => (
+                <button
+                  key={composer}
+                  type="button"
+                  className="admin-button admin-secondary"
+                  style={{ padding: "6px 9px", fontSize: 12 }}
+                  onClick={() => addComposerSuggestion(composer)}
+                >
+                  + {composer}
+                </button>
+              ))}
+            </div>
+            <datalist id="admin-location-suggestions">
+              {locationSuggestions.map((location) => (
+                <option key={location} value={location} />
+              ))}
+            </datalist>
+            <span style={{ color: "hsl(220 8% 68%)", fontSize: 12 }}>
+              Predlogi skladateljev se dodajo z vejico. Besedilo lahko kadarkoli ročno dopolniš.
+            </span>
+          </div>
           {field("Dirigent", "conductor")}
           {field("Vstopnina", "admission")}
           {field("Besedilo gumba", "cta", { required: true })}
