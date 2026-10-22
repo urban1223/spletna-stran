@@ -8,7 +8,7 @@ const getJson = async <T>(path: string): Promise<T> => {
   return response.json() as Promise<T>;
 };
 
-const sendJson = async <T>(path: string, method: "POST" | "PUT", body?: unknown): Promise<T> => {
+const sendJson = async <T>(path: string, method: "POST" | "PUT" | "DELETE", body?: unknown): Promise<T> => {
   const response = await fetch(path, {
     method,
     headers: { "Content-Type": "application/json" },
@@ -39,3 +39,6 @@ export const saveEvent = (event: Event, editingSlug?: string) =>
     editingSlug ? "PUT" : "POST",
     event,
   );
+
+export const deleteEvent = (slug: string) =>
+  sendJson<{ deleted: boolean; slug: string }>(`/api/events/${encodeURIComponent(slug)}`, "DELETE");

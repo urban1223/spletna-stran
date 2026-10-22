@@ -27,9 +27,54 @@ const contentTypes = {
   ".ico": "image/x-icon",
 };
 
+const publicBaseUrl = (process.env.PUBLIC_BASE_URL || "https://nova-akademija.si").replace(/\/$/, "");
+
 const sendJson = (response, statusCode, body) => {
   response.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
   response.end(JSON.stringify(body));
+};
+
+const escapeXml = (value) =>
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+
+const sendSitemap = (response) => {
+  const events = database
+    .prepare("SELECT slug, iso_date, past FROM events WHERE published = 1 ORDER BY iso_date ASC, slug ASC")
+    .all();
+  const staticUrls = [
+    { path: "/", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "1.0" },
+    { path: "/dogodki", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "0.9" },
+  ];
+  const urls = [
+    ...staticUrls,
+    ...events.map((event) => ({
+      path: `/dogodki/${event.slug}`,
+      lastmod: event.iso_date,
+      changefreq: Boolean(event.past) ? "never" : "monthly",
+      priority: Boolean(event.past) ? "0.4" : "0.95",
+    })),
+  ];
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls
+  .map(
+    (url) => `  <url>
+    <loc>${escapeXml(`${publicBaseUrl}${url.path}`)}</loc>
+    <lastmod>${escapeXml(url.lastmod)}</lastmod>
+    <changefreq>${url.changefreq}</changefreq>
+    <priority>${url.priority}</priority>
+  </url>`,
+  )
+  .join("\n")}
+</urlset>
+`;
+  response.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" });
+  response.end(body);
 };
 
 const parseCookies = (header = "") =>
@@ -153,7 +198,8 @@ const serializeEvent = (event) => ({
 });
 
 const server = createServer(async (request, response) => {
-  const allowedMethods = request.method === "GET" || request.method === "POST" || request.method === "PUT";
+  const allowedMethods =
+    request.method === "GET" || request.method === "POST" || request.method === "PUT" || request.method === "DELETE";
   if (!allowedMethods) {
     sendJson(response, 405, { error: "Method not allowed" });
     return;
@@ -163,6 +209,11 @@ const server = createServer(async (request, response) => {
 
   if (requestUrl.pathname === "/api/health") {
     sendJson(response, 200, { status: "ok" });
+    return;
+  }
+
+  if (requestUrl.pathname === "/sitemap.xml" && request.method === "GET") {
+    sendSitemap(response);
     return;
   }
 
@@ -213,6 +264,17 @@ const server = createServer(async (request, response) => {
     }
 
     try {
+      if (request.method === "DELETE" && requestUrl.pathname.startsWith("/api/events/")) {
+        const slug = decodeURIComponent(requestUrl.pathname.slice("/api/events/".length));
+        const result = database.prepare("DELETE FROM events WHERE slug = ?").run(slug);
+        if (result.changes === 0) {
+          sendJson(response, 404, { error: "Not found" });
+          return;
+        }
+        sendJson(response, 200, { deleted: true, slug });
+        return;
+      }
+
       const body = await readJsonBody(request);
       const errorMessage = validateEvent(body);
       if (errorMessage) {

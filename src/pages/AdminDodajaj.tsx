@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import type { Event } from "@/data/events-data";
-import { getAdminSession, getEvents, loginAdmin, logoutAdmin, saveEvent } from "@/lib/events-api";
+import { deleteEvent, getAdminSession, getEvents, loginAdmin, logoutAdmin, saveEvent } from "@/lib/events-api";
 
 type ConcertForm = {
   title: string;
@@ -256,6 +256,22 @@ export default function AdminDodajaj() {
       setAuthenticated(false);
       setEvents([]);
     });
+  };
+
+  const handleDelete = (event: Event) => {
+    if (!window.confirm(`Ali res želiš izbrisati koncert »${event.title}«? Tega dejanja ni mogoče razveljaviti.`)) {
+      return;
+    }
+    setNotice("");
+    deleteEvent(event.slug)
+      .then(() => {
+        setEvents((current) => current.filter((item) => item.slug !== event.slug));
+        if (editingSlug === event.slug) {
+          startNew();
+        }
+        setNotice(`Koncert »${event.title}« je bil izbrisan.`);
+      })
+      .catch((error: Error) => setNotice(`Brisanje ni uspelo: ${error.message}`));
   };
 
   const copyJson = async () => {
@@ -562,13 +578,23 @@ export default function AdminDodajaj() {
                       {isPast ? "Pretekli" : "Prihajajoči"}
                     </span>
                   </div>
-                  <button
-                    className="admin-button admin-secondary"
-                    type="button"
-                    onClick={() => editEvent(event)}
-                  >
-                    Uredi koncert
-                  </button>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      className="admin-button admin-secondary"
+                      type="button"
+                      onClick={() => editEvent(event)}
+                    >
+                      Uredi koncert
+                    </button>
+                    <button
+                      className="admin-button admin-secondary"
+                      type="button"
+                      onClick={() => handleDelete(event)}
+                      style={{ color: "hsl(0 75% 75%)", borderColor: "hsl(0 45% 35%)" }}
+                    >
+                      Izbriši
+                    </button>
+                  </div>
                   {editingSlug === event.slug && (
                     <div style={{ flexBasis: "100%", width: "100%" }}>{editorForm}</div>
                   )}
