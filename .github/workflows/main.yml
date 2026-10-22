@@ -8,6 +8,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
 
     steps:
     - name: Connect to VPS and deploy
@@ -17,8 +19,6 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
         envs: ADMIN_PASSWORD
-        env:
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
         script: |
           cd /home/timrekelj/nova-akademija
           git pull origin main
