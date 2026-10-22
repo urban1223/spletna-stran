@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import EventDetail from "./pages/EventDetail";
 import MemberDetail from "./pages/MemberDetail";
 import Tools from "./pages/Tools";
+import AdminDodajaj from "./pages/AdminDodajaj";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/orodja" element={<Tools />} />
               <Route path="/galerija" element={<Gallery />} />
               <Route path="/podprite-nas" element={<Support />} />
+              <Route path="/admin-dodajaj" element={<AdminDodajaj />} />
               <Route path="*" element={<NotFound />} />
               <Route path="/dogodki/:slug" element={<EventDetail />} />
               <Route path="/clani/:slug" element={<MemberDetail />} />
