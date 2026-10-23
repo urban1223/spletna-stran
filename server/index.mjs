@@ -273,7 +273,11 @@ const server = createServer(async (request, response) => {
       }
       const result = database
         .prepare("INSERT INTO gallery_albums (title, instagram_url, sort_order) VALUES (?, ?, ?)")
-        .run(body.title.trim(), body.instagramLink?.trim() || null, getGallery().length);
+        .run(
+          body.title.trim(),
+          body.instagramLink?.trim() || null,
+          (database.prepare("SELECT COALESCE(MIN(sort_order), 0) - 1 AS first FROM gallery_albums").get().first),
+        );
       sendJson(response, 201, { id: Number(result.lastInsertRowid) });
       return;
     } catch (error) {
