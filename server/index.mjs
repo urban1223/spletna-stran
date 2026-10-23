@@ -319,6 +319,50 @@ const server = createServer(async (request, response) => {
         sendJson(response, 200, { deleted: true });
         return;
       }
+      if (request.method === "POST" && parts[3] === "move") {
+        const body = await readJsonBody(request);
+        if (body.direction !== "up" && body.direction !== "down") {
+          sendJson(response, 400, { error: "Gallery direction is invalid" });
+          return;
+        }
+        const current = database
+          .prepare("SELECT id, sort_order FROM gallery_albums WHERE id = ?")
+          .get(albumId);
+        if (!current) {
+          sendJson(response, 404, { error: "Gallery not found" });
+          return;
+        }
+        const comparison = body.direction === "up" ? "<" : ">";
+        const ordering = body.direction === "up" ? "DESC" : "ASC";
+        const neighbor = database
+          .prepare(
+            `SELECT id, sort_order FROM gallery_albums
+             WHERE sort_order ${comparison} ?
+             ORDER BY sort_order ${ordering}, id ${ordering}
+             LIMIT 1`,
+          )
+          .get(current.sort_order);
+        if (!neighbor) {
+          sendJson(response, 200, { moved: false });
+          return;
+        }
+        database.exec("BEGIN");
+        try {
+          database.prepare("UPDATE gallery_albums SET sort_order = -1, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(current.id);
+          database
+            .prepare("UPDATE gallery_albums SET sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+            .run(current.sort_order, neighbor.id);
+          database
+            .prepare("UPDATE gallery_albums SET sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+            .run(neighbor.sort_order, current.id);
+          database.exec("COMMIT");
+        } catch (error) {
+          database.exec("ROLLBACK");
+          throw error;
+        }
+        sendJson(response, 200, { moved: true });
+        return;
+      }
       if (request.method === "PUT" && !imageId) {
         const body = await readJsonBody(request);
         if (typeof body.title !== "string" || !body.title.trim()) {

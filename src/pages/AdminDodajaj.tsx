@@ -6,6 +6,7 @@ import {
   deleteGallery,
   deleteGalleryImage,
   getGallery,
+  moveGallery,
   uploadGalleryImage,
   updateGallery,
   type GalleryAlbum,
@@ -196,6 +197,8 @@ export default function AdminDodajaj() {
   const [newGalleryTitle, setNewGalleryTitle] = useState("");
   const [newGalleryInstagram, setNewGalleryInstagram] = useState("");
   const [galleryNotice, setGalleryNotice] = useState("");
+  const [uploadingGalleryId, setUploadingGalleryId] = useState<number | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     getAdminSession()
@@ -338,7 +341,10 @@ export default function AdminDodajaj() {
   const refreshGallery = () => getGallery().then(setGalleryAlbums);
 
   const createGalleryAlbum = () => {
-    if (!newGalleryTitle.trim()) return;
+    if (!newGalleryTitle.trim()) {
+      setGalleryNotice("Vpiši naslov galerije, nato klikni »Shrani in objavi galerijo«.");
+      return;
+    }
     createGallery(newGalleryTitle, newGalleryInstagram)
       .then(() => {
         setNewGalleryTitle("");
@@ -347,6 +353,13 @@ export default function AdminDodajaj() {
         return refreshGallery();
       })
       .catch((error: Error) => setGalleryNotice(`Galerije ni mogoče ustvariti: ${error.message}`));
+  };
+
+  const handleGalleryMove = (album: GalleryAlbum, direction: "up" | "down") => {
+    moveGallery(album.id, direction)
+      .then(() => refreshGallery())
+      .then(() => setGalleryNotice(`Galerija »${album.title}« je premaknjena ${direction === "up" ? "navzgor" : "navzdol"}.`))
+      .catch((error: Error) => setGalleryNotice(`Premik ni uspel: ${error.message}`));
   };
 
   const resizeImage = (file: File): Promise<string> =>
@@ -387,13 +400,23 @@ export default function AdminDodajaj() {
 
   const handleGalleryUpload = async (album: GalleryAlbum, file: File) => {
     try {
-      setGalleryNotice("Slika se zmanjšuje …");
+      setUploadingGalleryId(album.id);
+      setUploadProgress(10);
+      setGalleryNotice(`Galerija »${album.title}«: pripravljam sliko …`);
       const data = await resizeImage(file);
+      setUploadProgress(55);
+      setGalleryNotice(`Galerija »${album.title}«: nalagam sliko …`);
       await uploadGalleryImage(album.id, data, file.name);
+      setUploadProgress(85);
+      setGalleryNotice(`Galerija »${album.title}«: osvežujem galerijo …`);
       await refreshGallery();
+      setUploadProgress(100);
       setGalleryNotice("Slika je bila zmanjšana pod 200 KB in objavljena.");
     } catch (error) {
       setGalleryNotice(`Slike ni mogoče objaviti: ${(error as Error).message}`);
+    } finally {
+      setUploadingGalleryId(null);
+      setUploadProgress(0);
     }
   };
 
@@ -623,6 +646,10 @@ export default function AdminDodajaj() {
           Vsaka slika se pred objavo samodejno zmanjša. Največja dovoljena velikost je <strong>200 KB</strong>.
           Slike se shranijo kot 1.jpg, 2.jpg, 3.jpg …
         </p>
+        <p style={{ margin: "10px 0 0", color: "hsl(45 85% 75%)", lineHeight: 1.5 }}>
+          Ko klikneš »Shrani in objavi galerijo«, se galerija takoj prikaže na javni strani <strong>/galerija</strong>.
+          Nato v posamezni galeriji klikni »Naloži sliko«, da dodaš fotografije.
+        </p>
       </div>
       <div className="admin-grid">
         <label style={labelStyle}>
@@ -635,23 +662,43 @@ export default function AdminDodajaj() {
         </label>
       </div>
       <button className="admin-button admin-gold" type="button" onClick={createGalleryAlbum}>
-        + Ustvari galerijo
+        + Shrani in objavi galerijo
       </button>
       {galleryNotice && <div role="status" style={{ color: "hsl(45 85% 75%)" }}>{galleryNotice}</div>}
       <div style={{ display: "grid", gap: 18 }}>
-        {galleryAlbums.map((album) => (
+        {galleryAlbums.map((album, albumIndex) => (
           <article key={album.id} className="admin-card" style={{ display: "grid", gap: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <input
-                style={{ ...inputStyle, maxWidth: 500 }}
-                value={album.title}
-                onChange={(e) =>
-                  setGalleryAlbums((current) =>
-                    current.map((item) => (item.id === album.id ? { ...item, title: e.target.value } : item)),
-                  )
-                }
-                onBlur={() => updateGallery(album).catch((error: Error) => setGalleryNotice(error.message))}
-              />
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <button
+                  className="admin-button admin-secondary"
+                  type="button"
+                  disabled={albumIndex === 0}
+                  onClick={() => handleGalleryMove(album, "up")}
+                  aria-label={`Premakni galerijo ${album.title} navzgor`}
+                >
+                  ↑ Gor
+                </button>
+                <button
+                  className="admin-button admin-secondary"
+                  type="button"
+                  disabled={albumIndex === galleryAlbums.length - 1}
+                  onClick={() => handleGalleryMove(album, "down")}
+                  aria-label={`Premakni galerijo ${album.title} navzdol`}
+                >
+                  ↓ Dol
+                </button>
+                <input
+                  style={{ ...inputStyle, maxWidth: 500 }}
+                  value={album.title}
+                  onChange={(e) =>
+                    setGalleryAlbums((current) =>
+                      current.map((item) => (item.id === album.id ? { ...item, title: e.target.value } : item)),
+                    )
+                  }
+                  onBlur={() => updateGallery(album).catch((error: Error) => setGalleryNotice(error.message))}
+                />
+              </div>
               <button className="admin-button admin-secondary" type="button" onClick={() => handleGalleryDelete(album)}>
                 Izbriši galerijo
               </button>
@@ -666,12 +713,30 @@ export default function AdminDodajaj() {
                 </div>
               ))}
             </div>
-            <label className="admin-button admin-gold" style={{ display: "inline-block", width: "fit-content" }}>
-              + Dodaj sliko (resizer, največ 200 KB)
+            {uploadingGalleryId === album.id && (
+              <div role="status" aria-live="polite" style={{ display: "grid", gap: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "hsl(220 8% 68%)" }}>
+                  <span>Nalaganje slike …</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <progress value={uploadProgress} max={100} style={{ width: "100%", accentColor: "hsl(45 85% 65%)" }} />
+              </div>
+            )}
+            <label
+              className="admin-button admin-gold"
+              style={{
+                display: "inline-block",
+                width: "fit-content",
+                opacity: uploadingGalleryId !== null ? 0.6 : 1,
+                pointerEvents: uploadingGalleryId !== null ? "none" : "auto",
+              }}
+            >
+              + Naloži sliko (samodejni resizer, največ 200 KB)
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 hidden
+                disabled={uploadingGalleryId !== null}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) void handleGalleryUpload(album, file);

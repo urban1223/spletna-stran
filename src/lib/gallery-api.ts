@@ -34,6 +34,13 @@ export const updateGallery = (album: GalleryAlbum) =>
     body: JSON.stringify({ title: album.title, instagramLink: album.instagramLink }),
   });
 
+export const moveGallery = (id: number, direction: "up" | "down") =>
+  request<{ moved: boolean }>(`/api/gallery/${id}/move`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ direction }),
+  });
+
 export const deleteGallery = (id: number) => request<{ deleted: boolean }>(`/api/gallery/${id}`, { method: "DELETE" });
 
 export const uploadGalleryImage = (albumId: number, data: string, alt: string) =>
