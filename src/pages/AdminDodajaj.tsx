@@ -403,6 +403,11 @@ export default function AdminDodajaj() {
     setCsvNotice(`Izvoženih koncertov: ${exportEvents.length}. CSV lahko zdaj uvoziš v Canvin Bulk Create.`);
   };
 
+  const exportSingleCanvaEvent = (event: Event) => {
+    downloadCanvaCsv([event], `koncert-${event.slug}-canva.csv`);
+    setCsvNotice(`Izvožen je koncert »${event.title}«. CSV lahko zdaj uvoziš v Canvin Bulk Create.`);
+  };
+
   const refreshGallery = () => getGallery().then(setGalleryAlbums);
 
   const createGalleryAlbum = () => {
@@ -984,6 +989,13 @@ export default function AdminDodajaj() {
                       onClick={() => editEvent(event)}
                     >
                       Uredi koncert
+                    </button>
+                    <button
+                      className="admin-button admin-secondary"
+                      type="button"
+                      onClick={() => exportSingleCanvaEvent(event)}
+                    >
+                      Izvozi za Canvo
                     </button>
                     <button
                       className="admin-button admin-secondary"
