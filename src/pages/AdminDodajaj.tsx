@@ -123,6 +123,55 @@ const formatSlovenianDate = (isoDate: string): string => {
   return `${capitalizedWeekday}, ${day}. ${monthName} ${year}`;
 };
 
+const canvaCsvColumns = [
+  "title",
+  "date",
+  "time",
+  "location",
+  "program",
+  "conductor",
+  "description",
+  "admission",
+  "cta",
+  "link",
+  "event_url",
+];
+
+const csvCell = (value: string | null | undefined): string => {
+  const normalized = (value || "").replace(/\r?\n/g, " ").trim();
+  return `"${normalized.replace(/"/g, '""')}"`;
+};
+
+const downloadCanvaCsv = (events: Event[], filename: string) => {
+  const origin = window.location.origin;
+  const rows = events.map((event) => [
+    event.title,
+    event.date,
+    event.time,
+    event.location,
+    event.program,
+    event.conductor,
+    event.description,
+    event.admission,
+    event.cta,
+    event.link,
+    `${origin}/dogodki/${event.slug}`,
+  ]);
+  const csv = [
+    canvaCsvColumns.join(","),
+    ...rows.map((row) => row.map(csvCell).join(",")),
+  ].join("\r\n");
+  const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
 const eventToForm = (event: Event, isPast: boolean): ConcertForm => ({
   title: event.title,
   date: event.isoDate || "",
@@ -199,6 +248,7 @@ export default function AdminDodajaj() {
   const [galleryNotice, setGalleryNotice] = useState("");
   const [uploadingGalleryId, setUploadingGalleryId] = useState<number | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [csvNotice, setCsvNotice] = useState("");
 
   useEffect(() => {
     getAdminSession()
@@ -336,6 +386,21 @@ export default function AdminDodajaj() {
         setNotice(`Koncert »${event.title}« je bil izbrisan.`);
       })
       .catch((error: Error) => setNotice(`Brisanje ni uspelo: ${error.message}`));
+  };
+
+  const exportCanvaEvents = (onlyUpcoming: boolean) => {
+    const exportEvents = events
+      .filter((event) => !onlyUpcoming || !pastSlugs.has(event.slug))
+      .sort((a, b) => (a.isoDate || "").localeCompare(b.isoDate || ""));
+    if (exportEvents.length === 0) {
+      setCsvNotice("Za izvoz ni koncertov.");
+      return;
+    }
+    downloadCanvaCsv(
+      exportEvents,
+      onlyUpcoming ? "koncerti-prihodnji-canva.csv" : "koncerti-vsi-canva.csv",
+    );
+    setCsvNotice(`Izvoženih koncertov: ${exportEvents.length}. CSV lahko zdaj uvoziš v Canvin Bulk Create.`);
   };
 
   const refreshGallery = () => getGallery().then(setGalleryAlbums);
@@ -842,10 +907,26 @@ export default function AdminDodajaj() {
             }}
           >
             <h2 style={{ margin: 0, fontSize: 21 }}>Objavljeni koncerti ({visibleEvents.length})</h2>
-            <button className="admin-button admin-gold" type="button" onClick={startNew}>
-              + Nov koncert
-            </button>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button className="admin-button admin-secondary" type="button" onClick={() => exportCanvaEvents(true)}>
+                Izvozi prihodnje za Canvo
+              </button>
+              <button className="admin-button admin-secondary" type="button" onClick={() => exportCanvaEvents(false)}>
+                Izvozi vse za Canvo
+              </button>
+              <button className="admin-button admin-gold" type="button" onClick={startNew}>
+                + Nov koncert
+              </button>
+            </div>
           </div>
+          <p style={{ margin: "0 0 14px", color: "hsl(220 8% 68%)", fontSize: 13, lineHeight: 1.5 }}>
+            CSV je pripravljen za <strong>Canva → Apps → Bulk Create</strong>. Vsebuje besedilna polja in javno povezavo do koncerta.
+          </p>
+          {csvNotice && (
+            <div role="status" style={{ marginBottom: 14, color: "hsl(45 85% 75%)" }}>
+              {csvNotice}
+            </div>
+          )}
           <div className="admin-grid" style={{ marginBottom: 12 }}>
             <label style={labelStyle}>
               Iskanje po naslovu
