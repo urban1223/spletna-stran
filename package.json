@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "serve": "vite serve",
     "migrate:events": "node --experimental-sqlite server/migrate-events.mjs",
+    "migrate:gallery": "node --experimental-sqlite server/migrate-gallery.mjs",
     "backup:events": "node --experimental-sqlite server/backup-events.mjs",
     "start:local": "node --experimental-sqlite server/index.mjs",
     "sync:styles": "node scripts/sync-shared-style.mjs"

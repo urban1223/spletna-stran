@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import type { Event } from "@/data/events-data";
 import { deleteEvent, getAdminSession, getEvents, loginAdmin, logoutAdmin, saveEvent } from "@/lib/events-api";
+import {
+  createGallery,
+  deleteGallery,
+  deleteGalleryImage,
+  getGallery,
+  uploadGalleryImage,
+  updateGallery,
+  type GalleryAlbum,
+} from "@/lib/gallery-api";
 
 type ConcertForm = {
   title: string;
@@ -181,12 +190,23 @@ export default function AdminDodajaj() {
   const [showPreview, setShowPreview] = useState(false);
   const [notice, setNotice] = useState("");
   const [copyNotice, setCopyNotice] = useState("");
+  const [activeTab, setActiveTab] = useState<"events" | "gallery">("events");
+  const [galleryAlbums, setGalleryAlbums] = useState<GalleryAlbum[]>([]);
+  const [selectedGalleryId, setSelectedGalleryId] = useState<number | null>(null);
+  const [newGalleryTitle, setNewGalleryTitle] = useState("");
+  const [newGalleryInstagram, setNewGalleryInstagram] = useState("");
+  const [galleryNotice, setGalleryNotice] = useState("");
 
   useEffect(() => {
     getAdminSession()
       .then((session) => {
         setAuthenticated(session.authenticated);
-        if (session.authenticated) return getEvents().then(setEvents);
+        if (session.authenticated) {
+          return Promise.all([getEvents(), getGallery()]).then(([loadedEvents, loadedGallery]) => {
+            setEvents(loadedEvents);
+            setGalleryAlbums(loadedGallery);
+          });
+        }
         return undefined;
       })
       .catch(() => setLoginError("Povezava s strežnikom ni uspela."))
@@ -295,6 +315,7 @@ export default function AdminDodajaj() {
     logoutAdmin().finally(() => {
       setAuthenticated(false);
       setEvents([]);
+      setGalleryAlbums([]);
     });
   };
 
@@ -312,6 +333,86 @@ export default function AdminDodajaj() {
         setNotice(`Koncert »${event.title}« je bil izbrisan.`);
       })
       .catch((error: Error) => setNotice(`Brisanje ni uspelo: ${error.message}`));
+  };
+
+  const refreshGallery = () => getGallery().then(setGalleryAlbums);
+
+  const createGalleryAlbum = () => {
+    if (!newGalleryTitle.trim()) return;
+    createGallery(newGalleryTitle, newGalleryInstagram)
+      .then(() => {
+        setNewGalleryTitle("");
+        setNewGalleryInstagram("");
+        setGalleryNotice("Galerija je ustvarjena.");
+        return refreshGallery();
+      })
+      .catch((error: Error) => setGalleryNotice(`Galerije ni mogoče ustvariti: ${error.message}`));
+  };
+
+  const resizeImage = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      image.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const scale = Math.min(1, 2000 / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        if (!context) {
+          reject(new Error("Resizer ni na voljo."));
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        let quality = 0.82;
+        const createData = () => canvas.toDataURL("image/jpeg", quality);
+        let data = createData();
+        while (data.length * 0.75 > 200 * 1024 && quality > 0.2) {
+          quality -= 0.08;
+          data = createData();
+        }
+        if (data.length * 0.75 > 200 * 1024) {
+          reject(new Error("Slike ni mogoče zmanjšati pod 200 KB."));
+          return;
+        }
+        resolve(data);
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("Slike ni mogoče prebrati."));
+      };
+      image.src = objectUrl;
+    });
+
+  const handleGalleryUpload = async (album: GalleryAlbum, file: File) => {
+    try {
+      setGalleryNotice("Slika se zmanjšuje …");
+      const data = await resizeImage(file);
+      await uploadGalleryImage(album.id, data, file.name);
+      await refreshGallery();
+      setGalleryNotice("Slika je bila zmanjšana pod 200 KB in objavljena.");
+    } catch (error) {
+      setGalleryNotice(`Slike ni mogoče objaviti: ${(error as Error).message}`);
+    }
+  };
+
+  const handleGalleryDelete = (album: GalleryAlbum) => {
+    if (!window.confirm(`Ali res želiš izbrisati galerijo »${album.title}«?`)) return;
+    deleteGallery(album.id)
+      .then(() => {
+        setGalleryAlbums((current) => current.filter((item) => item.id !== album.id));
+        setGalleryNotice("Galerija je izbrisana.");
+      })
+      .catch((error: Error) => setGalleryNotice(`Brisanje ni uspelo: ${error.message}`));
+  };
+
+  const handleGalleryImageDelete = (album: GalleryAlbum, imageId: number) => {
+    if (!window.confirm("Ali res želiš izbrisati to sliko?")) return;
+    deleteGalleryImage(album.id, imageId)
+      .then(() => refreshGallery())
+      .then(() => setGalleryNotice("Slika je izbrisana."))
+      .catch((error: Error) => setGalleryNotice(`Brisanje ni uspelo: ${error.message}`));
   };
 
   const copyJson = async () => {
@@ -514,6 +615,76 @@ export default function AdminDodajaj() {
     </form>
   );
 
+  const galleryEditor = (
+    <section className="admin-card" style={{ display: "grid", gap: 18 }}>
+      <div>
+        <h2 style={{ margin: "0 0 8px", fontSize: 21 }}>Uredi slike</h2>
+        <p style={{ margin: 0, color: "hsl(220 8% 68%)", lineHeight: 1.5 }}>
+          Vsaka slika se pred objavo samodejno zmanjša. Največja dovoljena velikost je <strong>200 KB</strong>.
+          Slike se shranijo kot 1.jpg, 2.jpg, 3.jpg …
+        </p>
+      </div>
+      <div className="admin-grid">
+        <label style={labelStyle}>
+          Naslov nove galerije
+          <input style={inputStyle} value={newGalleryTitle} onChange={(e) => setNewGalleryTitle(e.target.value)} />
+        </label>
+        <label style={labelStyle}>
+          Instagram povezava (neobvezno)
+          <input style={inputStyle} type="url" value={newGalleryInstagram} onChange={(e) => setNewGalleryInstagram(e.target.value)} />
+        </label>
+      </div>
+      <button className="admin-button admin-gold" type="button" onClick={createGalleryAlbum}>
+        + Ustvari galerijo
+      </button>
+      {galleryNotice && <div role="status" style={{ color: "hsl(45 85% 75%)" }}>{galleryNotice}</div>}
+      <div style={{ display: "grid", gap: 18 }}>
+        {galleryAlbums.map((album) => (
+          <article key={album.id} className="admin-card" style={{ display: "grid", gap: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <input
+                style={{ ...inputStyle, maxWidth: 500 }}
+                value={album.title}
+                onChange={(e) =>
+                  setGalleryAlbums((current) =>
+                    current.map((item) => (item.id === album.id ? { ...item, title: e.target.value } : item)),
+                  )
+                }
+                onBlur={() => updateGallery(album).catch((error: Error) => setGalleryNotice(error.message))}
+              />
+              <button className="admin-button admin-secondary" type="button" onClick={() => handleGalleryDelete(album)}>
+                Izbriši galerijo
+              </button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(130px,1fr))", gap: 12 }}>
+              {album.images.map((image) => (
+                <div key={image.id} style={{ display: "grid", gap: 6 }}>
+                  <img src={image.src} alt={image.alt} style={{ width: "100%", height: 130, objectFit: "cover", borderRadius: 8 }} />
+                  <button className="admin-button admin-secondary" type="button" onClick={() => handleGalleryImageDelete(album, image.id)}>
+                    Izbriši sliko
+                  </button>
+                </div>
+              ))}
+            </div>
+            <label className="admin-button admin-gold" style={{ display: "inline-block", width: "fit-content" }}>
+              + Dodaj sliko (resizer, največ 200 KB)
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleGalleryUpload(album, file);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+
   return (
     <main
       className="admin-concerts"
@@ -574,9 +745,27 @@ export default function AdminDodajaj() {
           </button>
         </header>
 
-        {!editingSlug && editorForm}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
+          <button
+            className={`admin-button ${activeTab === "events" ? "admin-gold" : "admin-secondary"}`}
+            type="button"
+            onClick={() => setActiveTab("events")}
+          >
+            Uredi koncert
+          </button>
+          <button
+            className={`admin-button ${activeTab === "gallery" ? "admin-gold" : "admin-secondary"}`}
+            type="button"
+            onClick={() => setActiveTab("gallery")}
+          >
+            Uredi slike
+          </button>
+        </div>
 
-        <section className="admin-card" style={{ marginBottom: 18 }}>
+        {activeTab === "events" && (
+          <>
+            {!editingSlug && editorForm}
+            <section className="admin-card" style={{ marginBottom: 18 }}>
           <div
             style={{
               display: "flex",
@@ -666,9 +855,11 @@ export default function AdminDodajaj() {
               );
             })
           )}
-        </section>
+            </section>
+          </>
+        )}
 
-        {showPreview && (
+        {activeTab === "events" && showPreview && (
           <section id="admin-preview" className="admin-card" style={{ marginTop: 18 }}>
             <div
               style={{
@@ -736,6 +927,7 @@ export default function AdminDodajaj() {
             </p>
           </section>
         )}
+        {activeTab === "gallery" && galleryEditor}
       </div>
     </main>
   );

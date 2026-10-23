@@ -1,6 +1,6 @@
 import { createReadStream } from "node:fs";
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { access, stat } from "node:fs/promises";
+import { access, mkdir, stat, unlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,6 +10,7 @@ import "./db.mjs";
 const port = Number(process.env.PORT || 8080);
 const publicDirectory = fileURLToPath(new URL("../dist/", import.meta.url));
 const indexFile = join(publicDirectory, "index.html");
+const galleryDirectory = process.env.GALLERY_DIRECTORY || fileURLToPath(new URL("../data/gallery/", import.meta.url));
 const adminUsername = process.env.ADMIN_USERNAME || "urban";
 const adminPassword = process.env.ADMIN_PASSWORD;
 const sessions = new Map();
@@ -49,6 +50,7 @@ const sendSitemap = (response) => {
   const staticUrls = [
     { path: "/", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "1.0" },
     { path: "/dogodki", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "0.9" },
+    { path: "/galerija", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "0.8" },
   ];
   const urls = [
     ...staticUrls,
@@ -119,7 +121,7 @@ const readJsonBody = async (request) => {
   let body = "";
   for await (const chunk of request) {
     body += chunk;
-    if (Buffer.byteLength(body) > 64 * 1024) {
+    if (Buffer.byteLength(body) > 512 * 1024) {
       throw new Error("Request body too large");
     }
   }
@@ -197,6 +199,45 @@ const serializeEvent = (event) => ({
   past: Boolean(event.past),
 });
 
+const serializeGallery = (album) => ({
+  id: Number(album.id),
+  title: album.title,
+  instagramLink: album.instagram_url,
+  images: album.images.map((image) => ({
+    id: Number(image.id),
+    src: image.storage_path.startsWith("/images/")
+      ? image.storage_path
+      : `/gallery-files/${image.storage_path}`,
+    alt: image.alt_text,
+  })),
+});
+
+const getGallery = () =>
+  database
+    .prepare(
+      `SELECT a.id, a.title, a.instagram_url, i.id AS image_id, i.storage_path, i.alt_text
+       FROM gallery_albums a
+       LEFT JOIN gallery_images i ON i.album_id = a.id
+       WHERE a.published = 1
+       ORDER BY a.sort_order ASC, a.id ASC, i.sort_order ASC, i.id ASC`,
+    )
+    .all()
+    .reduce((albums, row) => {
+      let album = albums.find((item) => item.id === Number(row.id));
+      if (!album) {
+        album = { id: Number(row.id), title: row.title, instagram_url: row.instagram_url, images: [] };
+        albums.push(album);
+      }
+      if (row.image_id !== null) {
+        album.images.push({
+          id: row.image_id,
+          storage_path: row.storage_path,
+          alt_text: row.alt_text,
+        });
+      }
+      return albums;
+    }, []);
+
 const server = createServer(async (request, response) => {
   const allowedMethods =
     request.method === "GET" || request.method === "POST" || request.method === "PUT" || request.method === "DELETE";
@@ -210,6 +251,127 @@ const server = createServer(async (request, response) => {
   if (requestUrl.pathname === "/api/health") {
     sendJson(response, 200, { status: "ok" });
     return;
+  }
+
+  if (requestUrl.pathname === "/api/gallery" && request.method === "GET") {
+    sendJson(response, 200, getGallery().map(serializeGallery));
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/gallery" && request.method === "POST") {
+    if (!isAuthenticated(request)) {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    try {
+      const body = await readJsonBody(request);
+      if (typeof body.title !== "string" || !body.title.trim()) {
+        sendJson(response, 400, { error: "Gallery title is required" });
+        return;
+      }
+      const result = database
+        .prepare("INSERT INTO gallery_albums (title, instagram_url, sort_order) VALUES (?, ?, ?)")
+        .run(body.title.trim(), body.instagramLink?.trim() || null, getGallery().length);
+      sendJson(response, 201, { id: Number(result.lastInsertRowid) });
+      return;
+    } catch (error) {
+      sendJson(response, error instanceof SyntaxError ? 400 : 500, { error: "Unable to save gallery" });
+      return;
+    }
+  }
+
+  if (requestUrl.pathname.startsWith("/api/gallery/")) {
+    if (!isAuthenticated(request)) {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    const parts = requestUrl.pathname.split("/").filter(Boolean);
+    const albumId = Number(parts[2]);
+    const imageId = parts[4] ? Number(parts[4]) : null;
+    try {
+      if (request.method === "DELETE" && imageId) {
+        const image = database
+          .prepare("SELECT storage_path FROM gallery_images WHERE id = ? AND album_id = ?")
+          .get(imageId, albumId);
+        if (!image) {
+          sendJson(response, 404, { error: "Image not found" });
+          return;
+        }
+        database.prepare("DELETE FROM gallery_images WHERE id = ? AND album_id = ?").run(imageId, albumId);
+        if (image.storage_path.startsWith("/gallery-files/")) {
+          await unlink(join(galleryDirectory, image.storage_path.slice("/gallery-files/".length))).catch(() => {});
+        }
+        sendJson(response, 200, { deleted: true });
+        return;
+      }
+      if (request.method === "DELETE" && !imageId) {
+        const images = database
+          .prepare("SELECT storage_path FROM gallery_images WHERE album_id = ?")
+          .all(albumId);
+        database.prepare("DELETE FROM gallery_albums WHERE id = ?").run(albumId);
+        await Promise.all(
+          images
+            .filter((image) => image.storage_path.startsWith("/gallery-files/"))
+            .map((image) =>
+              unlink(join(galleryDirectory, image.storage_path.slice("/gallery-files/".length))).catch(() => {}),
+            ),
+        );
+        sendJson(response, 200, { deleted: true });
+        return;
+      }
+      if (request.method === "PUT" && !imageId) {
+        const body = await readJsonBody(request);
+        if (typeof body.title !== "string" || !body.title.trim()) {
+          sendJson(response, 400, { error: "Gallery title is required" });
+          return;
+        }
+        database
+          .prepare("UPDATE gallery_albums SET title = ?, instagram_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+          .run(body.title.trim(), body.instagramLink?.trim() || null, albumId);
+        sendJson(response, 200, { updated: true });
+        return;
+      }
+      if (request.method === "POST" && parts[3] === "images") {
+        const body = await readJsonBody(request);
+        const match = /^data:image\/(jpeg|jpg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(body.data || "");
+        if (!match || typeof body.alt !== "string") {
+          sendJson(response, 400, { error: "Only resized JPEG or WebP images are allowed" });
+          return;
+        }
+        const buffer = Buffer.from(match[2], "base64");
+        if (buffer.length > 200 * 1024) {
+          sendJson(response, 413, { error: "Image must be smaller than 200 KB" });
+          return;
+        }
+        const album = database.prepare("SELECT id FROM gallery_albums WHERE id = ?").get(albumId);
+        if (!album) {
+          sendJson(response, 404, { error: "Gallery not found" });
+          return;
+        }
+        const next = database
+          .prepare("SELECT COALESCE(MAX(sort_order), 0) + 1 AS next FROM gallery_images WHERE album_id = ?")
+          .get(albumId).next;
+        const filename = `${next}.jpg`;
+        await mkdir(join(galleryDirectory, String(albumId)), { recursive: true });
+        const relativePath = `${albumId}/${filename}`;
+        await writeFile(join(galleryDirectory, relativePath), buffer);
+        const result = database
+          .prepare(
+            "INSERT INTO gallery_images (album_id, storage_path, original_name, alt_text, sort_order) VALUES (?, ?, ?, ?, ?)",
+          )
+          .run(albumId, `/gallery-files/${relativePath}`, filename, body.alt.trim() || filename, next);
+        sendJson(response, 201, { id: Number(result.lastInsertRowid), src: `/gallery-files/${relativePath}` });
+        return;
+      }
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        sendJson(response, 400, { error: "Invalid JSON" });
+        return;
+      }
+      console.error("Gallery request failed:", error);
+      sendJson(response, 500, { error: "Unable to update gallery" });
+      return;
+    }
   }
 
   if (requestUrl.pathname === "/sitemap.xml" && request.method === "GET") {
@@ -380,6 +542,15 @@ const server = createServer(async (request, response) => {
   }
 
   try {
+    if (requestUrl.pathname.startsWith("/gallery-files/")) {
+      const relativePath = decodeURIComponent(requestUrl.pathname.slice("/gallery-files/".length));
+      const requestedFile = join(galleryDirectory, relativePath);
+      if (normalize(requestedFile).startsWith(normalize(galleryDirectory + sep)) && (await access(requestedFile).then(() => true).catch(() => false))) {
+        if (await sendFile(response, requestedFile)) return;
+      }
+      sendJson(response, 404, { error: "Not found" });
+      return;
+    }
     const decodedPath = decodeURIComponent(requestUrl.pathname);
     const requestedFile = join(publicDirectory, decodedPath);
 

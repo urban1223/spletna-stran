@@ -22,8 +22,9 @@ jobs:
         script: |
           cd /home/timrekelj/nova-akademija
           git pull origin main
-          docker compose exec -T nova-akademija sh -c 'mkdir -p /data/backups && cp /data/events.sqlite /data/backups/events-pre-deploy-$(date -u +%Y%m%dT%H%M%SZ).sqlite'
+          docker compose exec -T nova-akademija npm run backup:events
           docker compose build
           docker compose run --rm nova-akademija npm run migrate:events
+          docker compose run --rm nova-akademija npm run migrate:gallery
           docker compose down
           docker compose up -d

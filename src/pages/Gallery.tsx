@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Seo from "@/components/Seo";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import { Button } from "@/components/ui/button";
+import { getGallery, type GalleryAlbum } from "@/lib/gallery-api";
 
 interface GalleryProject {
   title: string;
@@ -10,7 +11,7 @@ interface GalleryProject {
   instagramLink?: string;
 }
 
-const galleryData: GalleryProject[] = [
+const legacyGalleryData: GalleryProject[] = [
   {
     title: "Koncert Tartini v Ljubljani",
     images: [
@@ -86,6 +87,8 @@ const galleryData: GalleryProject[] = [
 ];
 
 const Gallery = () => {
+  const [galleryData, setGalleryData] = useState<GalleryAlbum[]>([]);
+  const [galleryError, setGalleryError] = useState("");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [currentImages, setCurrentImages] = useState<string[]>([]);
 
@@ -95,6 +98,10 @@ const Gallery = () => {
   };
 
   const closeLightbox = () => setLightboxIndex(null);
+
+  useEffect(() => {
+    getGallery().then(setGalleryData).catch((error: Error) => setGalleryError(error.message));
+  }, []);
 
   return (
     <div className="min-h-screen py-20">
@@ -109,6 +116,8 @@ const Gallery = () => {
         </h1>
 
         <div className="space-y-16">
+          {galleryError && <p className="text-destructive">{galleryError}</p>}
+          {!galleryError && galleryData.length === 0 && <p className="text-muted-foreground">Nalaganje galerije …</p>}
           {galleryData.map((project) => (
             <div key={project.title}>
               <h2 className="text-3xl font-bold text-accent mb-6 text-center">
