@@ -207,7 +207,9 @@ const serializeGallery = (album) => ({
     id: Number(image.id),
     src: image.storage_path.startsWith("/images/")
       ? image.storage_path
-      : `/gallery-files/${image.storage_path}`,
+      : image.storage_path.startsWith("/gallery-files/")
+        ? image.storage_path
+        : `/gallery-files/${image.storage_path}`,
     alt: image.alt_text,
   })),
 });
