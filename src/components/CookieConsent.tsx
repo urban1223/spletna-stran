@@ -24,25 +24,24 @@ const CookieConsent = () => {
     <aside
       role="dialog"
       aria-label="Nastavitve piškotkov"
-      className="fixed bottom-4 left-4 right-4 z-[100] mx-auto max-w-3xl rounded-lg border border-border bg-card p-5 shadow-2xl"
+      className="fixed inset-x-0 bottom-0 z-[100] w-full border-t border-border bg-card p-4 shadow-2xl sm:p-5"
     >
       <h2 className="mb-2 text-lg font-bold text-accent">Piškotki in zasebnost</h2>
       <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-        Uporabljamo nujne sej­ne piškotke za delovanje strani in izbiro članov na prvi strani.
-        Analitični in trženjski piškotki so privzeto izklopljeni; Google Analytics 4 se naloži samo po soglasju. Več informacij je v{" "}
+        Za pravilno delovanje uporabljamo nujne tehnične podatke. Google Analytics uporabljamo samo za anonimno statistiko obiska in ga vključimo šele, ko to dovolite. Izbiro lahko kadar koli spremenite na strani. Več informacij je v{" "}
         <a className="text-accent underline" href="/zasebnost">politiki zasebnosti</a> in{" "}
         <a className="text-accent underline" href="/piskotki">politiki piškotkov</a>.
       </p>
       {settingsOpen && (
         <div className="mb-4 rounded border border-border bg-background p-3 text-sm">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:gap-4">
             <div>
               <strong>Nujni piškotki</strong>
               <p className="mt-1 text-muted-foreground">Vedno aktivni; potrebni za sejo, soglasje in osnovno delovanje strani.</p>
             </div>
             <span className="text-accent">Vedno aktivni</span>
           </div>
-          <div className="mt-3 flex items-start justify-between gap-4">
+          <div className="mt-3 flex flex-col items-start justify-between gap-2 sm:flex-row sm:gap-4">
             <div>
               <strong>Analitika in trženje</strong>
               <p className="mt-1 text-muted-foreground">Google Analytics 4 se naloži samo po soglasju; trženjskih skript ne uporabljamo.</p>
@@ -51,11 +50,11 @@ const CookieConsent = () => {
           </div>
         </div>
       )}
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => saveConsent("necessary")}>Samo nujni</Button>
-        <Button onClick={() => saveConsent("all")} className="bg-accent text-accent-foreground hover:bg-accent/90">Sprejmi vse</Button>
-        {!settingsOpen && <Button variant="ghost" onClick={() => setSettingsOpen(true)}>Nastavitve</Button>}
-        {settingsOpen && <Button variant="ghost" onClick={() => saveConsent("necessary")}>Shrani izbiro</Button>}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <Button className="w-full sm:w-auto" variant="outline" onClick={() => saveConsent("necessary")}>Samo nujni</Button>
+        <Button className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => saveConsent("all")}>Sprejmi vse</Button>
+        {!settingsOpen && <Button className="w-full sm:w-auto" variant="ghost" onClick={() => setSettingsOpen(true)}>Nastavitve</Button>}
+        {settingsOpen && <Button className="w-full sm:w-auto" variant="ghost" onClick={() => saveConsent("necessary")}>Shrani izbiro</Button>}
       </div>
     </aside>
   );
