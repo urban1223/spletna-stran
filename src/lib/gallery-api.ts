@@ -52,3 +52,10 @@ export const uploadGalleryImage = (albumId: number, data: string, alt: string) =
 
 export const deleteGalleryImage = (albumId: number, imageId: number) =>
   request<{ deleted: boolean }>(`/api/gallery/${albumId}/images/${imageId}`, { method: "DELETE" });
+
+export const updateGalleryImage = (albumId: number, imageId: number, alt: string) =>
+  request<{ updated: boolean }>(`/api/gallery/${albumId}/images/${imageId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ alt }),
+  });

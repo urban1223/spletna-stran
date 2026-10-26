@@ -11,6 +11,7 @@ import {
   moveGallery,
   uploadGalleryImage,
   updateGallery,
+  updateGalleryImage,
   type GalleryAlbum,
 } from "@/lib/gallery-api";
 
@@ -612,6 +613,12 @@ export default function AdminDodajaj() {
       .catch((error: Error) => setGalleryNotice(`Brisanje ni uspelo: ${error.message}`));
   };
 
+  const handleGalleryImageAltUpdate = (album: GalleryAlbum, imageId: number, alt: string) => {
+    updateGalleryImage(album.id, imageId, alt)
+      .then(() => setGalleryNotice("Opis slike je shranjen."))
+      .catch((error: Error) => setGalleryNotice(`Opisa slike ni mogoče shraniti: ${error.message}`));
+  };
+
   const copyJson = async () => {
     try {
       await navigator.clipboard.writeText(exportJson);
@@ -882,6 +889,29 @@ export default function AdminDodajaj() {
               {album.images.map((image) => (
                 <div key={image.id} style={{ display: "grid", gap: 6 }}>
                   <img src={image.src} alt={image.alt} style={{ width: "100%", height: 130, objectFit: "cover", borderRadius: 8 }} />
+                  <label style={{ ...labelStyle, fontSize: 12 }}>
+                    Opis slike (za Google in dostopnost)
+                    <input
+                      style={inputStyle}
+                      value={image.alt}
+                      aria-label={`Opis slike v galeriji ${album.title}`}
+                      onChange={(e) =>
+                        setGalleryAlbums((current) =>
+                          current.map((item) =>
+                            item.id === album.id
+                              ? {
+                                  ...item,
+                                  images: item.images.map((currentImage) =>
+                                    currentImage.id === image.id ? { ...currentImage, alt: e.target.value } : currentImage,
+                                  ),
+                                }
+                              : item,
+                          ),
+                        )
+                      }
+                      onBlur={(e) => handleGalleryImageAltUpdate(album, image.id, e.target.value)}
+                    />
+                  </label>
                   <button className="admin-button admin-secondary" type="button" onClick={() => handleGalleryImageDelete(album, image.id)}>
                     Izbriši sliko
                   </button>

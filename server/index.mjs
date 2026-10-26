@@ -449,6 +449,22 @@ const server = createServer(async (request, response) => {
         sendJson(response, 200, { deleted: true });
         return;
       }
+      if (request.method === "PUT" && imageId) {
+        const body = await readJsonBody(request);
+        if (typeof body.alt !== "string" || !body.alt.trim()) {
+          sendJson(response, 400, { error: "Image description is required" });
+          return;
+        }
+        const result = database
+          .prepare("UPDATE gallery_images SET alt_text = ? WHERE id = ? AND album_id = ?")
+          .run(body.alt.trim(), imageId, albumId);
+        if (result.changes === 0) {
+          sendJson(response, 404, { error: "Image not found" });
+          return;
+        }
+        sendJson(response, 200, { updated: true });
+        return;
+      }
       if (request.method === "DELETE" && !imageId) {
         const images = database
           .prepare("SELECT storage_path FROM gallery_images WHERE album_id = ?")
