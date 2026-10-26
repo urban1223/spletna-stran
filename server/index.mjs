@@ -51,6 +51,9 @@ const sendSitemap = (response) => {
     { path: "/", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "1.0" },
     { path: "/dogodki", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "0.9" },
     { path: "/galerija", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "0.8" },
+    { path: "/pogoji-uporabe", lastmod: "2026-10-26", changefreq: "yearly", priority: "0.2" },
+    { path: "/zasebnost", lastmod: "2026-10-26", changefreq: "yearly", priority: "0.2" },
+    { path: "/piskotki", lastmod: "2026-10-26", changefreq: "yearly", priority: "0.2" },
   ];
   const urls = [
     ...staticUrls,

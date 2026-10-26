@@ -1,9 +1,50 @@
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Seo from "@/components/Seo";
+import { members as legacyMembers, type Member } from "@/data/members-data";
+import { getMembers, type AdminMember } from "@/lib/members-api";
+import { getSessionCookie, setSessionCookie } from "@/lib/cookies";
 import urbanImage from "@/assets/members/urban-klancar.jpg";
-import barbaraImage from "@/assets/members/barbara-kepic.jpg";
 import lauraImage from "@/assets/members/laura-calligaris.jpg";
+import barbaraImage from "@/assets/members/barbara-kepic.jpg";
+import marieImage from "@/assets/members/marie-tuhtan.jpg";
+import paulinaImage from "@/assets/members/paulina-tuhtan.jpg";
+import braneImage from "@/assets/members/brane-rezic.jpg";
+import natalijaImage from "@/assets/members/natalija-ljubotina.jpg";
+import erazemImage from "@/assets/members/erazem-zganjar.jpg";
+import anaImage from "@/assets/members/ana-birsa.jpg";
+import livijaImage from "@/assets/members/livija-zagar.jpg";
+import domenImage from "@/assets/members/domen-gvozdanovic.jpg";
+import jakobImage from "@/assets/members/jakob-istenic.jpg";
+import lovroImage from "@/assets/members/lovro-tavcar.jpg";
+import mojcaImage from "@/assets/members/mojca-jerman.jpg";
+import lukaImage from "@/assets/members/luka-posavec.jpg";
+import nezaImage from "@/assets/members/neza-gorup.jpg";
+import luka1Image from "@/assets/members/luka-poljanec.jpg";
+import martinImage from "@/assets/members/martin-tavcar.jpg";
+import vesnaImage from "@/assets/members/vesna-gostic.jpg";
+
+const imageMap: Record<string, string> = {
+  "urban-klancar": urbanImage, "laura-calligaris": lauraImage, "barbara-kepic": barbaraImage,
+  "marie-tuhtan": marieImage, "paulina-tuhtan": paulinaImage, "brane-rezic": braneImage,
+  "natalija-ljubotina": natalijaImage, "erazem-zganjar": erazemImage, "ana-birsa": anaImage,
+  "livija-zagar": livijaImage, "domen-gvozdanovic": domenImage, "jakob-istenic": jakobImage,
+  "lovro-tavcar": lovroImage, "mojca-jerman": mojcaImage, "luka-posavec": lukaImage,
+  "neza-gorup": nezaImage, "luka-poljanec": luka1Image, "martin-tavcar": martinImage,
+  "vesna-gostic": vesnaImage,
+};
+
+type HomeMember = Member & { imageUrl?: string | null };
+
+const chooseMembers = (available: HomeMember[]) => {
+  const saved = getSessionCookie("nova_home_members")?.split(",") || [];
+  const savedMembers = saved.map((slug) => available.find((member) => member.slug === slug)).filter(Boolean) as HomeMember[];
+  if (savedMembers.length === 3) return savedMembers;
+  const shuffled = [...available].sort(() => Math.random() - 0.5).slice(0, 3);
+  setSessionCookie("nova_home_members", shuffled.map((member) => member.slug).join(","));
+  return shuffled;
+};
 
 import {
   Carousel,
@@ -15,6 +56,13 @@ import {
 
 const Home = () => {
   const navigate = useNavigate();
+  const [homeMembers, setHomeMembers] = useState<HomeMember[]>(() => chooseMembers(legacyMembers));
+
+  useEffect(() => {
+    getMembers()
+      .then((loadedMembers: AdminMember[]) => setHomeMembers(chooseMembers(loadedMembers)))
+      .catch(() => undefined);
+  }, []);
 
   const galleryImages = [
     { id: 1, src: '/images/slika-1.jpg', alt: 'Baročni ansambel Nova akademija' },
@@ -116,47 +164,21 @@ const Home = () => {
     </h2>
 
     <div className="grid md:grid-cols-3 gap-8 justify-center items-center mb-12">
-      {/* Urban Klančar */}
-      <button
-        className="flex flex-col items-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded-lg p-2"
-        onClick={() => navigate("/clani")}
-      >
-        <img
-          src={urbanImage}
-          alt="Urban Klančar"
-          loading="lazy"
-          className="rounded-full mx-auto object-cover w-64 h-64 border-4 border-yellow-500 shadow-lg hover:scale-105 transition-transform duration-300"
-        />
-        <p className="mt-4 font-semibold text-foreground">Urban Klančar</p>
-      </button>
-
-      {/* Barbara Kepic */}
-      <button
-        className="flex flex-col items-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded-lg p-2"
-        onClick={() => navigate("/clani")}
-      >
-        <img
-          src={barbaraImage}
-          alt="Barbara Kepic"
-          loading="lazy"
-          className="rounded-full mx-auto object-cover w-64 h-64 border-4 border-yellow-500 shadow-lg hover:scale-105 transition-transform duration-300"
-        />
-        <p className="mt-4 font-semibold text-foreground">Barbara Kepic</p>
-      </button>
-
-      {/* Laura Calligaris */}
-      <button
-        className="flex flex-col items-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded-lg p-2"
-        onClick={() => navigate("/clani")}
-      >
-        <img
-          src={lauraImage}
-          alt="Laura Calligaris"
-          loading="lazy"
-          className="rounded-full mx-auto object-cover w-64 h-64 border-4 border-yellow-500 shadow-lg hover:scale-105 transition-transform duration-300"
-        />
-        <p className="mt-4 font-semibold text-foreground">Laura Calligaris</p>
-      </button>
+      {homeMembers.map((member) => (
+        <button
+          key={member.slug}
+          className="flex flex-col items-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded-lg p-2"
+          onClick={() => navigate(`/clani/${member.slug}`)}
+        >
+          <img
+            src={member.imageUrl || imageMap[member.imageKey]}
+            alt={member.name}
+            loading="lazy"
+            className="rounded-full mx-auto object-cover w-64 h-64 border-4 border-yellow-500 shadow-lg hover:scale-105 transition-transform duration-300"
+          />
+          <p className="mt-4 font-semibold text-foreground">{member.name}</p>
+        </button>
+      ))}
     </div>
 
     {/* Button to full members page */}
