@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
+import Analytics from "@/components/Analytics";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -32,6 +33,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         </main>
         <Footer />
         <CookieConsent />
+        <Analytics />
       </div>
       
     </div>

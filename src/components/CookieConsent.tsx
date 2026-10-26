@@ -29,7 +29,7 @@ const CookieConsent = () => {
       <h2 className="mb-2 text-lg font-bold text-accent">Piškotki in zasebnost</h2>
       <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
         Uporabljamo nujne sej­ne piškotke za delovanje strani in izbiro članov na prvi strani.
-        Analitični in trženjski piškotki so privzeto izklopljeni. Več informacij je v{" "}
+        Analitični in trženjski piškotki so privzeto izklopljeni; Google Analytics 4 se naloži samo po soglasju. Več informacij je v{" "}
         <a className="text-accent underline" href="/zasebnost">politiki zasebnosti</a> in{" "}
         <a className="text-accent underline" href="/piskotki">politiki piškotkov</a>.
       </p>
@@ -45,7 +45,7 @@ const CookieConsent = () => {
           <div className="mt-3 flex items-start justify-between gap-4">
             <div>
               <strong>Analitika in trženje</strong>
-              <p className="mt-1 text-muted-foreground">Trenutno ni aktivnih analitičnih ali trženjskih skript.</p>
+              <p className="mt-1 text-muted-foreground">Google Analytics 4 se naloži samo po soglasju; trženjskih skript ne uporabljamo.</p>
             </div>
             <span className="text-muted-foreground">Izklopljeno</span>
           </div>

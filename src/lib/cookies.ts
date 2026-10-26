@@ -13,6 +13,7 @@ export const getCookieConsent = (): CookieConsent | null => {
 
 export const setCookieConsent = (consent: CookieConsent) => {
   document.cookie = `nova_cookie_consent=${consent}; path=/; max-age=31536000; SameSite=Lax`;
+  window.dispatchEvent(new CustomEvent("cookie-consent-changed"));
 };
 
 export const openCookieSettings = () => {

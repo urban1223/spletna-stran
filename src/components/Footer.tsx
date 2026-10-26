@@ -58,9 +58,9 @@ const Footer = () => {
         <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
           <p>&copy; 2026 Društvo za širjenje stare glasbe Nova akademija. Vse pravice pridržane.</p>
           <div className="mt-4 flex flex-wrap justify-center gap-4">
-            <a href="/pogoji-uporabe" className="hover:text-accent">Pogoji uporabe</a>
-            <a href="/zasebnost" className="hover:text-accent">Politika zasebnosti</a>
-            <a href="/piskotki" className="hover:text-accent">Piškotki</a>
+            <a data-analytics-event="legal_terms_click" href="/pogoji-uporabe" className="hover:text-accent">Pogoji uporabe</a>
+            <a data-analytics-event="privacy_policy_click" href="/zasebnost" className="hover:text-accent">Politika zasebnosti</a>
+            <a data-analytics-event="cookie_policy_click" href="/piskotki" className="hover:text-accent">Piškotki</a>
             <button type="button" onClick={openCookieSettings} className="hover:text-accent">Nastavitve piškotkov</button>
           </div>
         </div>

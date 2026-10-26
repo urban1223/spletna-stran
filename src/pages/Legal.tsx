@@ -38,7 +38,7 @@ export const Privacy = () => (
     <h2>3. Nameni in pravne podlage</h2>
     <p>Podatke uporabljamo za odgovor na povpraševanje, obdelavo prijave ali rezervacije, organizacijo članstva ter zagotavljanje varnosti strani. Pravna podlaga je izvedba zahteve uporabnika, zakoniti interes za varnost oziroma privolitev, kadar jo zahteva zakon.</p>
     <h2>4. Prejemniki in prenosi</h2>
-    <p>Obrazci uporabljajo Web3Forms, zato se podatki, poslani prek obrazcev, lahko obdelujejo pri tem ponudniku. Stran vsebuje povezave do YouTube, Instagram in Facebook. Zunanje storitve uporabljajte skladno z njihovimi politikami zasebnosti. Analitika trenutno ni aktivna.</p>
+    <p>Obrazci uporabljajo Web3Forms, zato se podatki, poslani prek obrazcev, lahko obdelujejo pri tem ponudniku. Stran vsebuje povezave do YouTube, Instagram in Facebook. Zunanje storitve uporabljajte skladno z njihovimi politikami zasebnosti. Google Analytics 4 se uporablja samo po izrecnem soglasju za analitične piškotke.</p>
     <h2>5. Hramba in pravice</h2>
     <p>Podatke hranimo toliko časa, kolikor je potrebno za namen, zaradi katerega so bili zbrani, oziroma kolikor zahtevajo predpisi. Zahtevate lahko dostop, popravek, izbris, omejitev obdelave, ugovor ali prenosljivost, kadar so pogoji izpolnjeni. Zahtevo pošljite na {legal.email}. Pravico imate tudi do pritožbe pri Informacijskem pooblaščencu Republike Slovenije.</p>
     <h2>6. Fotografije članov</h2>
@@ -52,7 +52,7 @@ export const Cookies = () => (
     <h2>Nujni piškotki</h2>
     <p><code>nova_cookie_consent</code> si zapomni vašo izbiro soglasja do enega leta. Sejni piškotek <code>nova_home_members</code> si zapomni naključni izbor članov na domači strani do konca seje brskalnika. Piškotek <code>sidebar_state</code> si zapomni stanje stranskega menija. Ti piškotki so potrebni za zahtevano delovanje strani.</p>
     <h2>Analitični in trženjski piškotki</h2>
-    <p>Trenutno jih ne uporabljamo. Če jih bomo uvedli, bodo naloženi šele po vašem izrecnem soglasju in bo politika posodobljena.</p>
+    <p>Po vašem izrecnem soglasju uporabljamo Google Analytics 4 za merjenje ogledov strani, navigacije in izbranih dogodkov. Google Analytics uporablja analitične piškotke, ki se ne naložijo, če izberete samo nujne piškotke. Trženjskih piškotkov trenutno ne uporabljamo.</p>
     <h2>Upravljanje soglasja</h2>
     <p>Izberete lahko samo nujne piškotke ali sprejmete vse trenutno uporabljene kategorije. Nastavitve lahko ponovno odprete tukaj:</p>
     <button className="text-accent underline" onClick={openCookieSettings}>Odpri nastavitve piškotkov</button>
