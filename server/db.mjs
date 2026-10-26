@@ -51,6 +51,21 @@ database.exec(`
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS members (
+    slug TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT '',
+    instruments TEXT NOT NULL DEFAULT '',
+    image_key TEXT NOT NULL DEFAULT '',
+    image_url TEXT,
+    short_bio TEXT NOT NULL DEFAULT '',
+    full_bio TEXT NOT NULL DEFAULT '',
+    is_mentor INTEGER NOT NULL DEFAULT 0,
+    published INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 export { database, databasePath };

@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import Seo from "@/components/Seo";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowRight } from "lucide-react";
 import MembershipSignupDialog from "@/components/MembershipSignupDialog";
-import { regularMembers, mentors } from "@/data/members-data";
+import { members, regularMembers, mentors, type Member } from "@/data/members-data";
+import { getMembers } from "@/lib/members-api";
 
 import urbanImage from "@/assets/members/urban-klancar.jpg";
 import lauraImage from "@/assets/members/laura-calligaris.jpg";
@@ -50,7 +52,7 @@ const imageMap: Record<string, string> = {
   "vesna-gostic": vesnaImage,
 };
 
-const MemberCard = ({ member, navigate }: { member: any; navigate: any }) => (
+const MemberCard = ({ member, navigate }: { member: Member; navigate: (path: string) => void }) => (
   <Card
     className="p-8 bg-card border-border hover:border-accent transition-colors cursor-pointer"
     onClick={() => navigate(`/clani/${member.slug}`)}
@@ -63,7 +65,7 @@ const MemberCard = ({ member, navigate }: { member: any; navigate: any }) => (
           <p className="text-sm text-muted-foreground italic">{member.instruments}</p>
         </div>
         <Avatar className="h-16 w-16 border-2 border-accent">
-          <AvatarImage src={imageMap[member.imageKey]} alt={member.name} />
+          <AvatarImage src={member.imageUrl || imageMap[member.imageKey]} alt={member.name} />
           <AvatarFallback>
             {member.name.split(" ").map((n: string) => n[0]).join("")}
           </AvatarFallback>
@@ -80,6 +82,13 @@ const MemberCard = ({ member, navigate }: { member: any; navigate: any }) => (
 const Members = () => {
   const navigate = useNavigate();
   const [signupDialogOpen, setSignupDialogOpen] = useState(false);
+  const { data: managedMembers } = useQuery({ queryKey: ["members"], queryFn: getMembers });
+  const allMembers = managedMembers && managedMembers.length > 0
+    ? [...[...regularMembers, ...mentors].map((legacy) => managedMembers.find((member) => member.slug === legacy.slug) || legacy),
+      ...managedMembers.filter((member) => !members.some((legacy) => legacy.slug === member.slug))]
+    : [...regularMembers, ...mentors];
+  const displayedMembers = allMembers.filter((member) => !member.isMentor);
+  const displayedMentors = allMembers.filter((member) => member.isMentor);
 
   return (
     <div className="min-h-screen py-20">
@@ -102,7 +111,7 @@ const Members = () => {
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-accent mb-8 text-center">Člani</h2>
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {regularMembers.map((member) => (
+            {displayedMembers.map((member) => (
               <MemberCard key={member.slug} member={member} navigate={navigate} />
             ))}
           </div>
@@ -112,7 +121,7 @@ const Members = () => {
         <div>
           <h2 className="text-3xl font-bold text-accent mb-8 text-center">Mentorji</h2>
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {mentors.map((member) => (
+            {displayedMentors.map((member) => (
               <MemberCard key={member.slug} member={member} navigate={navigate} />
             ))}
           </div>

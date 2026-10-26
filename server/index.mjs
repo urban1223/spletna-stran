@@ -214,6 +214,42 @@ const serializeGallery = (album) => ({
   })),
 });
 
+const serializeMember = (member) => ({
+  slug: member.slug,
+  name: member.name,
+  role: member.role,
+  instruments: member.instruments,
+  imageKey: member.image_key,
+  imageUrl: member.image_url,
+  shortBio: member.short_bio,
+  fullBio: member.full_bio,
+  isMentor: Boolean(member.is_mentor),
+});
+
+const validateMember = (body) => {
+  const required = ["slug", "name"];
+  if (!body || typeof body !== "object" || required.some((field) => typeof body[field] !== "string" || !body[field].trim())) {
+    return "Member name and slug are required";
+  }
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(body.slug)) return "Invalid slug";
+  for (const field of ["role", "instruments", "imageKey", "imageUrl", "shortBio", "fullBio"]) {
+    if (body[field] !== null && body[field] !== undefined && typeof body[field] !== "string") return `Invalid ${field}`;
+  }
+  return null;
+};
+
+const memberValues = (body) => [
+  body.slug.trim(),
+  body.name.trim(),
+  (body.role || "").trim(),
+  (body.instruments || "").trim(),
+  (body.imageKey || "").trim(),
+  body.imageUrl?.trim() || null,
+  (body.shortBio || "").trim(),
+  (body.fullBio || "").trim(),
+  body.isMentor ? 1 : 0,
+];
+
 const getGallery = () =>
   database
     .prepare(
@@ -257,6 +293,72 @@ const server = createServer(async (request, response) => {
 
   if (requestUrl.pathname === "/api/gallery" && request.method === "GET") {
     sendJson(response, 200, getGallery().map(serializeGallery));
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/members" && request.method === "GET") {
+    const members = database.prepare("SELECT * FROM members WHERE published = 1 ORDER BY is_mentor ASC, name COLLATE NOCASE ASC").all();
+    sendJson(response, 200, members.map(serializeMember));
+    return;
+  }
+
+  if ((requestUrl.pathname === "/api/members" || requestUrl.pathname.startsWith("/api/members/")) && request.method !== "GET") {
+    if (!isAuthenticated(request)) {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    try {
+      const slug = requestUrl.pathname.startsWith("/api/members/") ? decodeURIComponent(requestUrl.pathname.slice("/api/members/".length)) : null;
+      if (request.method === "DELETE" && slug) {
+        const result = database.prepare("DELETE FROM members WHERE slug = ?").run(slug);
+        if (result.changes === 0) {
+          sendJson(response, 404, { error: "Member not found" });
+          return;
+        }
+        sendJson(response, 200, { deleted: true });
+        return;
+      }
+      const body = await readJsonBody(request);
+      const errorMessage = validateMember(body);
+      if (errorMessage) {
+        sendJson(response, 400, { error: errorMessage });
+        return;
+      }
+      if (request.method === "POST") {
+        database.prepare(
+          `INSERT INTO members
+            (slug, name, role, instruments, image_key, image_url, short_bio, full_bio, is_mentor, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        ).run(...memberValues(body));
+        const saved = database.prepare("SELECT * FROM members WHERE slug = ?").get(body.slug.trim());
+        sendJson(response, 201, { member: serializeMember(saved) });
+        return;
+      }
+      if (request.method === "PUT" && slug) {
+        const result = database.prepare(
+          `UPDATE members SET slug = ?, name = ?, role = ?, instruments = ?, image_key = ?, image_url = ?,
+            short_bio = ?, full_bio = ?, is_mentor = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?`,
+        ).run(...memberValues(body), slug);
+        if (result.changes === 0) {
+          database.prepare(
+            `INSERT INTO members
+              (slug, name, role, instruments, image_key, image_url, short_bio, full_bio, is_mentor, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+          ).run(...memberValues(body));
+        }
+        const saved = database.prepare("SELECT * FROM members WHERE slug = ?").get(body.slug.trim());
+        sendJson(response, 200, { member: serializeMember(saved) });
+        return;
+      }
+      sendJson(response, 400, { error: "Invalid member request" });
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        sendJson(response, 400, { error: "Invalid JSON" });
+        return;
+      }
+      console.error("Member request failed:", error);
+      sendJson(response, 500, { error: "Unable to update member" });
+    }
     return;
   }
 

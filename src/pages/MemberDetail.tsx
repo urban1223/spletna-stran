@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { members } from "@/data/members-data";
 import Seo from "@/components/Seo";
+import { useQuery } from "@tanstack/react-query";
+import { getMembers } from "@/lib/members-api";
 
 import urbanImage from "@/assets/members/urban-klancar.jpg";
 import lauraImage from "@/assets/members/laura-calligaris.jpg";
@@ -50,8 +52,12 @@ const imageMap: Record<string, string> = {
 const MemberDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-
-  const member = members.find((m) => m.slug === slug);
+  const { data: managedMembers } = useQuery({ queryKey: ["members"], queryFn: getMembers });
+  const allMembers = managedMembers && managedMembers.length > 0
+    ? [...members.map((legacy) => managedMembers.find((managed) => managed.slug === legacy.slug) || legacy),
+      ...managedMembers.filter((managed) => !members.some((legacy) => legacy.slug === managed.slug))]
+    : members;
+  const member = allMembers.find((m) => m.slug === slug);
 
   if (!member) {
     return (
@@ -65,7 +71,7 @@ const MemberDetail = () => {
     );
   }
 
-  const image = imageMap[member.imageKey];
+  const image = ("imageUrl" in member && member.imageUrl) || imageMap[member.imageKey];
   const initials = member.name.split(" ").map((n) => n[0]).join("");
 
   return (

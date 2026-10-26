@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import type { Event } from "@/data/events-data";
+import { members as legacyMembers } from "@/data/members-data";
+import { deleteMember, getMembers, saveMember, type AdminMember } from "@/lib/members-api";
 import { deleteEvent, getAdminSession, getEvents, loginAdmin, logoutAdmin, saveEvent } from "@/lib/events-api";
 import {
   createGallery,
@@ -59,6 +61,24 @@ const emptyForm: ConcertForm = {
   reservation: false,
   past: false,
 };
+
+type MemberForm = Omit<AdminMember, "slug" | "imageUrl"> & { imageUrl: string; slug: string };
+const emptyMemberForm: MemberForm = {
+  slug: "",
+  name: "",
+  role: "",
+  instruments: "",
+  imageKey: "",
+  imageUrl: "",
+  shortBio: "",
+  fullBio: "",
+  isMentor: false,
+};
+
+const ensureManagedMembers = (loadedMembers: AdminMember[]) =>
+  loadedMembers.length
+    ? Promise.resolve(loadedMembers)
+    : Promise.all(legacyMembers.map((member) => saveMember({ ...member, imageUrl: null }).then(({ member: saved }) => saved)));
 
 const composerSuggestions = [
   "J. S. Bach",
@@ -240,7 +260,12 @@ export default function AdminDodajaj() {
   const [showPreview, setShowPreview] = useState(false);
   const [notice, setNotice] = useState("");
   const [copyNotice, setCopyNotice] = useState("");
-  const [activeTab, setActiveTab] = useState<"events" | "gallery">("events");
+  const [activeTab, setActiveTab] = useState<"events" | "gallery" | "members">("events");
+  const [members, setMembers] = useState<AdminMember[]>([]);
+  const [memberForm, setMemberForm] = useState<MemberForm>(emptyMemberForm);
+  const [editingMemberSlug, setEditingMemberSlug] = useState<string | null>(null);
+  const [memberNotice, setMemberNotice] = useState("");
+  const [memberSearch, setMemberSearch] = useState("");
   const [galleryAlbums, setGalleryAlbums] = useState<GalleryAlbum[]>([]);
   const [selectedGalleryId, setSelectedGalleryId] = useState<number | null>(null);
   const [newGalleryTitle, setNewGalleryTitle] = useState("");
@@ -255,10 +280,12 @@ export default function AdminDodajaj() {
       .then((session) => {
         setAuthenticated(session.authenticated);
         if (session.authenticated) {
-          return Promise.all([getEvents(), getGallery()]).then(([loadedEvents, loadedGallery]) => {
+          return Promise.all([getEvents(), getGallery(), getMembers()]).then(([loadedEvents, loadedGallery, loadedMembers]) =>
+            ensureManagedMembers(loadedMembers).then((managedMembers) => {
             setEvents(loadedEvents);
             setGalleryAlbums(loadedGallery);
-          });
+            setMembers(managedMembers);
+          }));
         }
         return undefined;
       })
@@ -278,7 +305,13 @@ export default function AdminDodajaj() {
         if (!query) return true;
         return (event.title || "").toLocaleLowerCase("sl-SI").includes(query);
       })
-      .sort((a, b) => (b.isoDate || "").localeCompare(a.isoDate || ""));
+      .sort((a, b) => {
+        const aPast = pastSlugs.has(a.slug) || Boolean(a.past);
+        const bPast = pastSlugs.has(b.slug) || Boolean(b.past);
+        if (aPast !== bPast) return aPast ? 1 : -1;
+        const comparison = (a.isoDate || "").localeCompare(b.isoDate || "");
+        return aPast ? -comparison : comparison;
+      });
   }, [events, filter, pastSlugs, search]);
 
   const slug = editingSlug || slugify(form.title);
@@ -359,7 +392,11 @@ export default function AdminDodajaj() {
       .then(() => {
         setAuthenticated(true);
         setPassword("");
-        return getEvents().then(setEvents);
+        return Promise.all([getEvents(), getMembers()]).then(([loadedEvents, loadedMembers]) =>
+          ensureManagedMembers(loadedMembers).then((managedMembers) => {
+          setEvents(loadedEvents);
+          setMembers(managedMembers);
+        }));
       })
       .catch((error: Error) => setLoginError(error.message || "Prijava ni uspela."));
   };
@@ -369,6 +406,7 @@ export default function AdminDodajaj() {
       setAuthenticated(false);
       setEvents([]);
       setGalleryAlbums([]);
+      setMembers([]);
     });
   };
 
@@ -423,6 +461,49 @@ export default function AdminDodajaj() {
         return refreshGallery();
       })
       .catch((error: Error) => setGalleryNotice(`Galerije ni mogoče ustvariti: ${error.message}`));
+  };
+
+  const createGalleryFromEvent = (event: Event) => {
+    setNewGalleryTitle(event.title);
+    setNewGalleryInstagram("");
+    setGalleryNotice(`Naslov galerije za »${event.title}« je predizpolnjen. Dopolni podatke in jo shrani.`);
+    setActiveTab("gallery");
+    window.setTimeout(() => document.getElementById("admin-gallery-title")?.focus(), 0);
+  };
+
+  const editMember = (member: AdminMember) => {
+    setMemberForm({ ...member, imageUrl: member.imageUrl || "" });
+    setEditingMemberSlug(member.slug);
+    setMemberNotice(`Urejaš člana »${member.name}«.`);
+  };
+
+  const startNewMember = () => {
+    setMemberForm(emptyMemberForm);
+    setEditingMemberSlug(null);
+    setMemberNotice("Obrazec za novega člana je pripravljen.");
+  };
+
+  const handleMemberSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const payload = { ...memberForm, slug: memberForm.slug || slugify(memberForm.name), imageUrl: memberForm.imageUrl || null };
+    saveMember(payload, editingMemberSlug || undefined)
+      .then(({ member }) => {
+        setMembers((current) => [...current.filter((item) => item.slug !== (editingMemberSlug || member.slug)), member]);
+        setMemberForm(emptyMemberForm);
+        setEditingMemberSlug(null);
+        setMemberNotice(`Član »${member.name}« je uspešno shranjen.`);
+      })
+      .catch((error: Error) => setMemberNotice(`Shranjevanje ni uspelo: ${error.message}`));
+  };
+
+  const handleMemberDelete = (member: AdminMember) => {
+    if (!window.confirm(`Ali res želiš izbrisati člana »${member.name}«?`)) return;
+    deleteMember(member.slug)
+      .then(() => {
+        setMembers((current) => current.filter((item) => item.slug !== member.slug));
+        setMemberNotice(`Član »${member.name}« je bil izbrisan.`);
+      })
+      .catch((error: Error) => setMemberNotice(`Brisanje ni uspelo: ${error.message}`));
   };
 
   const handleGalleryMove = (album: GalleryAlbum, direction: "up" | "down") => {
@@ -593,6 +674,7 @@ export default function AdminDodajaj() {
           <label style={labelStyle}>
             Geslo
             <input
+              id="admin-gallery-title"
               style={inputStyle}
               type="password"
               value={password}
@@ -895,6 +977,13 @@ export default function AdminDodajaj() {
           >
             Uredi slike
           </button>
+          <button
+            className={`admin-button ${activeTab === "members" ? "admin-gold" : "admin-secondary"}`}
+            type="button"
+            onClick={() => setActiveTab("members")}
+          >
+            Uredi člane
+          </button>
         </div>
 
         {activeTab === "events" && (
@@ -997,6 +1086,9 @@ export default function AdminDodajaj() {
                     >
                       Izvozi za Canvo
                     </button>
+                    <button className="admin-button admin-secondary" type="button" onClick={() => createGalleryFromEvent(event)}>
+                      Ustvari galerijo
+                    </button>
                     <button
                       className="admin-button admin-secondary"
                       type="button"
@@ -1086,6 +1178,80 @@ export default function AdminDodajaj() {
           </section>
         )}
         {activeTab === "gallery" && galleryEditor}
+
+        {activeTab === "members" && (
+          <section className="admin-card">
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 15 }}>
+              <h2 style={{ margin: 0, fontSize: 21 }}>Člani in mentorji ({members.length})</h2>
+              <button className="admin-button admin-gold" type="button" onClick={startNewMember}>+ Dodaj člana</button>
+            </div>
+            {memberNotice && <div role="status" style={{ color: "hsl(45 85% 75%)", marginBottom: 14 }}>{memberNotice}</div>}
+            <div className="admin-grid" style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>
+                Iskanje po imenu
+                <input style={inputStyle} value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} />
+              </label>
+            </div>
+            <form onSubmit={handleMemberSubmit} className="admin-card" style={{ marginBottom: 18 }}>
+              <h3 style={{ marginTop: 0 }}>{editingMemberSlug ? "Uredi člana" : "Nov član"}</h3>
+              <div className="admin-grid">
+                {([
+                  ["name", "Ime", true],
+                  ["role", "Vloga", false],
+                  ["instruments", "Inštrumenti", false],
+                  ["imageKey", "Ključ obstoječe fotografije", false],
+                  ["imageUrl", "URL ali pot nove fotografije", false],
+                ] as const).map(([key, label, required]) => (
+                  <label key={key} style={labelStyle}>
+                    {label}
+                    <input
+                      style={inputStyle}
+                      required={required}
+                      value={memberForm[key]}
+                      onChange={(e) => setMemberForm((current) => ({ ...current, [key]: e.target.value }))}
+                    />
+                  </label>
+                ))}
+                <label style={labelStyle}>
+                  Kategorija
+                  <select
+                    style={inputStyle}
+                    value={memberForm.isMentor ? "mentor" : "member"}
+                    onChange={(e) => setMemberForm((current) => ({ ...current, isMentor: e.target.value === "mentor" }))}
+                  >
+                    <option value="member">Član</option>
+                    <option value="mentor">Mentor</option>
+                  </select>
+                </label>
+              </div>
+              <label style={labelStyle}>
+                Kratek opis
+                <textarea style={inputStyle} value={memberForm.shortBio} onChange={(e) => setMemberForm((current) => ({ ...current, shortBio: e.target.value }))} />
+              </label>
+              <label style={labelStyle}>
+                Daljši opis
+                <textarea style={inputStyle} value={memberForm.fullBio} onChange={(e) => setMemberForm((current) => ({ ...current, fullBio: e.target.value }))} />
+              </label>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className="admin-button admin-gold" type="submit">Shrani člana</button>
+                <button className="admin-button admin-secondary" type="button" onClick={startNewMember}>Počisti</button>
+              </div>
+            </form>
+            {members.filter((member) => member.name.toLocaleLowerCase("sl-SI").includes(memberSearch.toLocaleLowerCase("sl-SI"))).map((member) => (
+              <div className="admin-event" key={member.slug}>
+                <div>
+                  <div style={{ color: "hsl(45 85% 65%)", fontSize: 12 }}>{member.isMentor ? "Mentor" : "Član"}</div>
+                  <div style={{ fontSize: 16, fontWeight: 750 }}>{member.name}</div>
+                  <div style={{ color: "hsl(220 8% 68%)", fontSize: 13 }}>{member.role}</div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button className="admin-button admin-secondary" type="button" onClick={() => editMember(member)}>Uredi</button>
+                  <button className="admin-button admin-secondary" type="button" onClick={() => handleMemberDelete(member)} style={{ color: "hsl(0 75% 75%)", borderColor: "hsl(0 45% 35%)" }}>Izbriši</button>
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
       </div>
     </main>
   );

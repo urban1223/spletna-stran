@@ -13,7 +13,9 @@ const Events = () => {
     queryFn: getEvents,
   });
   const upcomingEvents = events.filter((event) => !event.past);
-  const pastEvents = events.filter((event) => event.past);
+  const pastEvents = events
+    .filter((event) => event.past)
+    .sort((a, b) => (b.isoDate || "").localeCompare(a.isoDate || ""));
 
   return (
     <div className="min-h-screen py-20">
