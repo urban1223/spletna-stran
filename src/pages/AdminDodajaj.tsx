@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import type { Event } from "@/data/events-data";
 import { members as legacyMembers } from "@/data/members-data";
-import { deleteMember, getMembers, saveMember, type AdminMember } from "@/lib/members-api";
+import { deleteMember, getMembers, migrateMemberImages, saveMember, type AdminMember } from "@/lib/members-api";
 import { deleteEvent, getAdminSession, getEvents, loginAdmin, logoutAdmin, saveEvent } from "@/lib/events-api";
 import {
   createGallery,
@@ -62,7 +62,11 @@ const emptyForm: ConcertForm = {
   past: false,
 };
 
-type MemberForm = Omit<AdminMember, "slug" | "imageUrl"> & { imageUrl: string; slug: string };
+type MemberForm = Omit<AdminMember, "slug" | "imageUrl" | "imageData"> & {
+  imageUrl: string;
+  imageData: string;
+  slug: string;
+};
 const emptyMemberForm: MemberForm = {
   slug: "",
   name: "",
@@ -70,6 +74,7 @@ const emptyMemberForm: MemberForm = {
   instruments: "",
   imageKey: "",
   imageUrl: "",
+  imageData: "",
   shortBio: "",
   fullBio: "",
   isMentor: false,
@@ -78,7 +83,7 @@ const emptyMemberForm: MemberForm = {
 const ensureManagedMembers = (loadedMembers: AdminMember[]) =>
   loadedMembers.length
     ? Promise.resolve(loadedMembers)
-    : Promise.all(legacyMembers.map((member) => saveMember({ ...member, imageUrl: null }).then(({ member: saved }) => saved)));
+    : Promise.all(legacyMembers.map((member) => saveMember({ ...member, imageUrl: null, imageData: null }).then(({ member: saved }) => saved)));
 
 const composerSuggestions = [
   "J. S. Bach",
@@ -281,11 +286,12 @@ export default function AdminDodajaj() {
         setAuthenticated(session.authenticated);
         if (session.authenticated) {
           return Promise.all([getEvents(), getGallery(), getMembers()]).then(([loadedEvents, loadedGallery, loadedMembers]) =>
-            ensureManagedMembers(loadedMembers).then((managedMembers) => {
+            ensureManagedMembers(loadedMembers).then((managedMembers) =>
+              migrateMemberImages().then(() => getMembers()).then((migratedMembers) => {
             setEvents(loadedEvents);
             setGalleryAlbums(loadedGallery);
-            setMembers(managedMembers);
-          }));
+            setMembers(migratedMembers);
+          })));
         }
         return undefined;
       })
@@ -393,10 +399,11 @@ export default function AdminDodajaj() {
         setAuthenticated(true);
         setPassword("");
         return Promise.all([getEvents(), getMembers()]).then(([loadedEvents, loadedMembers]) =>
-          ensureManagedMembers(loadedMembers).then((managedMembers) => {
+          ensureManagedMembers(loadedMembers).then(() =>
+            migrateMemberImages().then(() => getMembers()).then((migratedMembers) => {
           setEvents(loadedEvents);
-          setMembers(managedMembers);
-        }));
+          setMembers(migratedMembers);
+        })));
       })
       .catch((error: Error) => setLoginError(error.message || "Prijava ni uspela."));
   };
@@ -472,7 +479,7 @@ export default function AdminDodajaj() {
   };
 
   const editMember = (member: AdminMember) => {
-    setMemberForm({ ...member, imageUrl: member.imageUrl || "" });
+    setMemberForm({ ...member, imageUrl: member.imageUrl || "", imageData: member.imageData || "" });
     setEditingMemberSlug(member.slug);
     setMemberNotice(`Urejaš člana »${member.name}«.`);
   };
@@ -485,7 +492,12 @@ export default function AdminDodajaj() {
 
   const handleMemberSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const payload = { ...memberForm, slug: memberForm.slug || slugify(memberForm.name), imageUrl: memberForm.imageUrl || null };
+    const payload = {
+      ...memberForm,
+      slug: memberForm.slug || slugify(memberForm.name),
+      imageUrl: memberForm.imageUrl || null,
+      imageData: memberForm.imageData || null,
+    };
     saveMember(payload, editingMemberSlug || undefined)
       .then(({ member }) => {
         setMembers((current) => [...current.filter((item) => item.slug !== (editingMemberSlug || member.slug)), member]);
@@ -568,6 +580,17 @@ export default function AdminDodajaj() {
     } finally {
       setUploadingGalleryId(null);
       setUploadProgress(0);
+    }
+  };
+
+  const handleMemberImageChange = async (file: File) => {
+    try {
+      setMemberNotice("Pripravljam fotografijo …");
+      const imageData = await resizeImage(file);
+      setMemberForm((current) => ({ ...current, imageData, imageUrl: "" }));
+      setMemberNotice("Fotografija je pripravljena za shranjevanje.");
+    } catch (error) {
+      setMemberNotice(`Fotografije ni mogoče pripraviti: ${(error as Error).message}`);
     }
   };
 
@@ -1200,7 +1223,7 @@ export default function AdminDodajaj() {
                   ["role", "Vloga", false],
                   ["instruments", "Inštrumenti", false],
                   ["imageKey", "Ključ obstoječe fotografije", false],
-                  ["imageUrl", "URL ali pot nove fotografije", false],
+                  ["imageUrl", "URL ali pot zunanje fotografije", false],
                 ] as const).map(([key, label, required]) => (
                   <label key={key} style={labelStyle}>
                     {label}
@@ -1213,6 +1236,18 @@ export default function AdminDodajaj() {
                   </label>
                 ))}
                 <label style={labelStyle}>
+                  Naloži fotografijo
+                  <input
+                    style={inputStyle}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void handleMemberImageChange(file);
+                    }}
+                  />
+                </label>
+                <label style={labelStyle}>
                   Kategorija
                   <select
                     style={inputStyle}
@@ -1224,6 +1259,13 @@ export default function AdminDodajaj() {
                   </select>
                 </label>
               </div>
+              {memberForm.imageData && (
+                <img
+                  src={memberForm.imageData}
+                  alt="Predogled fotografije člana"
+                  style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 8, marginBottom: 12 }}
+                />
+              )}
               <label style={labelStyle}>
                 Kratek opis
                 <textarea style={inputStyle} value={memberForm.shortBio} onChange={(e) => setMemberForm((current) => ({ ...current, shortBio: e.target.value }))} />

@@ -1,6 +1,6 @@
 import { createReadStream } from "node:fs";
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { access, mkdir, stat, unlink, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -220,7 +220,8 @@ const serializeMember = (member) => ({
   role: member.role,
   instruments: member.instruments,
   imageKey: member.image_key,
-  imageUrl: member.image_url,
+  imageUrl: member.image_data || member.image_url,
+  imageData: member.image_data,
   shortBio: member.short_bio,
   fullBio: member.full_bio,
   isMentor: Boolean(member.is_mentor),
@@ -232,9 +233,13 @@ const validateMember = (body) => {
     return "Member name and slug are required";
   }
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(body.slug)) return "Invalid slug";
-  for (const field of ["role", "instruments", "imageKey", "imageUrl", "shortBio", "fullBio"]) {
+  for (const field of ["role", "instruments", "imageKey", "imageUrl", "imageData", "shortBio", "fullBio"]) {
     if (body[field] !== null && body[field] !== undefined && typeof body[field] !== "string") return `Invalid ${field}`;
   }
+  if (body.imageData && !/^data:image\/(?:jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(body.imageData)) {
+    return "Invalid image data";
+  }
+  if (body.imageData && Buffer.byteLength(body.imageData, "utf8") > 300 * 1024) return "Image must be smaller than 200 KB";
   return null;
 };
 
@@ -245,6 +250,7 @@ const memberValues = (body) => [
   (body.instruments || "").trim(),
   (body.imageKey || "").trim(),
   body.imageUrl?.trim() || null,
+  body.imageData || null,
   (body.shortBio || "").trim(),
   (body.fullBio || "").trim(),
   body.isMentor ? 1 : 0,
@@ -302,6 +308,34 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (requestUrl.pathname === "/api/members/migrate-images" && request.method === "POST") {
+    if (!isAuthenticated(request)) {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    try {
+      const membersDirectory = fileURLToPath(new URL("../src/assets/members/", import.meta.url));
+      const files = await (await import("node:fs/promises")).readdir(membersDirectory);
+      let migrated = 0;
+      for (const file of files) {
+        if (!/\.(?:jpg|jpeg|png|webp)$/i.test(file)) continue;
+        const slug = file.replace(/\.[^.]+$/, "");
+        const existing = database.prepare("SELECT image_data FROM members WHERE slug = ?").get(slug);
+        if (!existing || existing.image_data) continue;
+        const extension = file.split(".").pop().toLowerCase();
+        const mime = extension === "jpg" ? "jpeg" : extension;
+        const imageData = `data:image/${mime};base64,${(await readFile(join(membersDirectory, file))).toString("base64")}`;
+        database.prepare("UPDATE members SET image_data = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?").run(imageData, slug);
+        migrated += 1;
+      }
+      sendJson(response, 200, { migrated });
+    } catch (error) {
+      console.error("Member image migration failed:", error);
+      sendJson(response, 500, { error: "Unable to migrate member images" });
+    }
+    return;
+  }
+
   if ((requestUrl.pathname === "/api/members" || requestUrl.pathname.startsWith("/api/members/")) && request.method !== "GET") {
     if (!isAuthenticated(request)) {
       sendJson(response, 401, { error: "Authentication required" });
@@ -327,8 +361,8 @@ const server = createServer(async (request, response) => {
       if (request.method === "POST") {
         database.prepare(
           `INSERT INTO members
-            (slug, name, role, instruments, image_key, image_url, short_bio, full_bio, is_mentor, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+            (slug, name, role, instruments, image_key, image_url, image_data, short_bio, full_bio, is_mentor, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
         ).run(...memberValues(body));
         const saved = database.prepare("SELECT * FROM members WHERE slug = ?").get(body.slug.trim());
         sendJson(response, 201, { member: serializeMember(saved) });
@@ -336,14 +370,14 @@ const server = createServer(async (request, response) => {
       }
       if (request.method === "PUT" && slug) {
         const result = database.prepare(
-          `UPDATE members SET slug = ?, name = ?, role = ?, instruments = ?, image_key = ?, image_url = ?,
+          `UPDATE members SET slug = ?, name = ?, role = ?, instruments = ?, image_key = ?, image_url = ?, image_data = ?,
             short_bio = ?, full_bio = ?, is_mentor = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?`,
         ).run(...memberValues(body), slug);
         if (result.changes === 0) {
           database.prepare(
             `INSERT INTO members
-              (slug, name, role, instruments, image_key, image_url, short_bio, full_bio, is_mentor, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+              (slug, name, role, instruments, image_key, image_url, image_data, short_bio, full_bio, is_mentor, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
           ).run(...memberValues(body));
         }
         const saved = database.prepare("SELECT * FROM members WHERE slug = ?").get(body.slug.trim());

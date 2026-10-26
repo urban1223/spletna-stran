@@ -59,6 +59,7 @@ database.exec(`
     instruments TEXT NOT NULL DEFAULT '',
     image_key TEXT NOT NULL DEFAULT '',
     image_url TEXT,
+    image_data TEXT,
     short_bio TEXT NOT NULL DEFAULT '',
     full_bio TEXT NOT NULL DEFAULT '',
     is_mentor INTEGER NOT NULL DEFAULT 0,
@@ -67,5 +68,11 @@ database.exec(`
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 `);
+
+try {
+  database.exec("ALTER TABLE members ADD COLUMN image_data TEXT");
+} catch (error) {
+  if (!String(error?.message || "").includes("duplicate column name")) throw error;
+}
 
 export { database, databasePath };

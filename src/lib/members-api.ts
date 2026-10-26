@@ -7,7 +7,7 @@ const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   return body;
 };
 
-export type AdminMember = Member & { imageUrl: string | null };
+export type AdminMember = Member & { imageUrl: string | null; imageData?: string | null };
 
 export const getMembers = () => request<AdminMember[]>("/api/members");
 export const saveMember = (member: AdminMember, editingSlug?: string) =>
@@ -18,3 +18,6 @@ export const saveMember = (member: AdminMember, editingSlug?: string) =>
   });
 export const deleteMember = (slug: string) =>
   request<{ deleted: boolean }>(`/api/members/${encodeURIComponent(slug)}`, { method: "DELETE" });
+
+export const migrateMemberImages = () =>
+  request<{ migrated: number }>("/api/members/migrate-images", { method: "POST" });
