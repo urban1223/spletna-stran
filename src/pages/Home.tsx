@@ -62,11 +62,36 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+const renderLinkedText = (text: string) =>
+  text.split("\n").map((line, lineIndex) => (
+    <span key={`line-${lineIndex}`}>
+      {lineIndex > 0 && <br />}
+      {line.split(/(\[[^\]]+\]\([^)]+\))/g).map((part, partIndex) => {
+        const match = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(part);
+        if (!match) return <span key={`text-${partIndex}`}>{part}</span>;
+        const [, label, url] = match;
+        const isAllowedUrl = /^https?:\/\//i.test(url) || url.startsWith("/");
+        return isAllowedUrl ? (
+          <a
+            key={`link-${partIndex}`}
+            href={url}
+            className="font-semibold text-accent underline decoration-accent/70 underline-offset-2 hover:text-accent/80"
+          >
+            {label}
+          </a>
+        ) : (
+          <span key={`text-${partIndex}`}>{part}</span>
+        );
+      })}
+    </span>
+  ));
+
 const Home = () => {
   const navigate = useNavigate();
   const [homeMembers, setHomeMembers] = useState<HomeMember[]>(() => chooseMembers(legacyMembers));
   const [news, setNews] = useState<NewsItem[]>([]);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const [activeNewsIndex, setActiveNewsIndex] = useState(0);
 
   useEffect(() => {
     getMembers()
@@ -77,6 +102,18 @@ const Home = () => {
   useEffect(() => {
     getNews().then(setNews).catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    const visibleNewsCount = Math.min(news.length, 3);
+    if (visibleNewsCount <= 1) {
+      setActiveNewsIndex(0);
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setActiveNewsIndex((current) => (current + 1) % visibleNewsCount);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [news.length]);
 
   const galleryImages = [
     { id: 1, src: '/images/slika-1.jpg', alt: 'Baročni ansambel Nova akademija' },
@@ -131,8 +168,8 @@ const Home = () => {
             <h2 className="text-3xl font-bold tracking-tight text-accent sm:text-4xl mb-9 text-center">
               Aktualno
             </h2>
-            <div className="mx-auto max-w-5xl space-y-5">
-              {news.slice(0, 3).map((item) => (
+            <div className="mx-auto max-w-5xl">
+              {news.slice(0, 3).map((item, index) => index === activeNewsIndex && (
                 <article
                   key={item.id}
                   className="flex flex-col sm:flex-row overflow-hidden rounded-lg border border-accent/30 bg-background/80 shadow-lg"
@@ -149,7 +186,7 @@ const Home = () => {
                   <div className="flex flex-1 items-center justify-between gap-5 p-5 sm:p-7">
                     <div className="min-w-0">
                       <h3 className="text-2xl font-semibold text-accent">{item.title}</h3>
-                      <p className="mt-3 line-clamp-3 leading-relaxed text-foreground/85">{item.description}</p>
+                      <p className="mt-3 line-clamp-3 leading-relaxed text-foreground/85">{renderLinkedText(item.description)}</p>
                     </div>
                     <Button
                       type="button"
@@ -162,6 +199,22 @@ const Home = () => {
                 </article>
               ))}
             </div>
+            {news.length > 1 && (
+              <div className="mt-5 flex justify-center gap-2" aria-label="Izbira aktualne novice">
+                {news.slice(0, 3).map((item, index) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-label={`Prikaži novico ${index + 1}: ${item.title}`}
+                    aria-current={index === activeNewsIndex}
+                    onClick={() => setActiveNewsIndex(index)}
+                    className={`h-2.5 w-2.5 rounded-full transition-colors ${
+                      index === activeNewsIndex ? "bg-accent" : "bg-accent/35"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -229,18 +282,18 @@ const Home = () => {
                     <DialogTitle className="text-3xl leading-tight text-accent sm:text-5xl">
                       {selectedNews.title}
                     </DialogTitle>
-                    <DialogDescription className="whitespace-pre-line pt-5 text-base leading-8 text-foreground/90 sm:text-lg">
-                      {selectedNews.detailDescription || selectedNews.description}
+                    <DialogDescription className="pt-5 text-base leading-8 text-foreground/90 sm:text-lg">
+                      {renderLinkedText(selectedNews.detailDescription || selectedNews.description)}
                     </DialogDescription>
                   </DialogHeader>
                   {selectedNews.images.length > 0 && (
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                       {selectedNews.images.map((image) => (
                         <img
                           key={image.id}
                           src={image.data}
                           alt={image.alt}
-                          className="h-48 w-full rounded-md object-cover shadow-md sm:h-40"
+                          className="h-28 w-full rounded-md object-cover shadow-md sm:h-32"
                         />
                       ))}
                     </div>

@@ -980,7 +980,7 @@ export default function AdminDodajaj() {
             style={{ ...inputStyle, minHeight: 180, resize: "vertical" }}
             value={newsDraft.detailDescription}
             onChange={(e) => updateNewsDraft("detailDescription", e.target.value)}
-            placeholder="Daljši opis, ki se prikaže v skoraj celozaslonskem pogledu."
+            placeholder="Daljši opis. Povezavo v besedilu vpiši kot [Besedilo povezave](https://primer.si)."
             required
           />
         </label>
@@ -1006,7 +1006,7 @@ export default function AdminDodajaj() {
           <img src={newsDraft.heroData} alt={newsDraft.heroAlt || "Predogled glavne slike"} style={{ maxHeight: 220, width: "100%", objectFit: "cover", borderRadius: 8 }} />
         )}
         <div style={{ display: "grid", gap: 10 }}>
-          <strong>Manjše slike v podrobnem pogledu (največ 3)</strong>
+          <strong>Manjše slike v podrobnem pogledu (največ 5)</strong>
           <label className="admin-button admin-secondary" style={{ width: "fit-content" }}>
             + Dodaj manjšo sliko
             <input
@@ -1022,7 +1022,7 @@ export default function AdminDodajaj() {
           </label>
           {newsDraft.images.map((image) => (
             <div key={image.id} style={{ display: "grid", gridTemplateColumns: "100px 1fr auto", gap: 10, alignItems: "center" }}>
-              <img src={image.data} alt={image.alt} style={{ width: 100, height: 70, objectFit: "cover", borderRadius: 6 }} />
+              <img src={image.data} alt={image.alt} style={{ width: 80, height: 56, objectFit: "cover", borderRadius: 6 }} />
               <input
                 style={inputStyle}
                 value={image.alt}

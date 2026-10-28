@@ -470,8 +470,8 @@ const server = createServer(async (request, response) => {
           sendJson(response, 404, { error: "News not found" });
           return;
         }
-        if (imageCount >= 3) {
-          sendJson(response, 400, { error: "At most three detail images can be added" });
+        if (imageCount >= 5) {
+          sendJson(response, 400, { error: "At most five detail images can be added" });
           return;
         }
         if (Buffer.byteLength(body.data, "utf8") > 300 * 1024) {
