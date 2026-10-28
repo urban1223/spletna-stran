@@ -230,6 +230,83 @@ const serializeMember = (member) => ({
   isMentor: Boolean(member.is_mentor),
 });
 
+const parseNewsLinks = (value) => {
+  try {
+    const links = JSON.parse(value || "[]");
+    return Array.isArray(links)
+      ? links.filter((link) => link && typeof link.label === "string" && typeof link.url === "string")
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+const getNews = () =>
+  database
+    .prepare(
+      `SELECT n.id, n.title, n.description, n.hero_data, n.hero_alt, n.links_json,
+              i.id AS image_id, i.image_data, i.alt_text
+       FROM news n
+       LEFT JOIN news_images i ON i.news_id = n.id
+       WHERE n.published = 1
+       ORDER BY n.sort_order ASC, n.id ASC, i.sort_order ASC, i.id ASC`,
+    )
+    .all()
+    .reduce((items, row) => {
+      let item = items.find((news) => news.id === Number(row.id));
+      if (!item) {
+        item = {
+          id: Number(row.id),
+          title: row.title,
+          description: row.description,
+          heroData: row.hero_data,
+          heroAlt: row.hero_alt,
+          links: parseNewsLinks(row.links_json),
+          images: [],
+        };
+        items.push(item);
+      }
+      if (row.image_id !== null) {
+        item.images.push({ id: Number(row.image_id), data: row.image_data, alt: row.alt_text });
+      }
+      return items;
+    }, []);
+
+const validateNews = (body) => {
+  if (!body || typeof body !== "object" || typeof body.title !== "string" || !body.title.trim()) {
+    return "News title is required";
+  }
+  if (typeof body.description !== "string") return "News description is invalid";
+  if (body.heroData !== null && body.heroData !== undefined && typeof body.heroData !== "string") {
+    return "News image is invalid";
+  }
+  if (body.heroData && Buffer.byteLength(body.heroData, "utf8") > 300 * 1024) return "News image is too large";
+  if (body.heroAlt !== undefined && typeof body.heroAlt !== "string") return "News image description is invalid";
+  if (!Array.isArray(body.links) || body.links.length > 10) return "News links are invalid";
+  if (
+    body.links.some(
+      (link) =>
+        !link ||
+        typeof link.label !== "string" ||
+        !link.label.trim() ||
+        typeof link.url !== "string" ||
+        !link.url.trim() ||
+        (!/^https?:\/\//i.test(link.url.trim()) && !link.url.trim().startsWith("/")),
+    )
+  ) {
+    return "News links are invalid";
+  }
+  return null;
+};
+
+const newsValues = (body) => [
+  body.title.trim(),
+  body.description.trim(),
+  body.heroData || null,
+  (body.heroAlt || "").trim(),
+  JSON.stringify(body.links.map((link) => ({ label: link.label.trim(), url: link.url.trim() }))),
+];
+
 const validateMember = (body) => {
   const required = ["slug", "name"];
   if (!body || typeof body !== "object" || required.some((field) => typeof body[field] !== "string" || !body[field].trim())) {
@@ -297,6 +374,149 @@ const server = createServer(async (request, response) => {
 
   if (requestUrl.pathname === "/api/health") {
     sendJson(response, 200, { status: "ok" });
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/news" && request.method === "GET") {
+    sendJson(response, 200, getNews());
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/news" && request.method === "POST") {
+    if (!isAuthenticated(request)) {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    try {
+      const body = await readJsonBody(request);
+      const errorMessage = validateNews(body);
+      if (errorMessage) {
+        sendJson(response, 400, { error: errorMessage });
+        return;
+      }
+      const newsCount = database.prepare("SELECT COUNT(*) AS count FROM news WHERE published = 1").get().count;
+      if (newsCount >= 3) {
+        sendJson(response, 400, { error: "At most three news items can be published" });
+        return;
+      }
+      const result = database
+        .prepare(
+          "INSERT INTO news (title, description, hero_data, hero_alt, links_json, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .run(...newsValues(body), newsCount);
+      sendJson(response, 201, { news: getNews().find((item) => item.id === Number(result.lastInsertRowid)) });
+      return;
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        sendJson(response, 400, { error: "Invalid JSON" });
+        return;
+      }
+      console.error("News creation failed:", error);
+      sendJson(response, 500, { error: "Unable to save news" });
+      return;
+    }
+  }
+
+  if (requestUrl.pathname.startsWith("/api/news/")) {
+    if (!isAuthenticated(request) && request.method !== "GET") {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    const parts = requestUrl.pathname.split("/").filter(Boolean);
+    const newsId = Number(parts[2]);
+    const imageId = parts[4] ? Number(parts[4]) : null;
+    try {
+      if (request.method === "DELETE" && !imageId) {
+        const result = database.prepare("DELETE FROM news WHERE id = ?").run(newsId);
+        if (result.changes === 0) {
+          sendJson(response, 404, { error: "News not found" });
+          return;
+        }
+        sendJson(response, 200, { deleted: true });
+        return;
+      }
+      if (request.method === "PUT" && !imageId) {
+        const body = await readJsonBody(request);
+        const errorMessage = validateNews(body);
+        if (errorMessage) {
+          sendJson(response, 400, { error: errorMessage });
+          return;
+        }
+        const result = database
+          .prepare(
+            "UPDATE news SET title = ?, description = ?, hero_data = ?, hero_alt = ?, links_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+          )
+          .run(...newsValues(body), newsId);
+        if (result.changes === 0) {
+          sendJson(response, 404, { error: "News not found" });
+          return;
+        }
+        sendJson(response, 200, { news: getNews().find((item) => item.id === newsId) });
+        return;
+      }
+      if (request.method === "POST" && parts[3] === "images") {
+        const body = await readJsonBody(request);
+        const match = /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(body.data || "");
+        if (!match || typeof body.alt !== "string" || !body.alt.trim()) {
+          sendJson(response, 400, { error: "A valid image and description are required" });
+          return;
+        }
+        const news = database.prepare("SELECT id FROM news WHERE id = ?").get(newsId);
+        const imageCount = database.prepare("SELECT COUNT(*) AS count FROM news_images WHERE news_id = ?").get(newsId).count;
+        if (!news) {
+          sendJson(response, 404, { error: "News not found" });
+          return;
+        }
+        if (imageCount >= 3) {
+          sendJson(response, 400, { error: "At most three detail images can be added" });
+          return;
+        }
+        if (Buffer.byteLength(body.data, "utf8") > 300 * 1024) {
+          sendJson(response, 413, { error: "Image must be smaller than 200 KB" });
+          return;
+        }
+        const result = database
+          .prepare("INSERT INTO news_images (news_id, image_data, alt_text, sort_order) VALUES (?, ?, ?, ?)")
+          .run(newsId, body.data, body.alt.trim(), imageCount);
+        sendJson(response, 201, {
+          image: { id: Number(result.lastInsertRowid), data: body.data, alt: body.alt.trim() },
+        });
+        return;
+      }
+      if (request.method === "PUT" && imageId) {
+        const body = await readJsonBody(request);
+        if (typeof body.alt !== "string" || !body.alt.trim()) {
+          sendJson(response, 400, { error: "Image description is required" });
+          return;
+        }
+        const result = database
+          .prepare("UPDATE news_images SET alt_text = ? WHERE id = ? AND news_id = ?")
+          .run(body.alt.trim(), imageId, newsId);
+        if (result.changes === 0) {
+          sendJson(response, 404, { error: "Image not found" });
+          return;
+        }
+        sendJson(response, 200, { updated: true });
+        return;
+      }
+      if (request.method === "DELETE" && imageId) {
+        const result = database.prepare("DELETE FROM news_images WHERE id = ? AND news_id = ?").run(imageId, newsId);
+        if (result.changes === 0) {
+          sendJson(response, 404, { error: "Image not found" });
+          return;
+        }
+        sendJson(response, 200, { deleted: true });
+        return;
+      }
+      sendJson(response, 400, { error: "Invalid news request" });
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        sendJson(response, 400, { error: "Invalid JSON" });
+        return;
+      }
+      console.error("News request failed:", error);
+      sendJson(response, 500, { error: "Unable to update news" });
+    }
     return;
   }
 

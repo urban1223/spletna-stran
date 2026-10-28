@@ -4,6 +4,17 @@ import { members as legacyMembers } from "@/data/members-data";
 import { deleteMember, getMembers, migrateMemberImages, saveMember, type AdminMember } from "@/lib/members-api";
 import { deleteEvent, getAdminSession, getEvents, loginAdmin, logoutAdmin, saveEvent } from "@/lib/events-api";
 import {
+  addNewsImage,
+  createNews,
+  deleteNews,
+  deleteNewsImage,
+  getNews,
+  updateNews,
+  updateNewsImage,
+  type NewsItem,
+  type NewsLink,
+} from "@/lib/news-api";
+import {
   createGallery,
   deleteGallery,
   deleteGalleryImage,
@@ -67,6 +78,17 @@ type MemberForm = Omit<AdminMember, "slug" | "imageUrl" | "imageData"> & {
   imageUrl: string;
   imageData: string;
   slug: string;
+};
+
+type NewsDraft = Omit<NewsItem, "id"> & { id?: number };
+
+const emptyNewsDraft: NewsDraft = {
+  title: "",
+  description: "",
+  heroData: null,
+  heroAlt: "",
+  images: [],
+  links: [],
 };
 const emptyMemberForm: MemberForm = {
   slug: "",
@@ -266,7 +288,7 @@ export default function AdminDodajaj() {
   const [showPreview, setShowPreview] = useState(false);
   const [notice, setNotice] = useState("");
   const [copyNotice, setCopyNotice] = useState("");
-  const [activeTab, setActiveTab] = useState<"events" | "gallery" | "members">("events");
+  const [activeTab, setActiveTab] = useState<"events" | "gallery" | "members" | "news">("events");
   const [members, setMembers] = useState<AdminMember[]>([]);
   const [memberForm, setMemberForm] = useState<MemberForm>(emptyMemberForm);
   const [editingMemberSlug, setEditingMemberSlug] = useState<string | null>(null);
@@ -280,18 +302,23 @@ export default function AdminDodajaj() {
   const [uploadingGalleryId, setUploadingGalleryId] = useState<number | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [csvNotice, setCsvNotice] = useState("");
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [newsDraft, setNewsDraft] = useState<NewsDraft>(emptyNewsDraft);
+  const [newsNotice, setNewsNotice] = useState("");
+  const [savingNews, setSavingNews] = useState(false);
 
   useEffect(() => {
     getAdminSession()
       .then((session) => {
         setAuthenticated(session.authenticated);
         if (session.authenticated) {
-          return Promise.all([getEvents(), getGallery(), getMembers()]).then(([loadedEvents, loadedGallery, loadedMembers]) =>
+          return Promise.all([getEvents(), getGallery(), getMembers(), getNews()]).then(([loadedEvents, loadedGallery, loadedMembers, loadedNews]) =>
             ensureManagedMembers(loadedMembers).then((managedMembers) =>
               migrateMemberImages().then(() => getMembers()).then((migratedMembers) => {
             setEvents(loadedEvents);
             setGalleryAlbums(loadedGallery);
             setMembers(migratedMembers);
+            setNews(loadedNews);
           })));
         }
         return undefined;
@@ -399,11 +426,12 @@ export default function AdminDodajaj() {
       .then(() => {
         setAuthenticated(true);
         setPassword("");
-        return Promise.all([getEvents(), getMembers()]).then(([loadedEvents, loadedMembers]) =>
+        return Promise.all([getEvents(), getMembers(), getNews()]).then(([loadedEvents, loadedMembers, loadedNews]) =>
           ensureManagedMembers(loadedMembers).then(() =>
             migrateMemberImages().then(() => getMembers()).then((migratedMembers) => {
           setEvents(loadedEvents);
           setMembers(migratedMembers);
+          setNews(loadedNews);
         })));
       })
       .catch((error: Error) => setLoginError(error.message || "Prijava ni uspela."));
@@ -415,6 +443,7 @@ export default function AdminDodajaj() {
       setEvents([]);
       setGalleryAlbums([]);
       setMembers([]);
+      setNews([]);
     });
   };
 
@@ -619,6 +648,108 @@ export default function AdminDodajaj() {
       .catch((error: Error) => setGalleryNotice(`Opisa slike ni mogoče shraniti: ${error.message}`));
   };
 
+  const updateNewsDraft = <K extends keyof NewsDraft>(key: K, value: NewsDraft[K]) => {
+    setNewsDraft((current) => ({ ...current, [key]: value }));
+    setNewsNotice("");
+  };
+
+  const startNews = () => {
+    setNewsDraft(emptyNewsDraft);
+    setNewsNotice("");
+  };
+
+  const editNews = (item: NewsItem) => {
+    setNewsDraft({ ...item, links: item.links.map((link) => ({ ...link })), images: [...item.images] });
+    setNewsNotice(`Urejaš aktualno novico »${item.title}«.`);
+    window.setTimeout(() => document.getElementById(`admin-news-${item.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+  };
+
+  const saveNewsDraft = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSavingNews(true);
+    const request = newsDraft.id ? updateNews(newsDraft as NewsItem) : createNews(newsDraft);
+    request
+      .then(({ news: saved }) => {
+        setNews((current) => {
+          const withoutSaved = current.filter((item) => item.id !== saved.id);
+          return [...withoutSaved, saved];
+        });
+        setNewsDraft(saved);
+        setNewsNotice("Aktualna novica je shranjena in objavljena.");
+      })
+      .catch((error: Error) => setNewsNotice(`Novice ni mogoče shraniti: ${error.message}`))
+      .finally(() => setSavingNews(false));
+  };
+
+  const handleNewsHeroUpload = async (file: File) => {
+    try {
+      const data = await resizeImage(file);
+      updateNewsDraft("heroData", data);
+      if (!newsDraft.heroAlt) updateNewsDraft("heroAlt", file.name.replace(/\.[^.]+$/, ""));
+      setNewsNotice("Glavna slika je pripravljena. Klikni »Shrani novico«.");
+    } catch (error) {
+      setNewsNotice(`Glavne slike ni mogoče pripraviti: ${(error as Error).message}`);
+    }
+  };
+
+  const handleNewsImageUpload = async (file: File) => {
+    if (!newsDraft.id) {
+      setNewsNotice("Najprej shrani novico, nato lahko dodaš manjše slike.");
+      return;
+    }
+    if (newsDraft.images.length >= 3) {
+      setNewsNotice("Dodane so lahko največ 3 manjše slike.");
+      return;
+    }
+    try {
+      const data = await resizeImage(file);
+      const { image } = await addNewsImage(newsDraft.id, data, file.name.replace(/\.[^.]+$/, ""));
+      setNewsDraft((current) => ({ ...current, images: [...current.images, image] }));
+      setNews((current) => current.map((item) => (item.id === newsDraft.id ? { ...item, images: [...item.images, image] } : item)));
+      setNewsNotice("Manjša slika je dodana.");
+    } catch (error) {
+      setNewsNotice(`Slike ni mogoče dodati: ${(error as Error).message}`);
+    }
+  };
+
+  const handleNewsImageDelete = (imageId: number) => {
+    if (!newsDraft.id) return;
+    deleteNewsImage(newsDraft.id, imageId)
+      .then(() => {
+        setNewsDraft((current) => ({ ...current, images: current.images.filter((image) => image.id !== imageId) }));
+        setNews((current) => current.map((item) => item.id === newsDraft.id ? { ...item, images: item.images.filter((image) => image.id !== imageId) } : item));
+        setNewsNotice("Manjša slika je izbrisana.");
+      })
+      .catch((error: Error) => setNewsNotice(`Slike ni mogoče izbrisati: ${error.message}`));
+  };
+
+  const handleNewsImageAltUpdate = (image: NewsItem["images"][number]) => {
+    if (!newsDraft.id) return;
+    updateNewsImage(newsDraft.id, image)
+      .then(() => setNewsNotice("Opis slike je shranjen."))
+      .catch((error: Error) => setNewsNotice(`Opisa slike ni mogoče shraniti: ${error.message}`));
+  };
+
+  const deleteNewsItem = (item: NewsItem) => {
+    if (!window.confirm(`Ali res želiš izbrisati aktualno novico »${item.title}«?`)) return;
+    deleteNews(item.id)
+      .then(() => {
+        setNews((current) => current.filter((newsItem) => newsItem.id !== item.id));
+        if (newsDraft.id === item.id) setNewsDraft(emptyNewsDraft);
+        setNewsNotice("Aktualna novica je izbrisana.");
+      })
+      .catch((error: Error) => setNewsNotice(`Novice ni mogoče izbrisati: ${error.message}`));
+  };
+
+  const addNewsLink = () => updateNewsDraft("links", [...newsDraft.links, { label: "", url: "" }]);
+
+  const updateNewsLink = (index: number, key: keyof NewsLink, value: string) => {
+    updateNewsDraft(
+      "links",
+      newsDraft.links.map((link, linkIndex) => (linkIndex === index ? { ...link, [key]: value } : link)),
+    );
+  };
+
   const copyJson = async () => {
     try {
       await navigator.clipboard.writeText(exportJson);
@@ -818,6 +949,140 @@ export default function AdminDodajaj() {
         </div>
       )}
     </form>
+  );
+
+  const newsEditor = (
+    <section className="admin-card" style={{ display: "grid", gap: 18 }}>
+      <div>
+        <h2 style={{ margin: "0 0 8px", fontSize: 21 }}>Aktualno</h2>
+        <p style={{ margin: 0, color: "hsl(220 8% 68%)", lineHeight: 1.5 }}>
+          Objavi največ 3 aktualne novice na prvi strani. Glavna slika je neobvezna in se prikaže na levi.
+        </p>
+      </div>
+      <form onSubmit={saveNewsDraft} style={{ display: "grid", gap: 14 }}>
+        <label style={labelStyle}>
+          Naslov
+          <input style={inputStyle} value={newsDraft.title} onChange={(e) => updateNewsDraft("title", e.target.value)} required />
+        </label>
+        <label style={labelStyle}>
+          Opis
+          <textarea
+            style={{ ...inputStyle, minHeight: 120, resize: "vertical" }}
+            value={newsDraft.description}
+            onChange={(e) => updateNewsDraft("description", e.target.value)}
+            required
+          />
+        </label>
+        <div className="admin-grid">
+          <label style={labelStyle}>
+            Glavna slika (neobvezno)
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handleNewsHeroUpload(file);
+                e.currentTarget.value = "";
+              }}
+            />
+          </label>
+          <label style={labelStyle}>
+            Opis glavne slike
+            <input style={inputStyle} value={newsDraft.heroAlt} onChange={(e) => updateNewsDraft("heroAlt", e.target.value)} />
+          </label>
+        </div>
+        {newsDraft.heroData && (
+          <img src={newsDraft.heroData} alt={newsDraft.heroAlt || "Predogled glavne slike"} style={{ maxHeight: 220, width: "100%", objectFit: "cover", borderRadius: 8 }} />
+        )}
+        <div style={{ display: "grid", gap: 10 }}>
+          <strong>Manjše slike v podrobnem pogledu (največ 3)</strong>
+          <label className="admin-button admin-secondary" style={{ width: "fit-content" }}>
+            + Dodaj manjšo sliko
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handleNewsImageUpload(file);
+                e.currentTarget.value = "";
+              }}
+            />
+          </label>
+          {newsDraft.images.map((image) => (
+            <div key={image.id} style={{ display: "grid", gridTemplateColumns: "100px 1fr auto", gap: 10, alignItems: "center" }}>
+              <img src={image.data} alt={image.alt} style={{ width: 100, height: 70, objectFit: "cover", borderRadius: 6 }} />
+              <input
+                style={inputStyle}
+                value={image.alt}
+                aria-label="Opis manjše slike"
+                onChange={(e) =>
+                  setNewsDraft((current) => ({
+                    ...current,
+                    images: current.images.map((currentImage) =>
+                      currentImage.id === image.id ? { ...currentImage, alt: e.target.value } : currentImage,
+                    ),
+                  }))
+                }
+                onBlur={() => handleNewsImageAltUpdate(image)}
+              />
+              <button className="admin-button admin-secondary" type="button" onClick={() => handleNewsImageDelete(image.id)}>
+                Izbriši
+              </button>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "grid", gap: 10 }}>
+          <strong>Povezave v podrobnem pogledu</strong>
+          {newsDraft.links.map((link, index) => (
+            <div key={index} className="admin-grid">
+              <input
+                style={inputStyle}
+                placeholder="Besedilo povezave, npr. Več o koncertu"
+                value={link.label}
+                onChange={(e) => updateNewsLink(index, "label", e.target.value)}
+              />
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  style={inputStyle}
+                  placeholder="URL ali notranja pot, npr. /dogodki"
+                  value={link.url}
+                  onChange={(e) => updateNewsLink(index, "url", e.target.value)}
+                />
+                <button
+                  className="admin-button admin-secondary"
+                  type="button"
+                  onClick={() => updateNewsDraft("links", newsDraft.links.filter((_, linkIndex) => linkIndex !== index))}
+                >
+                  Odstrani
+                </button>
+              </div>
+            </div>
+          ))}
+          <button className="admin-button admin-secondary" type="button" onClick={addNewsLink} style={{ width: "fit-content" }}>
+            + Dodaj povezavo
+          </button>
+        </div>
+        <button className="admin-button admin-gold" type="submit" disabled={savingNews}>
+          {savingNews ? "Shranjujem …" : newsDraft.id ? "Shrani spremembe" : "Objavi aktualno novico"}
+        </button>
+      </form>
+      {newsNotice && <div role="status" style={{ color: "hsl(45 85% 75%)" }}>{newsNotice}</div>}
+      <div style={{ display: "grid", gap: 12 }}>
+        {news.map((item) => (
+          <article id={`admin-news-${item.id}`} key={item.id} className="admin-event">
+            <div>
+              <strong>{item.title}</strong>
+              <div style={{ color: "hsl(220 8% 68%)", fontSize: 13, marginTop: 4 }}>{item.description}</div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button className="admin-button admin-secondary" type="button" onClick={() => editNews(item)}>Uredi</button>
+              <button className="admin-button admin-secondary" type="button" onClick={() => deleteNewsItem(item)}>Izbriši</button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 
   const galleryEditor = (
@@ -1037,6 +1302,13 @@ export default function AdminDodajaj() {
           >
             Uredi člane
           </button>
+          <button
+            className={`admin-button ${activeTab === "news" ? "admin-gold" : "admin-secondary"}`}
+            type="button"
+            onClick={() => setActiveTab("news")}
+          >
+            Uredi aktualno
+          </button>
         </div>
 
         {activeTab === "events" && (
@@ -1230,6 +1502,18 @@ export default function AdminDodajaj() {
             </p>
           </section>
         )}
+
+        {activeTab === "news" && (
+          <>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+              <button className="admin-button admin-gold" type="button" onClick={startNews} disabled={news.length >= 3}>
+                + Nova aktualna novica
+              </button>
+            </div>
+            {newsEditor}
+          </>
+        )}
+
         {activeTab === "gallery" && galleryEditor}
 
         {activeTab === "members" && (

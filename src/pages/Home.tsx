@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Seo from "@/components/Seo";
 import { members as legacyMembers, type Member } from "@/data/members-data";
 import { getMembers, type AdminMember } from "@/lib/members-api";
+import { getNews, type NewsItem } from "@/lib/news-api";
 import { getSessionCookie, setSessionCookie } from "@/lib/cookies";
 import urbanImage from "@/assets/members/urban-klancar.jpg";
 import lauraImage from "@/assets/members/laura-calligaris.jpg";
@@ -53,15 +54,28 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Home = () => {
   const navigate = useNavigate();
   const [homeMembers, setHomeMembers] = useState<HomeMember[]>(() => chooseMembers(legacyMembers));
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
 
   useEffect(() => {
     getMembers()
       .then((loadedMembers: AdminMember[]) => setHomeMembers(chooseMembers(loadedMembers)))
       .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    getNews().then(setNews).catch(() => undefined);
   }, []);
 
   const galleryImages = [
@@ -111,6 +125,47 @@ const Home = () => {
         </div>
       </section>
 
+      {news.length > 0 && (
+        <section className="py-16">
+          <div className="container mx-auto px-4 relative z-10">
+            <h2 className="text-3xl font-bold tracking-tight text-accent sm:text-4xl mb-9 text-center">
+              Aktualno
+            </h2>
+            <div className="mx-auto max-w-5xl space-y-5">
+              {news.slice(0, 3).map((item) => (
+                <article
+                  key={item.id}
+                  className="flex flex-col sm:flex-row overflow-hidden rounded-lg border border-accent/30 bg-background/80 shadow-lg"
+                >
+                  {item.heroData ? (
+                    <img
+                      src={item.heroData}
+                      alt={item.heroAlt || item.title}
+                      className="h-52 w-full object-cover sm:h-auto sm:w-2/5"
+                    />
+                  ) : (
+                    <div className="hidden sm:block sm:w-2/5 bg-accent/10" aria-hidden="true" />
+                  )}
+                  <div className="flex flex-1 items-center justify-between gap-5 p-5 sm:p-7">
+                    <div className="min-w-0">
+                      <h3 className="text-2xl font-semibold text-accent">{item.title}</h3>
+                      <p className="mt-3 line-clamp-3 leading-relaxed text-foreground/85">{item.description}</p>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => setSelectedNews(item)}
+                      className="shrink-0 bg-accent text-accent-foreground hover:bg-accent/90"
+                    >
+                      Preberi več
+                    </Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Gallery Section */}
       <section className="pt-28 pb-8">
         <div className="container mx-auto px-4 relative z-10">
@@ -155,6 +210,42 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      <Dialog open={selectedNews !== null} onOpenChange={(open) => !open && setSelectedNews(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+          {selectedNews && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-accent">{selectedNews.title}</DialogTitle>
+                <DialogDescription className="whitespace-pre-line leading-relaxed">
+                  {selectedNews.description}
+                </DialogDescription>
+              </DialogHeader>
+              {selectedNews.images.length > 0 && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  {selectedNews.images.map((image) => (
+                    <img
+                      key={image.id}
+                      src={image.data}
+                      alt={image.alt}
+                      className="h-40 w-full rounded-md object-cover"
+                    />
+                  ))}
+                </div>
+              )}
+              {selectedNews.links.length > 0 && (
+                <div className="flex flex-wrap gap-3">
+                  {selectedNews.links.map((link) => (
+                    <Button key={`${link.label}-${link.url}`} asChild variant="outline">
+                      <a href={link.url}>{link.label}</a>
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
 {/* Members Section */}
 <section className="pt-28 pb-8">
