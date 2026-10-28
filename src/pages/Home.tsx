@@ -212,36 +212,50 @@ const Home = () => {
       </section>
 
       <Dialog open={selectedNews !== null} onOpenChange={(open) => !open && setSelectedNews(null)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="max-h-[96vh] w-[calc(100%-1rem)] max-w-6xl overflow-y-auto border-accent/30 bg-background p-0 sm:rounded-xl">
           {selectedNews && (
             <>
-              <DialogHeader>
-                <DialogTitle className="text-accent">{selectedNews.title}</DialogTitle>
-                <DialogDescription className="whitespace-pre-line leading-relaxed">
-                  {selectedNews.description}
-                </DialogDescription>
-              </DialogHeader>
-              {selectedNews.images.length > 0 && (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  {selectedNews.images.map((image) => (
-                    <img
-                      key={image.id}
-                      src={image.data}
-                      alt={image.alt}
-                      className="h-40 w-full rounded-md object-cover"
-                    />
-                  ))}
+              <div className="min-h-[80vh]">
+                {selectedNews.heroData && (
+                  <img
+                    src={selectedNews.heroData}
+                    alt={selectedNews.heroAlt || selectedNews.title}
+                    className="h-56 w-full object-cover sm:h-72"
+                  />
+                )}
+                <div className="mx-auto max-w-4xl px-6 py-10 sm:px-12 sm:py-14">
+                  <DialogHeader className="mb-8 text-left">
+                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-accent">Aktualno</p>
+                    <DialogTitle className="text-3xl leading-tight text-accent sm:text-5xl">
+                      {selectedNews.title}
+                    </DialogTitle>
+                    <DialogDescription className="whitespace-pre-line pt-5 text-base leading-8 text-foreground/90 sm:text-lg">
+                      {selectedNews.detailDescription || selectedNews.description}
+                    </DialogDescription>
+                  </DialogHeader>
+                  {selectedNews.images.length > 0 && (
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                      {selectedNews.images.map((image) => (
+                        <img
+                          key={image.id}
+                          src={image.data}
+                          alt={image.alt}
+                          className="h-48 w-full rounded-md object-cover shadow-md sm:h-40"
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {selectedNews.links.length > 0 && (
+                    <div className="mt-10 flex flex-wrap gap-3 border-t border-border pt-7">
+                      {selectedNews.links.map((link) => (
+                        <Button key={`${link.label}-${link.url}`} asChild variant="outline">
+                          <a href={link.url}>{link.label}</a>
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-              {selectedNews.links.length > 0 && (
-                <div className="flex flex-wrap gap-3">
-                  {selectedNews.links.map((link) => (
-                    <Button key={`${link.label}-${link.url}`} asChild variant="outline">
-                      <a href={link.url}>{link.label}</a>
-                    </Button>
-                  ))}
-                </div>
-              )}
+              </div>
             </>
           )}
         </DialogContent>

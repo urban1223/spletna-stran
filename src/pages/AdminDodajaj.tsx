@@ -85,6 +85,7 @@ type NewsDraft = Omit<NewsItem, "id"> & { id?: number };
 const emptyNewsDraft: NewsDraft = {
   title: "",
   description: "",
+  detailDescription: "",
   heroData: null,
   heroAlt: "",
   images: [],
@@ -965,11 +966,21 @@ export default function AdminDodajaj() {
           <input style={inputStyle} value={newsDraft.title} onChange={(e) => updateNewsDraft("title", e.target.value)} required />
         </label>
         <label style={labelStyle}>
-          Opis
+          Kratek opis za prvo stran
           <textarea
             style={{ ...inputStyle, minHeight: 120, resize: "vertical" }}
             value={newsDraft.description}
             onChange={(e) => updateNewsDraft("description", e.target.value)}
+            required
+          />
+        </label>
+        <label style={labelStyle}>
+          Opis v podrobnem pogledu
+          <textarea
+            style={{ ...inputStyle, minHeight: 180, resize: "vertical" }}
+            value={newsDraft.detailDescription}
+            onChange={(e) => updateNewsDraft("detailDescription", e.target.value)}
+            placeholder="Daljši opis, ki se prikaže v skoraj celozaslonskem pogledu."
             required
           />
         </label>

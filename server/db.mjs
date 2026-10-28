@@ -72,6 +72,7 @@ database.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
+    detail_description TEXT NOT NULL DEFAULT '',
     hero_data TEXT,
     hero_alt TEXT NOT NULL DEFAULT '',
     links_json TEXT NOT NULL DEFAULT '[]',
@@ -90,6 +91,12 @@ database.exec(`
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 `);
+
+try {
+  database.exec("ALTER TABLE news ADD COLUMN detail_description TEXT NOT NULL DEFAULT ''");
+} catch (error) {
+  if (!String(error?.message || "").includes("duplicate column name")) throw error;
+}
 
 try {
   database.exec("ALTER TABLE members ADD COLUMN image_data TEXT");

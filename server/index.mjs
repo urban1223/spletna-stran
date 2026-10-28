@@ -244,7 +244,7 @@ const parseNewsLinks = (value) => {
 const getNews = () =>
   database
     .prepare(
-      `SELECT n.id, n.title, n.description, n.hero_data, n.hero_alt, n.links_json,
+      `SELECT n.id, n.title, n.description, n.detail_description, n.hero_data, n.hero_alt, n.links_json,
               i.id AS image_id, i.image_data, i.alt_text
        FROM news n
        LEFT JOIN news_images i ON i.news_id = n.id
@@ -259,6 +259,7 @@ const getNews = () =>
           id: Number(row.id),
           title: row.title,
           description: row.description,
+          detailDescription: row.detail_description || row.description,
           heroData: row.hero_data,
           heroAlt: row.hero_alt,
           links: parseNewsLinks(row.links_json),
@@ -277,6 +278,7 @@ const validateNews = (body) => {
     return "News title is required";
   }
   if (typeof body.description !== "string") return "News description is invalid";
+  if (typeof body.detailDescription !== "string") return "News detail description is invalid";
   if (body.heroData !== null && body.heroData !== undefined && typeof body.heroData !== "string") {
     return "News image is invalid";
   }
@@ -302,6 +304,7 @@ const validateNews = (body) => {
 const newsValues = (body) => [
   body.title.trim(),
   body.description.trim(),
+  body.detailDescription.trim(),
   body.heroData || null,
   (body.heroAlt || "").trim(),
   JSON.stringify(body.links.map((link) => ({ label: link.label.trim(), url: link.url.trim() }))),
@@ -401,7 +404,7 @@ const server = createServer(async (request, response) => {
       }
       const result = database
         .prepare(
-          "INSERT INTO news (title, description, hero_data, hero_alt, links_json, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+          "INSERT INTO news (title, description, detail_description, hero_data, hero_alt, links_json, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)",
         )
         .run(...newsValues(body), newsCount);
       sendJson(response, 201, { news: getNews().find((item) => item.id === Number(result.lastInsertRowid)) });
@@ -444,7 +447,7 @@ const server = createServer(async (request, response) => {
         }
         const result = database
           .prepare(
-            "UPDATE news SET title = ?, description = ?, hero_data = ?, hero_alt = ?, links_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            "UPDATE news SET title = ?, description = ?, detail_description = ?, hero_data = ?, hero_alt = ?, links_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
           )
           .run(...newsValues(body), newsId);
         if (result.changes === 0) {

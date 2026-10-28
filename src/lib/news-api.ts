@@ -13,6 +13,7 @@ export type NewsItem = {
   id: number;
   title: string;
   description: string;
+  detailDescription: string;
   heroData: string | null;
   heroAlt: string;
   images: NewsImage[];
@@ -42,6 +43,7 @@ export const updateNews = (news: NewsItem) =>
     body: JSON.stringify({
       title: news.title,
       description: news.description,
+      detailDescription: news.detailDescription,
       heroData: news.heroData,
       heroAlt: news.heroAlt,
       links: news.links,
