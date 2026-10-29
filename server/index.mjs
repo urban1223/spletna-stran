@@ -47,6 +47,9 @@ const sendSitemap = (response) => {
   const events = database
     .prepare("SELECT slug, iso_date, past FROM events WHERE published = 1 ORDER BY iso_date ASC, slug ASC")
     .all();
+  const news = database
+    .prepare("SELECT id, date(updated_at) AS lastmod FROM news WHERE published = 1 ORDER BY sort_order ASC, id ASC")
+    .all();
   const staticUrls = [
     { path: "/", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "1.0" },
     { path: "/dogodki", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "0.9" },
@@ -62,6 +65,12 @@ const sendSitemap = (response) => {
       lastmod: event.iso_date,
       changefreq: Boolean(event.past) ? "never" : "monthly",
       priority: Boolean(event.past) ? "0.4" : "0.95",
+    })),
+    ...news.map((item) => ({
+      path: `/aktualno/${item.id}`,
+      lastmod: item.lastmod || new Date().toISOString().slice(0, 10),
+      changefreq: "weekly",
+      priority: "0.8",
     })),
   ];
   const body = `<?xml version="1.0" encoding="UTF-8"?>
@@ -429,6 +438,15 @@ const server = createServer(async (request, response) => {
     const newsId = Number(parts[2]);
     const imageId = parts[4] ? Number(parts[4]) : null;
     try {
+      if (request.method === "GET" && !imageId) {
+        const item = getNews().find((news) => news.id === newsId);
+        if (!item) {
+          sendJson(response, 404, { error: "News not found" });
+          return;
+        }
+        sendJson(response, 200, item);
+        return;
+      }
       if (request.method === "DELETE" && !imageId) {
         const result = database.prepare("DELETE FROM news WHERE id = ?").run(newsId);
         if (result.changes === 0) {

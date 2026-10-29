@@ -27,7 +27,19 @@ const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   return body;
 };
 
+const isNewsItem = (value: unknown): value is NewsItem => {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Partial<NewsItem>;
+  return typeof item.id === "number" && typeof item.title === "string" && item.title.trim().length > 0;
+};
+
 export const getNews = () => request<NewsItem[]>("/api/news");
+
+export const getNewsItem = async (id: number) => {
+  const item = await request<NewsItem>(`/api/news/${id}`);
+  if (!isNewsItem(item)) throw new Error("News not found");
+  return item;
+};
 
 export const createNews = (news: Omit<NewsItem, "id" | "images">) =>
   request<{ news: NewsItem }>("/api/news", {

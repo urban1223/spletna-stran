@@ -1085,6 +1085,12 @@ export default function AdminDodajaj() {
             <div>
               <strong>{item.title}</strong>
               <div style={{ color: "hsl(220 8% 68%)", fontSize: 13, marginTop: 4 }}>{item.description}</div>
+              <div style={{ color: "hsl(220 8% 68%)", fontSize: 13, marginTop: 6 }}>
+                Javna povezava:{" "}
+                <a href={`/aktualno/${item.id}`} style={{ color: "hsl(45 85% 75%)" }}>
+                  /aktualno/{item.id}
+                </a>
+              </div>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button className="admin-button admin-secondary" type="button" onClick={() => editNews(item)}>Uredi</button>

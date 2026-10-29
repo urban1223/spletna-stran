@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Seo from "@/components/Seo";
+import NewsLinkedText from "@/components/NewsLinkedText";
 import { members as legacyMembers, type Member } from "@/data/members-data";
 import { getMembers, type AdminMember } from "@/lib/members-api";
 import { getNews, type NewsItem } from "@/lib/news-api";
@@ -54,43 +55,11 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
-const renderLinkedText = (text: string) =>
-  text.split("\n").map((line, lineIndex) => (
-    <span key={`line-${lineIndex}`}>
-      {lineIndex > 0 && <br />}
-      {line.split(/(\[[^\]]+\]\([^)]+\))/g).map((part, partIndex) => {
-        const match = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(part);
-        if (!match) return <span key={`text-${partIndex}`}>{part}</span>;
-        const [, label, url] = match;
-        const isAllowedUrl = /^https?:\/\//i.test(url) || url.startsWith("/");
-        return isAllowedUrl ? (
-          <a
-            key={`link-${partIndex}`}
-            href={url}
-            className="font-semibold text-accent underline decoration-accent/70 underline-offset-2 hover:text-accent/80"
-          >
-            {label}
-          </a>
-        ) : (
-          <span key={`text-${partIndex}`}>{part}</span>
-        );
-      })}
-    </span>
-  ));
 
 const Home = () => {
   const navigate = useNavigate();
   const [homeMembers, setHomeMembers] = useState<HomeMember[]>(() => chooseMembers(legacyMembers));
   const [news, setNews] = useState<NewsItem[]>([]);
-  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
 
   useEffect(() => {
@@ -185,15 +154,17 @@ const Home = () => {
                   )}
                   <div className="flex flex-1 items-center justify-between gap-5 p-5 sm:p-7">
                     <div className="min-w-0">
-                      <h3 className="text-2xl font-semibold text-accent">{item.title}</h3>
-                      <p className="mt-3 line-clamp-3 leading-relaxed text-foreground/85">{renderLinkedText(item.description)}</p>
+                      <h3 className="text-2xl font-semibold text-accent">
+                        <Link to={`/aktualno/${item.id}`} className="hover:underline">
+                          {item.title}
+                        </Link>
+                      </h3>
+                      <p className="mt-3 line-clamp-3 leading-relaxed text-foreground/85">
+                        <NewsLinkedText text={item.description} />
+                      </p>
                     </div>
-                    <Button
-                      type="button"
-                      onClick={() => setSelectedNews(item)}
-                      className="shrink-0 bg-accent text-accent-foreground hover:bg-accent/90"
-                    >
-                      Preberi več
+                    <Button asChild className="shrink-0 bg-accent text-accent-foreground hover:bg-accent/90">
+                      <Link to={`/aktualno/${item.id}`}>Preberi več</Link>
                     </Button>
                   </div>
                 </article>
@@ -263,56 +234,6 @@ const Home = () => {
           </div>
         </div>
       </section>
-
-      <Dialog open={selectedNews !== null} onOpenChange={(open) => !open && setSelectedNews(null)}>
-        <DialogContent className="max-h-[96vh] w-[calc(100%-1rem)] max-w-6xl overflow-y-auto border-accent/30 bg-background p-0 sm:rounded-xl">
-          {selectedNews && (
-            <>
-              <div className="min-h-[80vh]">
-                {selectedNews.heroData && (
-                  <img
-                    src={selectedNews.heroData}
-                    alt={selectedNews.heroAlt || selectedNews.title}
-                    className="h-56 w-full object-cover sm:h-72"
-                  />
-                )}
-                <div className="mx-auto max-w-4xl px-6 py-10 sm:px-12 sm:py-14">
-                  <DialogHeader className="mb-8 text-left">
-                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-accent">Aktualno</p>
-                    <DialogTitle className="text-3xl leading-tight text-accent sm:text-5xl">
-                      {selectedNews.title}
-                    </DialogTitle>
-                    <DialogDescription className="pt-5 text-base leading-8 text-foreground/90 sm:text-lg">
-                      {renderLinkedText(selectedNews.detailDescription || selectedNews.description)}
-                    </DialogDescription>
-                  </DialogHeader>
-                  {selectedNews.images.length > 0 && (
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                      {selectedNews.images.map((image) => (
-                        <img
-                          key={image.id}
-                          src={image.data}
-                          alt={image.alt}
-                          className="h-28 w-full rounded-md object-cover shadow-md sm:h-32"
-                        />
-                      ))}
-                    </div>
-                  )}
-                  {selectedNews.links.length > 0 && (
-                    <div className="mt-10 flex flex-wrap gap-3 border-t border-border pt-7">
-                      {selectedNews.links.map((link) => (
-                        <Button key={`${link.label}-${link.url}`} asChild variant="outline">
-                          <a href={link.url}>{link.label}</a>
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
 
 {/* Members Section */}
 <section className="pt-28 pb-8">
