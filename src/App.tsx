@@ -18,6 +18,7 @@ import EventDetail from "./pages/EventDetail";
 import MemberDetail from "./pages/MemberDetail";
 import Tools from "./pages/Tools";
 import AdminDodajaj from "./pages/AdminDodajaj";
+import NewsDetail from "./pages/NewsDetail";
 import { Cookies, Privacy, Terms } from "./pages/Legal";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/galerija" element={<Gallery />} />
               <Route path="/podprite-nas" element={<Support />} />
               <Route path="/admin-dodajaj" element={<AdminDodajaj />} />
+              <Route path="/aktualno/:id" element={<NewsDetail />} />
               <Route path="/pogoji-uporabe" element={<Terms />} />
               <Route path="/zasebnost" element={<Privacy />} />
               <Route path="/piskotki" element={<Cookies />} />
