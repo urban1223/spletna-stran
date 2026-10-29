@@ -3,6 +3,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 const WORKING_DPI = 300;  // polna delovna/izvozna ločljivost
 const PREVIEW_DPI = 120;   // hitra začetna ločljivost ob uvozu (nadgradi se v ozadju do WORKING_DPI)
 const PRESETS_KEY = 'cbPretvornikPresets_v1';
+const INK_SMOOTHING_PX = 0.495; // 10 % več glajenja; izhod ostane brez sivin
 
 // ── Stanje ──────────────────────────────────────────────────────────────
 let pagesData = [], activePageIndex = null, draggedIndex = null;
@@ -94,33 +95,28 @@ zoneThresholdNum.addEventListener('input', () => {
     if (z) { z.threshold = v; processPage(activePageIndex); }
 });
 
-// ── Samodejni prag (Otsu) ────────────────────────────────────────────────
+// ── Samodejni prag in črno-bela obdelava ─────────────────────────────────
 
-function computeOtsuThreshold(canvas, rect) {
+// Prag je občutljivost glede na lokalno ozadje, ne več absolutna svetlost.
+// To odstrani vpliv rumenega papirja, senc in neenakomerne osvetlitve.
+function computeAdaptiveThreshold(canvas, rect) {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const x = rect ? rect.x : 0, y = rect ? rect.y : 0;
     const w = rect ? rect.w : canvas.width, h = rect ? rect.h : canvas.height;
     const d = ctx.getImageData(x, y, w, h).data;
-    const hist = new Array(256).fill(0);
+    let sum = 0, sumSq = 0, count = 0;
     for (let i = 0; i < d.length; i += 4) {
-        hist[Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2])]++;
+        const v = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        sum += v; sumSq += v * v; count++;
     }
-    const total = w * h;
-    let sum = 0;
-    for (let t = 0; t < 256; t++) sum += t * hist[t];
-    let sumB = 0, wB = 0, maxVar = 0, threshold = 128;
-    for (let t = 0; t < 256; t++) {
-        wB += hist[t]; if (wB === 0) continue;
-        const wF = total - wB; if (wF === 0) break;
-        sumB += t * hist[t];
-        const mB = sumB / wB, mF = (sum - sumB) / wF;
-        const varBetween = wB * wF * (mB - mF) * (mB - mF);
-        if (varBetween > maxVar) { maxVar = varBetween; threshold = t; }
-    }
-    return threshold;
+    const mean = sum / count;
+    const stdDev = Math.sqrt(Math.max(0, sumSq / count - mean * mean));
+    // Darker/less uniform pages need a slightly stronger local separation.
+    return Math.round(Math.max(160, Math.min(215, 193 - (stdDev - 35) * 0.35)));
 }
 
-// `orig` privzeto pData.originalCanvas (delovna 300 DPI kopija) za predogled/Auto-prag cone.
+// `orig` privzeto pData.originalCanvas (delovna 300 DPI kopija) za predogled/avtomatsko
+// občutljivost cone.
 // Izvoz pa MORA podati svoj (morda drugače-DPI) `orig`, sicer se cone vzorčijo iz napačno
 // velikega platna kadar je DPI izvoza različen od delovne ločljivosti (300).
 function renderRotatedGrayscale(pData, orig = pData.originalCanvas) {
@@ -505,7 +501,7 @@ async function loadPdfFile(file, onEarlyReady) {
         const page = await doc.getPage(i);
         const previewCanvas = await renderPageToCanvas(page, PREVIEW_DPI);
         const nativeDPI = await detectNativeDPI(page);
-        const threshold = computeOtsuThreshold(previewCanvas); // prag zaznamo enkrat ob uvozu (odvisen le od sivin, ne ločljivosti)
+        const threshold = computeAdaptiveThreshold(previewCanvas); // občutljivost glede na lokalno ozadje
         pagesData.push({
             originalCanvas: previewCanvas, hiRes: false, rotation: 0, threshold,
             zones: [], sourceDoc: doc, pageNumber: i, nativeDPI
@@ -702,14 +698,8 @@ function applyZones(ctx, w, h, orig, pData) {
         const zx = Math.max(0, Math.round(z.x1 * w)), zy = Math.max(0, Math.round(z.y1 * h));
         const zw = Math.min(w, Math.round(z.x2 * w)) - zx, zh = Math.min(h, Math.round(z.y2 * h)) - zy;
         if (zw <= 0 || zh <= 0) continue;
-        const imgData = gctx.getImageData(zx, zy, zw, zh);
-        const d = imgData.data;
-        for (let i = 0; i < d.length; i += 4) {
-            const v = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-            d[i] = d[i + 1] = d[i + 2] = v >= z.threshold ? 255 : 0;
-            d[i + 3] = 255;
-        }
-        ctx.putImageData(imgData, zx, zy);
+        adaptiveBinarize(gctx, rotated.width, rotated.height, z.threshold, { x: zx, y: zy, w: zw, h: zh });
+        ctx.drawImage(rotated, zx, zy, zw, zh, zx, zy, zw, zh);
     }
 }
 
@@ -753,16 +743,72 @@ function fitPreviewBox() {
 // Ob spremembi velikosti okna (in ob vlečenju ročke panela) je treba prikaz na novo prilagoditi.
 window.addEventListener('resize', () => { if (activePageIndex !== null) fitPreviewBox(); });
 
+function buildLuminanceIntegral(imageData, width, height) {
+    const integral = new Float64Array((width + 1) * (height + 1));
+    const d = imageData.data;
+    for (let y = 1; y <= height; y++) {
+        let rowSum = 0;
+        for (let x = 1; x <= width; x++) {
+            const i = ((y - 1) * width + x - 1) * 4;
+            rowSum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+            const p = y * (width + 1) + x;
+            integral[p] = integral[p - (width + 1)] + rowSum;
+        }
+    }
+    return integral;
+}
+
+function adaptiveBinarize(ctx, width, height, threshold, rect = null) {
+    // Mehko predglajenje zmanjša stopničaste robove pri poševnih črtah in notah.
+    // Binarizacija se izvede šele nato, zato izhod ostane čisto črn ali bel.
+    const softened = document.createElement('canvas');
+    softened.width = width;
+    softened.height = height;
+    const softenedCtx = softened.getContext('2d', { willReadFrequently: true });
+    softenedCtx.filter = `blur(${INK_SMOOTHING_PX}px)`;
+    softenedCtx.drawImage(ctx.canvas, 0, 0);
+    const imageData = softenedCtx.getImageData(0, 0, width, height);
+    const d = imageData.data;
+    const integral = buildLuminanceIntegral(imageData, width, height);
+    const stride = width + 1;
+    const radius = Math.max(12, Math.round(Math.min(width, height) * 0.018));
+    const x1 = rect ? Math.max(0, rect.x) : 0;
+    const y1 = rect ? Math.max(0, rect.y) : 0;
+    const x2 = rect ? Math.min(width, rect.x + rect.w) : width;
+    const y2 = rect ? Math.min(height, rect.y + rect.h) : height;
+    const ratio = Math.max(0.35, Math.min(0.95, threshold / 255));
+
+    for (let y = y1; y < y2; y++) {
+        const top = Math.max(0, y - radius);
+        const bottom = Math.min(height, y + radius + 1);
+        for (let x = x1; x < x2; x++) {
+            const left = Math.max(0, x - radius);
+            const right = Math.min(width, x + radius + 1);
+            const area = (right - left) * (bottom - top);
+            const localMean = (
+                integral[bottom * stride + right] -
+                integral[top * stride + right] -
+                integral[bottom * stride + left] +
+                integral[top * stride + left]
+            ) / area;
+            const i = (y * width + x) * 4;
+            const luminance = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+            // Saturated yellow/brown paper is treated as background unless it is
+            // substantially darker than its local paper tone.
+            const saturation = Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]);
+            const colorPenalty = saturation > 28 ? Math.min(12, (saturation - 28) * 0.12) : 0;
+            const cutoff = localMean * ratio - colorPenalty;
+            const ink = luminance < cutoff;
+            d[i] = d[i + 1] = d[i + 2] = ink ? 0 : 255;
+            d[i + 3] = 255;
+        }
+    }
+    ctx.putImageData(imageData, 0, 0);
+}
+
 function applyFilter(canvas, threshold) {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const d = imgData.data;
-    for (let i = 0; i < d.length; i += 4) {
-        const v = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-        d[i] = d[i + 1] = d[i + 2] = v >= threshold ? 255 : 0;
-        d[i + 3] = 255;
-    }
-    ctx.putImageData(imgData, 0, 0);
+    adaptiveBinarize(ctx, canvas.width, canvas.height, threshold);
 }
 
 // ── Izvoz ────────────────────────────────────────────────────────────────
@@ -794,6 +840,95 @@ function formatBytes(bytes) {
     return (bytes / 1024 / 1024).toFixed(1) + ' MB';
 }
 
+function packOneBitCanvas(canvas) {
+    const { width, height } = canvas;
+    const pixels = canvas.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, width, height).data;
+    const rowBytes = Math.ceil(width / 8);
+    const packed = new Uint8Array(rowBytes * height);
+    for (let y = 0; y < height; y++) {
+        const rowOffset = y * rowBytes;
+        for (let x = 0; x < width; x++) {
+            const pixelOffset = (y * width + x) * 4;
+            if (pixels[pixelOffset] < 128) packed[rowOffset + (x >> 3)] |= 1 << (7 - (x & 7));
+        }
+    }
+    return { width, height, packed };
+}
+
+async function deflateBytes(bytes) {
+    if (!('CompressionStream' in window)) {
+        throw new Error('This browser does not support fast lossless PDF compression.');
+    }
+    const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+function concatBytes(...parts) {
+    const result = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+    let offset = 0;
+    for (const part of parts) {
+        result.set(part, offset);
+        offset += part.length;
+    }
+    return result;
+}
+
+function pdfTextBytes(text) {
+    return new TextEncoder().encode(text);
+}
+
+async function buildBitonalPdf(pages) {
+    const objects = [];
+    const pageRefs = [];
+    const pageData = [];
+    let nextObject = 3;
+
+    for (const page of pages) {
+        const imageObject = nextObject++;
+        const contentObject = nextObject++;
+        const pageObject = nextObject++;
+        pageRefs.push(pageObject);
+        pageData.push({ image: page.image, compressed: page.compressed, imageObject, contentObject, pageObject, widthPt: page.widthPt, heightPt: page.heightPt });
+    }
+
+    objects[1] = pdfTextBytes('<< /Type /Catalog /Pages 2 0 R >>');
+    objects[2] = pdfTextBytes(`<< /Type /Pages /Kids [${pageRefs.map(ref => `${ref} 0 R`).join(' ')}] /Count ${pageRefs.length} >>`);
+    for (const page of pageData) {
+        const pageContent = pdfTextBytes(`q ${page.widthPt} 0 0 ${page.heightPt} 0 0 cm /Im1 Do Q`);
+        objects[page.imageObject] = concatBytes(
+            pdfTextBytes(`<< /Type /XObject /Subtype /Image /Width ${page.image.width} /Height ${page.image.height} /ColorSpace /DeviceGray /BitsPerComponent 1 /Decode [1 0] /Filter /FlateDecode /Length ${page.compressed.length} >>\nstream\n`),
+            page.compressed,
+            pdfTextBytes('\nendstream')
+        );
+        objects[page.contentObject] = concatBytes(
+            pdfTextBytes(`<< /Length ${pageContent.length} >>\nstream\n`),
+            pageContent,
+            pdfTextBytes('\nendstream')
+        );
+        objects[page.pageObject] = pdfTextBytes(
+            `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${page.widthPt} ${page.heightPt}] ` +
+            `/Resources << /XObject << /Im1 ${page.imageObject} 0 R >> >> /Contents ${page.contentObject} 0 R >>`
+        );
+    }
+
+    const header = pdfTextBytes('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+    const chunks = [header];
+    const offsets = new Array(objects.length).fill(0);
+    let position = header.length;
+    for (let i = 1; i < objects.length; i++) {
+        const object = concatBytes(pdfTextBytes(`${i} 0 obj\n`), objects[i], pdfTextBytes('\nendobj\n'));
+        offsets[i] = position;
+        chunks.push(object);
+        position += object.length;
+    }
+    const xrefOffset = position;
+    const xref = [`xref\n0 ${objects.length}\n0000000000 65535 f \n`];
+    for (let i = 1; i < objects.length; i++) xref.push(`${String(offsets[i]).padStart(10, '0')} 00000 n \n`);
+    xref.push(`trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+    chunks.push(pdfTextBytes(xref.join('')));
+    return new Blob(chunks, { type: 'application/pdf' });
+}
+
 // Zgradi seznam ponujenih ločljivosti: standardne 150/300/600 + zaznana izvorna (če je nižja
 // in se ne ujema z eno od standardnih), z eno izmed njih označeno kot privzeto priporočeno.
 function getDpiCandidates() {
@@ -807,8 +942,8 @@ function getDpiCandidates() {
     }));
 }
 
-// Približna velikost za eno (reprezentativno) stran pri dani DPI — dejansko izriše,
-// upragovi in JPEG-stisne stran skozi isti cevovod kot pravi izvoz.
+// Približna velikost za eno (reprezentativno) stran pri dani DPI — dejansko izriše
+// in stisne stran skozi isti cevovod kot pravi izvoz.
 async function estimatePageBytes(pData, dpi) {
     const orig = await getExportSourceCanvas(pData, dpi);
     const expW = pData.rotation % 180 === 0 ? orig.width : orig.height;
@@ -818,8 +953,10 @@ async function estimatePageBytes(pData, dpi) {
     const eCtx = exp.getContext('2d');
     renderToCtx(eCtx, expW, expH, orig, pData, pData.threshold);
     if (pData.zones.length) applyZones(eCtx, expW, expH, orig, pData);
-    const url = exp.toDataURL('image/jpeg', 0.9);
-    return Math.round((url.length - url.indexOf(',') - 1) * 3 / 4);
+    const oneBitBytes = Math.ceil(expW / 8) * expH;
+    exp.width = 1;
+    exp.height = 1;
+    return oneBitBytes;
 }
 
 async function openExportDialog() {
@@ -880,9 +1017,8 @@ async function exportCleanedPDF(dpi) {
     }
 
     statusDisplay.innerText = "Exporting selected range...";
-    const { jsPDF } = window.jspdf;
     const { sIdx, eIdx } = parsePageRange();
-    let doc = null, isFirst = true;
+    const exportPages = [];
 
     for (let i = sIdx; i <= eIdx; i++) {
         statusDisplay.innerText = `Exporting page ${i - sIdx + 1}/${eIdx - sIdx + 1}...`;
@@ -896,29 +1032,22 @@ async function exportCleanedPDF(dpi) {
         const eCtx = exp.getContext('2d');
         renderToCtx(eCtx, expW, expH, orig, pData, pData.threshold);
         if (pData.zones.length) applyZones(eCtx, expW, expH, orig, pData);
-        // (obroba con se NE izvozi)
-        // JPEG: jsPDF vgradi JPEG skoraj neposredno (brez dekodiranja), PNG pa gre skozi
-        // počasen čisto-JS dekodirnik in je za velike skene lahko 20-30x počasnejši.
-        const url = exp.toDataURL('image/jpeg', 0.9);
-        const orient = expW > expH ? 'l' : 'p';
-        // jsPDF-jeva enota "px" NI 1px=1pt — interno jo pretvori v pt s faktorjem 96/72 (1.333×),
-        // zato bi stran, "veliko" toliko pikslov, dobila napačno (napihnjeno) fizično velikost v PDF-ju.
-        // Fizično pravilno velikost (v pt) izračunamo sami iz DPI, pri katerem smo dejansko renderirali:
-        // pri 300 DPI je 1 pika = 72/300 pt, kar za izvirno 1000×1558pt stran znova da ~1000×1558pt.
         const ptScale = 72 / dpi;
-        const expWpt = expW * ptScale, expHpt = expH * ptScale;
-        if (isFirst) { doc = new jsPDF({ orientation: orient, unit: 'pt', format: [expWpt, expHpt], compress: true }); isFirst = false; }
-        else { doc.addPage([expWpt, expHpt], orient); }
-        doc.addImage(url, 'JPEG', 0, 0, expWpt, expHpt);
+        const image = packOneBitCanvas(exp);
+        const compressed = await deflateBytes(image.packed);
+        exportPages.push({ image, compressed, widthPt: expW * ptScale, heightPt: expH * ptScale });
+        exp.width = 1;
+        exp.height = 1;
+        await new Promise(requestAnimationFrame);
     }
 
-    if (!doc) { statusDisplay.innerText = "Invalid page range."; return; }
+    if (exportPages.length === 0) { statusDisplay.innerText = "Invalid page range."; return; }
     const pageCount = eIdx - sIdx + 1;
     let blob;
     try {
-        blob = doc.output('blob');
+        blob = await buildBitonalPdf(exportPages);
     } catch (e) {
-        statusDisplay.innerText = `Export is too large for a single PDF (${pageCount} pages at ${dpi} DPI exceeds the technical size limit). Lower the export resolution or export a smaller page range (e.g. 10-20 at a time).`;
+        statusDisplay.innerText = `Export failed: ${e.message || e}. Try a smaller page range (e.g. 10-20 pages at a time).`;
         return;
     }
     if (fileHandle) {
@@ -940,16 +1069,16 @@ async function exportCleanedPDF(dpi) {
 // izračuna JS in jo omeji na vidno okno), odpre/zapre pa se s klikom na ikono "?".
 const HELP_TEXTS = {
     threshold: {
-        title: "Global threshold",
-        html: `<p>The brightness cutoff for the whole page: pixels lighter than this turn <strong>white</strong>, darker ones turn <strong>black</strong>.</p>
-               <p>Lower it to keep faint or grey strokes; raise it to drop yellowed paper, stains and show-through from the other side.</p>`
+        title: "Global ink sensitivity",
+        html: `<p>The converter estimates the paper tone around every pixel, removes yellow/uneven background, and keeps pixels that are substantially darker as <strong>black ink</strong>.</p>
+               <p>Lower the value to keep faint strokes; raise it to remove stains, show-through and paper texture.</p>`
     },
     presets: {
         title: "Presets",
         html: `<p>Save the current threshold under a name (e.g. a paper type or scan batch) and re-apply it to any page or document with <strong>one click</strong>.</p>`
     },
     zone: {
-        title: "Zone threshold",
+        title: "Zone ink sensitivity",
         html: `<p>Apply a different threshold to just one rectangle of the page — handy when a stamp, a dark margin or a faded correction needs a stronger or gentler cutoff than the rest.</p>
                <p>Click <strong>+ Add Zone</strong>, draw the area, then adjust its slider.</p>`
     }

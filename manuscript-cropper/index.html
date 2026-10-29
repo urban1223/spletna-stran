@@ -175,6 +175,21 @@
           <label><input type="radio" name="pageSize" value="original"> Original crop size</label>
         </div>
       </div>
+      <div class="field">
+        <label>Image fit</label>
+        <div class="radio-row">
+          <label><input type="radio" name="imageFit" value="contain" checked> Show the whole image</label>
+          <label><input type="radio" name="imageFit" value="cover"> Fill A4 (crop edges)</label>
+        </div>
+        <small class="field-hint">“Show the whole image” preserves the proportions. Side white space is unavoidable when the scan and A4 have different proportions.</small>
+      </div>
+      <div class="field">
+        <label>Encoding</label>
+        <div class="radio-row">
+          <label><input type="radio" name="exportEncoding" value="png" checked> PNG lossless</label>
+          <label><input type="radio" name="exportEncoding" value="jpeg"> JPEG 92 (smaller/faster)</label>
+        </div>
+      </div>
       <div class="stats-box" id="fileStatsBox"></div>
       <div class="modal-row">
         <button class="secondary" id="cancelMetaBtn">Cancel</button>
@@ -267,24 +282,37 @@
       }
       clusters.push({ start: curStart, end: curEnd });
 
-      const top = clusters[0].start;
+      let top = clusters[0].start;
       let bottom = clusters[clusters.length - 1].end;
       let hasFooter = false;
+      let hasHeader = false;
+      const gaps = [];
+      for (let i = 1; i < clusters.length; i++) gaps.push(clusters[i].start - clusters[i - 1].end);
+      const sortedGaps = gaps.slice().sort((a, b) => a - b);
+      const medianGap = sortedGaps.length ? sortedGaps[Math.floor(sortedGaps.length / 2)] : 0;
+      const isolatedGap = Math.max(pageRect.h * 0.018, medianGap * 1.65);
 
+      // Library stamps, page numbers and catalogue footers are often several
+      // short rows rather than one row. Treat an isolated block at either
+      // edge as auxiliary material, but keep a real staff/text block intact.
       if (clusters.length >= 2) {
-        const last = clusters[clusters.length - 1];
-        const prev = clusters[clusters.length - 2];
-        const gapBeforeLast = last.start - prev.end;
-        const earlierGaps = [];
-        for (let i = 1; i < clusters.length - 1; i++) earlierGaps.push(clusters[i].start - clusters[i - 1].end);
-        const sortedGaps = earlierGaps.slice().sort((a, b) => a - b);
-        const medianGap = sortedGaps.length ? sortedGaps[Math.floor(sortedGaps.length / 2)] : 0;
+        const first = clusters[0];
+        const next = clusters[1];
+        const firstSpan = first.end - first.start;
+        if (first.start <= pageRect.y + pageRect.h * 0.08 &&
+            firstSpan <= pageRect.h * 0.1 &&
+            next.start - first.end >= isolatedGap) {
+          hasHeader = true;
+          top = next.start;
+        }
+
+        const lastIndex = clusters.length - 1;
+        const last = clusters[lastIndex];
+        const prev = clusters[lastIndex - 1];
         const lastSpan = last.end - last.start;
-        const footerZoneY = pageRect.y + pageRect.h * 0.8;
-        const isOutlierGap = gapBeforeLast > Math.max(medianGap * 1.8, pageRect.h * 0.02);
-        const isSmall = lastSpan <= pageRect.h * 0.08;
-        const isBottomish = last.start >= footerZoneY;
-        if (isOutlierGap && isSmall && isBottomish) {
+        if (last.end >= pageRect.y + pageRect.h * 0.88 &&
+            lastSpan <= pageRect.h * 0.12 &&
+            last.start - prev.end >= isolatedGap) {
           hasFooter = true;
           bottom = prev.end;
         }
@@ -306,7 +334,7 @@
       for (let x = ex - 1; x >= sx; x--) { if (colDensity[x] > colCut) { right = x; break; } }
 
       if (right - left < pageRect.w * 0.2 || bottom - top < pageRect.h * 0.2) return { valid: false, _reason: "bounds-too-small" };
-      return { valid: true, rawLeft: left, rawRight: right, rawTop: top, rawBottom: bottom, hasFooter, inkThresh, _clusters: clusters };
+      return { valid: true, rawLeft: left, rawRight: right, rawTop: top, rawBottom: bottom, hasFooter, hasHeader, inkThresh, _clusters: clusters };
     }
 
     function computeCropWithSide(rawLeft, rawRight, rawTop, rawBottom, imgW, imgH, isDesna, paddingMm) {
@@ -560,22 +588,43 @@
       }
     }
 
-    // ── Left/right page detection, based on ink density near the edges ─────────
-    function detectSide(d, w, h, pageRect, content) {
-      const step = w > 2000 ? 4 : 2;
-      const bandW = Math.floor(pageRect.w * 0.12);
-      const sy = content.rawTop, ey = content.rawBottom;
-      const isInkAt = (x, y) => { const i = (y * w + x) * 4; return d[i] > 55 && (d[i] + d[i + 1] + d[i + 2]) / 3 < content.inkThresh; };
-      let leftInk = 0, rightInk = 0;
-      for (let y = sy; y < ey; y += step) {
-        for (let bx = 0; bx < bandW; bx += step) {
-          const lx = clamp(pageRect.x + bx, 0, w - 1);
-          const rx = clamp(pageRect.x + pageRect.w - 1 - bx, 0, w - 1);
-          if (isInkAt(lx, y)) leftInk++;
-          if (isInkAt(rx, y)) rightInk++;
+    // ── Left/right page detection, based on the inner/outer content margins ─────
+    function detectSide(pageRect, content) {
+      const leftMargin = Math.max(0, content.rawLeft - pageRect.x);
+      const rightMargin = Math.max(0, pageRect.x + pageRect.w - 1 - content.rawRight);
+      const delta = (leftMargin - rightMargin) / Math.max(1, pageRect.w);
+      return { isDesna: delta > 0, confidence: Math.abs(delta) };
+    }
+
+    // Hough lines are excellent when OpenCV has loaded, but a local fallback
+    // keeps music-page detection useful when the CDN is unavailable.
+    function detectStaffJS(d, w, h, region) {
+      const step = w > 2200 ? 3 : 2;
+      const lineRows = [];
+      for (let y = region.y; y < region.y + region.h; y += step) {
+        let dark = 0;
+        for (let x = region.x; x < region.x + region.w; x += step) {
+          const i = (y * w + x) * 4;
+          const lum = (d[i] + d[i + 1] + d[i + 2]) / 3;
+          if (lum < 155) dark++;
+        }
+        if (dark / Math.max(1, Math.ceil(region.w / step)) > 0.28) lineRows.push(y);
+      }
+      const merged = [];
+      for (const y of lineRows) {
+        if (!merged.length || y - merged[merged.length - 1] > Math.max(2, step * 2)) merged.push(y);
+        else merged[merged.length - 1] = Math.round((merged[merged.length - 1] + y) / 2);
+      }
+      for (let i = 0; i + 4 < merged.length; i++) {
+        const five = merged.slice(i, i + 5);
+        const gaps = five.slice(1).map((y, j) => y - five[j]);
+        const avg = gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length;
+        const variation = Math.max(...gaps) - Math.min(...gaps);
+        if (avg >= 3 && variation <= avg * 0.45) {
+          return { hasStaff: true, topY: five[0], gap: avg };
         }
       }
-      return rightInk < leftInk;
+      return null;
     }
 
     // ── Main per-page analysis pipeline ─────────────────────────────────────────
@@ -591,16 +640,16 @@
       if (!content.valid) {
         const rl = pageRect.x, rr = pageRect.x + pageRect.w - 1, rt = pageRect.y, rb = pageRect.y + pageRect.h - 1;
         const crop = computeCropWithSide(rl, rr, rt, rb, w, h, true, paddingMm);
-        return { isDesna: true, _rawLeft: rl, _rawRight: rr, _rawTop: rt, _rawBottom: rb, _hasFooter: false, _hasStaff: false, _hasKey: false, ...crop };
+        return { isDesna: true, _sideConfidence: 0, _rawLeft: rl, _rawRight: rr, _rawTop: rt, _rawBottom: rb, _hasFooter: false, _hasHeader: false, _hasStaff: false, _hasKey: false, ...crop };
       }
 
-      const isDesna = detectSide(full.data, w, h, pageRect, content);
+      const side = detectSide(pageRect, content);
       const staffRegion = {
         x: content.rawLeft, y: content.rawTop,
         w: content.rawRight - content.rawLeft,
         h: Math.max(20, Math.round((content.rawBottom - content.rawTop) * 0.55))
       };
-      const staff = detectStaffCV(canvas, staffRegion);
+      const staff = detectStaffCV(canvas, staffRegion) || detectStaffJS(full.data, w, h, staffRegion);
 
       let rawTop = content.rawTop;
       let hasKey = false;
@@ -610,10 +659,12 @@
         hasKey = detectKeySignatureJS(full.data, w, h, staffRegion, staff.topY, staff.gap);
       }
 
-      const crop = computeCropWithSide(content.rawLeft, content.rawRight, rawTop, content.rawBottom, w, h, isDesna, paddingMm);
+      const crop = computeCropWithSide(content.rawLeft, content.rawRight, rawTop, content.rawBottom, w, h, side.isDesna, paddingMm);
       return {
-        isDesna, _rawLeft: content.rawLeft, _rawRight: content.rawRight, _rawTop: rawTop, _rawBottom: content.rawBottom,
-        _hasFooter: content.hasFooter, _hasStaff: !!(staff && staff.hasStaff), _hasKey: hasKey,
+        isDesna: side.isDesna, _sideConfidence: side.confidence,
+        _rawLeft: content.rawLeft, _rawRight: content.rawRight, _rawTop: rawTop, _rawBottom: content.rawBottom,
+        _hasFooter: content.hasFooter, _hasHeader: content.hasHeader,
+        _hasStaff: !!(staff && staff.hasStaff), _hasKey: hasKey,
         ...crop
       };
     }
@@ -655,7 +706,7 @@
     });
     const toPercentCrop = (crop, w, h) => ({ x: crop.x/w, y: crop.y/h, w: crop.w/w, h: crop.h/h });
 
-    function createPage(imageCanvas, sourceName, pdfSource) {
+    function createPage(imageCanvas, sourceName, pdfSource, sourceBitmap = null) {
       const thumb = document.createElement("canvas");
       thumb.width = 150;
       thumb.height = Math.round((imageCanvas.height / imageCanvas.width) * 150);
@@ -668,7 +719,7 @@
         : { x: autoCrop.x, y: autoCrop.y, w: autoCrop.w, h: autoCrop.h };
       return {
         id: idSeed++, sourceName, imageCanvas, thumbCanvas: thumb,
-        pdfSource: pdfSource || null, rotationDeg: 0,
+        pdfSource: pdfSource || null, sourceBitmap, rotationDeg: 0,
         type: suggestType(autoCrop), crop, autoCrop,
         isDesna: autoCrop.isDesna,
         sideManual: false,
@@ -676,6 +727,38 @@
         manuallyEdited: false,
         pageNum: 0
       };
+    }
+
+    function stabilizeAutomaticSides() {
+      const candidates = state.pages
+        .map((page, index) => ({ page, index }))
+        .filter(item => !item.page.sideManual);
+      if (candidates.length < 2) return;
+
+      // A scan can have almost equal whitespace on both sides. In that case
+      // use the normal alternating book sequence, weighted by pages whose
+      // inner/outer margin is unambiguous.
+      const phaseScore = [0, 0];
+      candidates.forEach(({ page, index }) => {
+        const evidence = page.autoCrop._sideConfidence || 0;
+        if (evidence < 0.12) return;
+        for (let phase = 0; phase < 2; phase++) {
+          const expected = ((index + phase) % 2) === 0;
+          phaseScore[phase] += (page.autoCrop.isDesna === expected ? 1 : -1) * evidence;
+        }
+      });
+      const phase = phaseScore[1] > phaseScore[0] ? 1 : 0;
+
+      candidates.forEach(({ page, index }) => {
+        const expected = ((index + phase) % 2) === 0;
+        const confidence = page.autoCrop._sideConfidence || 0;
+        if (confidence >= 0.12) return;
+        page.isDesna = expected;
+        if (page.sideLocked || page.manuallyEdited || page.type === "Skip") return;
+        const a = page.autoCrop;
+        page.crop = computeCropWithSide(a._rawLeft, a._rawRight, a._rawTop, a._rawBottom,
+          page.imageCanvas.width, page.imageCanvas.height, expected, state.paddingMm);
+      });
     }
 
     // Apply a manual left/right assignment starting from the selected page.
@@ -940,12 +1023,29 @@
     // Full quality for PDF-sourced pages is only re-rendered at export time,
     // at the chosen export DPI (see getExportCanvas) — never at ingest time.
     const LOAD_SCALE = 1.6;
+    const MAX_WORKING_DIM = 1800;
+
+    function scaleForWorkingCanvas(width, height) {
+      return Math.min(LOAD_SCALE, MAX_WORKING_DIM / Math.max(width, height));
+    }
+
+    function makeWorkingCanvas(source) {
+      const scale = scaleForWorkingCanvas(source.width, source.height);
+      if (scale >= 0.999) return source;
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(source.width * scale));
+      canvas.height = Math.max(1, Math.round(source.height * scale));
+      canvas.getContext("2d", { willReadFrequently: true }).drawImage(source, 0, 0, canvas.width, canvas.height);
+      return canvas;
+    }
 
     async function handleFiles(files) {
       if (!files.length) return;
       setLoading(true, "Preparing smart detection...", 0.01);
       try {
-        await ensureCV();
+        // OpenCV improves page-edge detection, but it must not block import.
+        // The plain-JS detector is immediately available as a fallback.
+        ensureCV();
         setLoading(true, "Loading files...", 0.02);
         const loaded = [];
         const failed = [];
@@ -962,7 +1062,9 @@
               for (let p = 1; p <= doc.numPages; p++) {
                 setLoading(true, `${file.name}: page ${p} of ${doc.numPages}`, (idx/files.length)*0.5);
                 const page = await doc.getPage(p);
-                const viewport = page.getViewport({ scale: LOAD_SCALE });
+                const baseViewport = page.getViewport({ scale: LOAD_SCALE });
+                const workingScale = scaleForWorkingCanvas(baseViewport.width, baseViewport.height);
+                const viewport = page.getViewport({ scale: workingScale });
                 const canvas = document.createElement("canvas");
                 canvas.width = Math.floor(viewport.width); canvas.height = Math.floor(viewport.height);
                 // willReadFrequently: the page canvas is analyzed (getImageData)
@@ -975,10 +1077,7 @@
               }
             } else if (file.type.startsWith("image/")) {
               const bmp = await createImageBitmap(file);
-              const canvas = document.createElement("canvas");
-              canvas.width = bmp.width; canvas.height = bmp.height;
-              canvas.getContext("2d", { willReadFrequently: true }).drawImage(bmp, 0, 0);
-              loaded.push(createPage(canvas, file.name));
+              loaded.push(createPage(makeWorkingCanvas(bmp), file.name, null, bmp));
             }
           } catch (fileErr) {
             console.error("Failed to load file:", file.name, fileErr);
@@ -986,6 +1085,7 @@
           }
         }
         state.pages.push(...loaded);
+        stabilizeAutomaticSides();
         renumberPages();
         ensureSortable();
         renderThumbnails();
@@ -1019,7 +1119,14 @@
     }
 
     async function getExportCanvas(page, dpi) {
-      if (!page.pdfSource) return page.imageCanvas;
+      if (!page.pdfSource) {
+        if (!page.sourceBitmap) return page.imageCanvas;
+        const sourceCanvas = document.createElement("canvas");
+        sourceCanvas.width = page.sourceBitmap.width;
+        sourceCanvas.height = page.sourceBitmap.height;
+        sourceCanvas.getContext("2d").drawImage(page.sourceBitmap, 0, 0);
+        return applyRotation(sourceCanvas, page.rotationDeg || 0);
+      }
       const { doc, pageNum } = page.pdfSource;
       const pdfPage = await doc.getPage(pageNum);
       const viewport = pdfPage.getViewport({ scale: dpi / 72 });
@@ -1045,6 +1152,32 @@
       return out;
     }
 
+    function getExportEncoding() {
+      const checked = document.querySelector('input[name="exportEncoding"]:checked');
+      return checked ? checked.value : "png";
+    }
+
+    function limitForA4(canvas, dpi) {
+      const maxLong = Math.round((297 / 25.4) * dpi);
+      const maxShort = Math.round((210 / 25.4) * dpi);
+      const scale = Math.min(1, maxLong / canvas.width, maxShort / canvas.height);
+      if (scale >= 0.999) return canvas;
+      const limited = document.createElement("canvas");
+      limited.width = Math.max(1, Math.round(canvas.width * scale));
+      limited.height = Math.max(1, Math.round(canvas.height * scale));
+      limited.getContext("2d", { willReadFrequently: true }).drawImage(
+        canvas, 0, 0, limited.width, limited.height
+      );
+      return limited;
+    }
+
+    function encodeCanvas(canvas, encoding) {
+      if (encoding === "jpeg") {
+        return { data: canvas.toDataURL("image/jpeg", 0.92), format: "JPEG" };
+      }
+      return { data: canvas.toDataURL("image/png"), format: "PNG" };
+    }
+
     function isGrayscaleSelected() {
       const checked = document.querySelector('input[name="colorMode"]:checked');
       return checked ? checked.value === "grayscale" : false;
@@ -1055,16 +1188,23 @@
       return checked ? checked.value === "a4" : true;
     }
 
+    function isCoverFitSelected() {
+      const checked = document.querySelector('input[name="imageFit"]:checked');
+      return checked ? checked.value === "cover" : false;
+    }
+
     // Standard A4 sheet (210×297mm) instead of a page sized exactly to the crop.
     // Print dialogs handle a fixed, standard page size far more reliably than a
     // custom one-off size per page — "fit to page"/scaling behaves as expected.
-    function fitToA4(mmW, mmH, marginMm = 6) {
+    function fitToA4(mmW, mmH, marginMm = 6, cover = false) {
       const landscape = mmW > mmH;
       const pageW = landscape ? 297 : 210;
       const pageH = landscape ? 210 : 297;
       const availW = pageW - marginMm * 2;
       const availH = pageH - marginMm * 2;
-      const scale = Math.min(availW / mmW, availH / mmH);
+      const scale = cover
+        ? Math.max(availW / mmW, availH / mmH)
+        : Math.min(availW / mmW, availH / mmH);
       const drawW = mmW * scale, drawH = mmH * scale;
       return {
         pageW, pageH, orientation: landscape ? "landscape" : "portrait",
@@ -1157,6 +1297,21 @@
     el.sideCancelBtn.addEventListener("click", () => { el.sideModal.classList.add("hidden"); });
 
     // ── Export resolution dialog ─────────────────────────────────────────────
+    function setRecommendedExportSettings() {
+      const recommended = {
+        exportFormat: "pdf",
+        colorMode: "original",
+        pageSize: "a4",
+        imageFit: "contain",
+        exportEncoding: "png"
+      };
+      for (const [name, value] of Object.entries(recommended)) {
+        const input = document.querySelector(`input[name="${name}"][value="${value}"]`);
+        if (input) input.checked = true;
+      }
+      state.exportDpi = 300;
+    }
+
     function getDpiCandidates() {
       return [
         { dpi: 150, label: "150 DPI · draft" },
@@ -1177,7 +1332,8 @@
       const out = await getExportCrop(page, dpi);
       const ctx = out.getContext("2d");
       if (isGrayscaleSelected()) toGrayscale(ctx, out.width, out.height);
-      const url = out.toDataURL("image/jpeg", 0.9);
+      const encoded = encodeCanvas(out, getExportEncoding());
+      const url = encoded.data;
       return Math.round((url.length - url.indexOf(",") - 1) * 3 / 4);
     }
 
@@ -1210,6 +1366,7 @@
 
     function closeExportDialog() { el.exportModalBg.classList.add("hidden"); }
 
+    setRecommendedExportSettings();
     el.exportBtn.addEventListener("click", () => openExportDialog());
     el.exportCancelBtn.addEventListener("click", closeExportDialog);
     el.exportModalBg.addEventListener("click", e => { if (e.target === el.exportModalBg) closeExportDialog(); });
@@ -1236,22 +1393,26 @@
       setLoading(true, "Generating PDF file...", 0.05);
       const grayscale = isGrayscaleSelected();
       const fitA4 = isA4Selected();
+      const coverFit = isCoverFitSelected();
+      const encoding = getExportEncoding();
       const dpi = state.exportDpi;
       try {
         let pdf = null;
         for (let i = 0; i < valid.length; i++) {
           setLoading(true, `Page ${i+1} / ${valid.length} (full quality)`, 0.05 + (i/valid.length)*0.9);
           const p = valid[i];
-          const out = await getExportCrop(p, dpi);
+          let out = await getExportCrop(p, dpi);
           const ctx = out.getContext("2d");
           if (grayscale) toGrayscale(ctx, out.width, out.height);
+          if (fitA4) out = limitForA4(out, dpi);
           const mmW = (out.width * 25.4) / dpi;
           const mmH = (out.height * 25.4) / dpi;
-          const imgData = out.toDataURL("image/jpeg", 0.92);
+          const encoded = encodeCanvas(out, encoding);
+          const imgData = encoded.data;
 
           let pageFormat, orientation, drawX = 0, drawY = 0, drawW = mmW, drawH = mmH;
           if (fitA4) {
-            const fit = fitToA4(mmW, mmH);
+            const fit = fitToA4(mmW, mmH, 6, coverFit);
             pageFormat = [fit.pageW, fit.pageH]; orientation = fit.orientation;
             drawW = fit.drawW; drawH = fit.drawH; drawX = fit.offsetX; drawY = fit.offsetY;
           } else {
@@ -1264,7 +1425,7 @@
           } else {
             pdf.addPage(pageFormat, orientation);
           }
-          pdf.addImage(imgData, "JPEG", drawX, drawY, drawW, drawH, undefined, "FAST");
+          pdf.addImage(imgData, encoded.format, drawX, drawY, drawW, drawH, undefined, encoding === "jpeg" ? "FAST" : "NONE");
         }
         await new Promise(r => setTimeout(r, 30));
         pdf.save(`${el.filenameInput.value || "manuscript"}.pdf`);
@@ -1282,8 +1443,10 @@
           setLoading(true, `Page ${i+1} / ${valid.length} (full quality)`, 0.05 + (i/valid.length)*0.9);
           const p = valid[i];
           const out = await getExportCrop(p, state.exportDpi);
-          const b64 = out.toDataURL("image/jpeg", 0.92).split(",")[1];
-          zip.file(`page_${String(p.pageNum).padStart(3,"0")}_${p.type.toLowerCase().replace(/ /g,"_")}.jpg`, b64, { base64: true });
+          const encoded = encodeCanvas(out, getExportEncoding());
+          const b64 = encoded.data.split(",")[1];
+          const extension = encoded.format.toLowerCase();
+          zip.file(`page_${String(p.pageNum).padStart(3,"0")}_${p.type.toLowerCase().replace(/ /g,"_")}.${extension}`, b64, { base64: true });
         }
         const blob = await zip.generateAsync({ type: "blob" });
         const a = document.createElement("a");
@@ -1294,6 +1457,7 @@
     }
 
     el.clearAllBtn.addEventListener("click", () => {
+      state.pages.forEach(p => { if (p.sourceBitmap) p.sourceBitmap.close(); });
       state.pages = []; state.selectedId = null; state.masterProfile = null;
       state.sideMaster = { desna: null, leva: null };
       state.leadingNonMusicSeen = 0; state.firstMusicSeen = false;
