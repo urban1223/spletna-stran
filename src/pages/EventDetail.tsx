@@ -2,10 +2,72 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Music, ArrowLeft, Ticket } from "lucide-react";
+import { Calendar, MapPin, Music, ArrowLeft, Ticket, Share2 } from "lucide-react";
 import ReservationFormDialog from "@/components/ReservationFormDialog";
 import Seo from "@/components/Seo";
 import { getEvent } from "@/lib/events-api";
+import { toast } from "sonner";
+
+const calendarDate = (event: { isoDate: string; time: string }) => {
+  const date = event.isoDate.replace(/-/g, "");
+  const time = /^([01]\d|2[0-3]):[0-5]\d$/.test(event.time) ? event.time.replace(":", "") + "00" : null;
+  return time ? `${date}T${time}` : date;
+};
+
+const nextDay = (isoDate: string) => {
+  const date = new Date(`${isoDate}T00:00:00`);
+  date.setDate(date.getDate() + 1);
+  return date.toISOString().slice(0, 10).replace(/-/g, "");
+};
+
+const calendarDateFromLocalTime = (isoDate: string, time: string) => {
+  const date = new Date(`${isoDate}T${time}:00`);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+};
+
+const addToGoogleCalendar = (event: {
+  title: string;
+  description: string;
+  program: string;
+  isoDate: string;
+  time: string;
+  location: string;
+}) => {
+  const start = calendarDate(event);
+  const hasTime = start.includes("T");
+  const end = hasTime
+    ? calendarDateFromLocalTime(event.isoDate, (() => {
+        const date = new Date(`${event.isoDate}T${event.time}:00`);
+        date.setHours(date.getHours() + 2);
+        const pad = (value: number) => String(value).padStart(2, "0");
+        return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      })())
+    : nextDay(event.isoDate);
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: event.title,
+    dates: `${start}/${end}`,
+    details: `${event.description}\nProgram: ${event.program}`,
+    location: event.location,
+  });
+  window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, "_blank", "noopener,noreferrer");
+};
+
+const shareEvent = async (event: { title: string }) => {
+  const url = window.location.href;
+  if (navigator.share) {
+    await navigator.share({ title: event.title, url });
+    return;
+  }
+  try {
+    if (!navigator.clipboard) throw new Error("Clipboard API unavailable");
+    await navigator.clipboard.writeText(url);
+    toast.success("Povezava do dogodka je kopirana.");
+  } catch {
+    toast.error("Povezave ni mogoče kopirati.");
+  }
+};
 
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -111,6 +173,23 @@ const EventDetail = () => {
               <p className="font-bold text-foreground text-lg">{event.admission}</p>
             </div>
           )}
+        </div>
+
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row">
+          {!event.past && (
+            <Button variant="outline" className="flex-1" onClick={() => addToGoogleCalendar(event)}>
+              <Calendar className="h-4 w-4" />
+              DODAJ V KOLEDAR
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => shareEvent(event).catch(() => toast.error("Deljenje dogodka ni uspelo."))}
+          >
+            <Share2 className="h-4 w-4" />
+            DELI DOGODEK
+          </Button>
         </div>
 
         {/* CTA */}

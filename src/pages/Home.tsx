@@ -147,6 +147,8 @@ const Home = () => {
                     <img
                       src={item.heroData}
                       alt={item.heroAlt || item.title}
+                      loading={index === 0 ? "eager" : "lazy"}
+                      decoding={index === 0 ? "sync" : "async"}
                       className="h-52 w-full object-cover sm:h-auto sm:w-2/5"
                     />
                   ) : (
@@ -186,6 +188,15 @@ const Home = () => {
                 ))}
               </div>
             )}
+            <div className="mt-8 text-center">
+              <Button
+                size="lg"
+                onClick={() => navigate("/aktualno")}
+                className="bg-accent px-8 py-4 font-semibold text-accent-foreground hover:bg-accent/90"
+              >
+                ARHIV NOVIC
+              </Button>
+            </div>
           </div>
         </section>
       )}
