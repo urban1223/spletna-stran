@@ -99,6 +99,12 @@ try {
 }
 
 try {
+  database.exec("ALTER TABLE news ADD COLUMN slug TEXT");
+} catch (error) {
+  if (!String(error?.message || "").includes("duplicate column name")) throw error;
+}
+
+try {
   database.exec("ALTER TABLE members ADD COLUMN image_data TEXT");
 } catch (error) {
   if (!String(error?.message || "").includes("duplicate column name")) throw error;

@@ -43,16 +43,54 @@ const escapeXml = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 
+const slugifyNewsTitle = (title) =>
+  title
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "novica";
+
+const uniqueNewsSlug = (title, currentId = null) => {
+  const base = slugifyNewsTitle(title);
+  let slug = base;
+  let suffix = 2;
+  while (
+    database
+      .prepare("SELECT id FROM news WHERE slug = ? AND (? IS NULL OR id != ?)")
+      .get(slug, currentId, currentId)
+  ) {
+    slug = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  return slug;
+};
+
+const migrateNewsSlugs = () => {
+  const items = database.prepare("SELECT id, title, slug FROM news ORDER BY id ASC").all();
+  for (const item of items) {
+    if (!item.slug) {
+      database.prepare("UPDATE news SET slug = ? WHERE id = ?").run(uniqueNewsSlug(item.title, item.id), item.id);
+    }
+  }
+  database.exec("CREATE UNIQUE INDEX IF NOT EXISTS news_slug_unique ON news(slug)");
+};
+
+migrateNewsSlugs();
+
 const sendSitemap = (response) => {
   const events = database
     .prepare("SELECT slug, iso_date, past FROM events WHERE published = 1 ORDER BY iso_date ASC, slug ASC")
     .all();
   const news = database
-    .prepare("SELECT id, date(updated_at) AS lastmod FROM news WHERE published = 1 ORDER BY sort_order ASC, id ASC")
+    .prepare("SELECT slug, date(updated_at) AS lastmod FROM news WHERE published = 1 ORDER BY sort_order ASC, id ASC")
     .all();
   const staticUrls = [
     { path: "/", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "1.0" },
     { path: "/dogodki", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "0.9" },
+    { path: "/aktualno", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "0.8" },
     { path: "/galerija", lastmod: new Date().toISOString().slice(0, 10), changefreq: "weekly", priority: "0.8" },
     { path: "/pogoji-uporabe", lastmod: "2026-10-26", changefreq: "yearly", priority: "0.2" },
     { path: "/zasebnost", lastmod: "2026-10-26", changefreq: "yearly", priority: "0.2" },
@@ -67,7 +105,7 @@ const sendSitemap = (response) => {
       priority: Boolean(event.past) ? "0.4" : "0.95",
     })),
     ...news.map((item) => ({
-      path: `/aktualno/${item.id}`,
+      path: `/aktualno/${item.slug}`,
       lastmod: item.lastmod || new Date().toISOString().slice(0, 10),
       changefreq: "weekly",
       priority: "0.8",
@@ -253,7 +291,7 @@ const parseNewsLinks = (value) => {
 const getNews = () =>
   database
     .prepare(
-      `SELECT n.id, n.title, n.description, n.detail_description, n.hero_data, n.hero_alt, n.links_json,
+      `SELECT n.id, n.slug, n.title, n.description, n.detail_description, n.hero_data, n.hero_alt, n.links_json,
               i.id AS image_id, i.image_data, i.alt_text
        FROM news n
        LEFT JOIN news_images i ON i.news_id = n.id
@@ -266,6 +304,7 @@ const getNews = () =>
       if (!item) {
         item = {
           id: Number(row.id),
+          slug: row.slug,
           title: row.title,
           description: row.description,
           detailDescription: row.detail_description || row.description,
@@ -411,11 +450,12 @@ const server = createServer(async (request, response) => {
         sendJson(response, 400, { error: "At most three news items can be published" });
         return;
       }
+      const slug = uniqueNewsSlug(body.title);
       const result = database
         .prepare(
-          "INSERT INTO news (title, description, detail_description, hero_data, hero_alt, links_json, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          "INSERT INTO news (slug, title, description, detail_description, hero_data, hero_alt, links_json, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         )
-        .run(...newsValues(body), newsCount);
+        .run(slug, ...newsValues(body), newsCount);
       sendJson(response, 201, { news: getNews().find((item) => item.id === Number(result.lastInsertRowid)) });
       return;
     } catch (error) {
@@ -435,11 +475,13 @@ const server = createServer(async (request, response) => {
       return;
     }
     const parts = requestUrl.pathname.split("/").filter(Boolean);
-    const newsId = Number(parts[2]);
+    const newsIdentifier = decodeURIComponent(parts[2] || "");
+    const resolvedNews = getNews().find((news) => news.id === Number(newsIdentifier) || news.slug === newsIdentifier);
+    const newsId = resolvedNews?.id || Number(newsIdentifier);
     const imageId = parts[4] ? Number(parts[4]) : null;
     try {
       if (request.method === "GET" && !imageId) {
-        const item = getNews().find((news) => news.id === newsId);
+        const item = resolvedNews;
         if (!item) {
           sendJson(response, 404, { error: "News not found" });
           return;
@@ -463,11 +505,12 @@ const server = createServer(async (request, response) => {
           sendJson(response, 400, { error: errorMessage });
           return;
         }
+        const slug = uniqueNewsSlug(body.title, newsId);
         const result = database
           .prepare(
-            "UPDATE news SET title = ?, description = ?, detail_description = ?, hero_data = ?, hero_alt = ?, links_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            "UPDATE news SET slug = ?, title = ?, description = ?, detail_description = ?, hero_data = ?, hero_alt = ?, links_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
           )
-          .run(...newsValues(body), newsId);
+          .run(slug, ...newsValues(body), newsId);
         if (result.changes === 0) {
           sendJson(response, 404, { error: "News not found" });
           return;

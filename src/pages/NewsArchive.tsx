@@ -44,7 +44,7 @@ const NewsArchive = () => {
                 )}
                 <div className="p-6">
                   <h2 className="text-2xl font-semibold text-accent">
-                    <Link to={`/aktualno/${item.id}`} className="hover:underline">
+                    <Link to={`/aktualno/${item.slug}`} className="hover:underline">
                       {item.title}
                     </Link>
                   </h2>
@@ -52,7 +52,7 @@ const NewsArchive = () => {
                     <NewsLinkedText text={item.description} />
                   </p>
                   <Link
-                    to={`/aktualno/${item.id}`}
+                    to={`/aktualno/${item.slug}`}
                     className="mt-5 inline-block font-semibold text-accent hover:underline"
                   >
                     Preberi več

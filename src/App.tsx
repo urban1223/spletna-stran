@@ -48,7 +48,7 @@ const App = () => (
               <Route path="/podprite-nas" element={<Support />} />
               <Route path="/admin-dodajaj" element={<AdminDodajaj />} />
               <Route path="/aktualno" element={<NewsArchive />} />
-              <Route path="/aktualno/:id" element={<NewsDetail />} />
+              <Route path="/aktualno/:slug" element={<NewsDetail />} />
               <Route path="/pogoji-uporabe" element={<Terms />} />
               <Route path="/zasebnost" element={<Privacy />} />
               <Route path="/piskotki" element={<Cookies />} />

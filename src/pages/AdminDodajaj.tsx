@@ -80,7 +80,7 @@ type MemberForm = Omit<AdminMember, "slug" | "imageUrl" | "imageData"> & {
   slug: string;
 };
 
-type NewsDraft = Omit<NewsItem, "id"> & { id?: number };
+type NewsDraft = Omit<NewsItem, "id" | "slug"> & { id?: number };
 
 const emptyNewsDraft: NewsDraft = {
   title: "",
@@ -1087,8 +1087,8 @@ export default function AdminDodajaj() {
               <div style={{ color: "hsl(220 8% 68%)", fontSize: 13, marginTop: 4 }}>{item.description}</div>
               <div style={{ color: "hsl(220 8% 68%)", fontSize: 13, marginTop: 6 }}>
                 Javna povezava:{" "}
-                <a href={`/aktualno/${item.id}`} style={{ color: "hsl(45 85% 75%)" }}>
-                  /aktualno/{item.id}
+                <a href={`/aktualno/${item.slug}`} style={{ color: "hsl(45 85% 75%)" }}>
+                  /aktualno/{item.slug}
                 </a>
               </div>
             </div>

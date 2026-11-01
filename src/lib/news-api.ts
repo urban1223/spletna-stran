@@ -11,6 +11,7 @@ export type NewsImage = {
 
 export type NewsItem = {
   id: number;
+  slug: string;
   title: string;
   description: string;
   detailDescription: string;
@@ -30,18 +31,23 @@ const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
 const isNewsItem = (value: unknown): value is NewsItem => {
   if (!value || typeof value !== "object") return false;
   const item = value as Partial<NewsItem>;
-  return typeof item.id === "number" && typeof item.title === "string" && item.title.trim().length > 0;
+  return (
+    typeof item.id === "number" &&
+    typeof item.slug === "string" &&
+    typeof item.title === "string" &&
+    item.title.trim().length > 0
+  );
 };
 
 export const getNews = () => request<NewsItem[]>("/api/news");
 
-export const getNewsItem = async (id: number) => {
-  const item = await request<NewsItem>(`/api/news/${id}`);
+export const getNewsItem = async (slug: string) => {
+  const item = await request<NewsItem>(`/api/news/${encodeURIComponent(slug)}`);
   if (!isNewsItem(item)) throw new Error("News not found");
   return item;
 };
 
-export const createNews = (news: Omit<NewsItem, "id" | "images">) =>
+export const createNews = (news: Omit<NewsItem, "id" | "slug" | "images">) =>
   request<{ news: NewsItem }>("/api/news", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

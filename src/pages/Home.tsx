@@ -157,7 +157,7 @@ const Home = () => {
                   <div className="flex flex-1 items-center justify-between gap-5 p-5 sm:p-7">
                     <div className="min-w-0">
                       <h3 className="text-2xl font-semibold text-accent">
-                        <Link to={`/aktualno/${item.id}`} className="hover:underline">
+                        <Link to={`/aktualno/${item.slug}`} className="hover:underline">
                           {item.title}
                         </Link>
                       </h3>
@@ -166,7 +166,7 @@ const Home = () => {
                       </p>
                     </div>
                     <Button asChild className="shrink-0 bg-accent text-accent-foreground hover:bg-accent/90">
-                      <Link to={`/aktualno/${item.id}`}>Preberi več</Link>
+                      <Link to={`/aktualno/${item.slug}`}>Preberi več</Link>
                     </Button>
                   </div>
                 </article>

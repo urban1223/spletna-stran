@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,15 +8,20 @@ import NewsLinkedText, { newsPlainText } from "@/components/NewsLinkedText";
 import { getNewsItem } from "@/lib/news-api";
 
 const NewsDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const newsId = Number(id);
   const { data: news, isLoading, isError } = useQuery({
-    queryKey: ["news", newsId],
-    queryFn: () => getNewsItem(newsId),
-    enabled: Number.isInteger(newsId) && newsId > 0,
+    queryKey: ["news", slug],
+    queryFn: () => getNewsItem(slug || ""),
+    enabled: Boolean(slug),
     retry: false,
   });
+
+  useEffect(() => {
+    if (news && slug !== news.slug) {
+      navigate(`/aktualno/${news.slug}`, { replace: true });
+    }
+  }, [navigate, news, slug]);
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Nalaganje novice …</div>;
@@ -39,7 +45,7 @@ const NewsDetail = () => {
     <div className="min-h-screen">
       <Seo
         title={news.title}
-        path={`/aktualno/${news.id}`}
+        path={`/aktualno/${news.slug}`}
         type="article"
         description={description}
         jsonLd={{
