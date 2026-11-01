@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Event } from "@/data/events-data";
 import { members as legacyMembers } from "@/data/members-data";
 import { deleteMember, getMembers, migrateMemberImages, saveMember, type AdminMember } from "@/lib/members-api";
@@ -273,6 +274,7 @@ const buildConcertExport = (
 };
 
 export default function AdminDodajaj() {
+  const queryClient = useQueryClient();
   const [events, setEvents] = useState<Event[]>([]);
   const [authenticated, setAuthenticated] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -313,7 +315,7 @@ export default function AdminDodajaj() {
       .then((session) => {
         setAuthenticated(session.authenticated);
         if (session.authenticated) {
-          return Promise.all([getEvents(), getGallery(), getMembers(), getNews()]).then(([loadedEvents, loadedGallery, loadedMembers, loadedNews]) =>
+          return Promise.all([getEvents(), getGallery(), getMembers(), getNews(true)]).then(([loadedEvents, loadedGallery, loadedMembers, loadedNews]) =>
             ensureManagedMembers(loadedMembers).then((managedMembers) =>
               migrateMemberImages().then(() => getMembers()).then((migratedMembers) => {
             setEvents(loadedEvents);
@@ -406,6 +408,7 @@ export default function AdminDodajaj() {
     setCopyNotice("");
     saveEvent(exportPayload, editingSlug || undefined)
       .then(({ event: savedEvent }) => {
+        queryClient.invalidateQueries({ queryKey: ["events"] });
         setEvents((current) => {
           const withoutSaved = current.filter((item) => item.slug !== savedEvent.slug);
           return [...withoutSaved, savedEvent];
@@ -425,9 +428,10 @@ export default function AdminDodajaj() {
     setLoginError("");
     loginAdmin(username, password)
       .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["events"] });
         setAuthenticated(true);
         setPassword("");
-        return Promise.all([getEvents(), getMembers(), getNews()]).then(([loadedEvents, loadedMembers, loadedNews]) =>
+        return Promise.all([getEvents(), getMembers(), getNews(true)]).then(([loadedEvents, loadedMembers, loadedNews]) =>
           ensureManagedMembers(loadedMembers).then(() =>
             migrateMemberImages().then(() => getMembers()).then((migratedMembers) => {
           setEvents(loadedEvents);
@@ -531,6 +535,7 @@ export default function AdminDodajaj() {
     };
     saveMember(payload, editingMemberSlug || undefined)
       .then(({ member }) => {
+        queryClient.invalidateQueries({ queryKey: ["members"] });
         setMembers((current) => [...current.filter((item) => item.slug !== (editingMemberSlug || member.slug)), member]);
         setMemberForm(emptyMemberForm);
         setEditingMemberSlug(null);
@@ -543,6 +548,7 @@ export default function AdminDodajaj() {
     if (!window.confirm(`Ali res želiš izbrisati člana »${member.name}«?`)) return;
     deleteMember(member.slug)
       .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["members"] });
         setMembers((current) => current.filter((item) => item.slug !== member.slug));
         setMemberNotice(`Član »${member.name}« je bil izbrisan.`);
       })
@@ -671,6 +677,7 @@ export default function AdminDodajaj() {
     const request = newsDraft.id ? updateNews(newsDraft as NewsItem) : createNews(newsDraft);
     request
       .then(({ news: saved }) => {
+        queryClient.invalidateQueries({ queryKey: ["news"] });
         setNews((current) => {
           const withoutSaved = current.filter((item) => item.id !== saved.id);
           return [...withoutSaved, saved];
@@ -717,6 +724,7 @@ export default function AdminDodajaj() {
     if (!newsDraft.id) return;
     deleteNewsImage(newsDraft.id, imageId)
       .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["news"] });
         setNewsDraft((current) => ({ ...current, images: current.images.filter((image) => image.id !== imageId) }));
         setNews((current) => current.map((item) => item.id === newsDraft.id ? { ...item, images: item.images.filter((image) => image.id !== imageId) } : item));
         setNewsNotice("Manjša slika je izbrisana.");

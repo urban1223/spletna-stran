@@ -25,7 +25,15 @@ const Terms = lazy(() => import("./pages/Legal").then((module) => ({ default: mo
 const Privacy = lazy(() => import("./pages/Legal").then((module) => ({ default: module.Privacy })));
 const Cookies = lazy(() => import("./pages/Legal").then((module) => ({ default: module.Cookies })));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <ErrorBoundary>

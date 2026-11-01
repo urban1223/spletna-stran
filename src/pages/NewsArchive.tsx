@@ -7,7 +7,7 @@ import { getNews } from "@/lib/news-api";
 const NewsArchive = () => {
   const { data: news = [], isLoading, isError } = useQuery({
     queryKey: ["news"],
-    queryFn: getNews,
+    queryFn: () => getNews(),
   });
 
   return (
@@ -39,7 +39,10 @@ const NewsArchive = () => {
                     alt={item.heroAlt || item.title}
                     loading="lazy"
                     decoding="async"
-                    className="h-52 w-full object-cover"
+                    width="800"
+                    height="450"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="aspect-video h-auto w-full object-cover"
                   />
                 )}
                 <div className="p-6">

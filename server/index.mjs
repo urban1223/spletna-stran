@@ -1,5 +1,5 @@
 import { createReadStream } from "node:fs";
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { access, mkdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize, sep } from "node:path";
@@ -30,9 +30,23 @@ const contentTypes = {
 
 const publicBaseUrl = (process.env.PUBLIC_BASE_URL || "https://nova-akademija.si").replace(/\/$/, "");
 
-const sendJson = (response, statusCode, body) => {
-  response.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
-  response.end(JSON.stringify(body));
+const sendJson = (response, statusCode, body, options = {}) => {
+  const payload = JSON.stringify(body);
+  const etag = `"${createHash("sha1").update(payload).digest("hex")}"`;
+  const requestedEtags = String(response.requestHeaders?.["if-none-match"] || "")
+    .split(",")
+    .map((value) => value.trim());
+  if (statusCode === 200 && (requestedEtags.includes(etag) || requestedEtags.includes(etag.slice(1, -1)))) {
+    response.writeHead(304, { ETag: etag, "Cache-Control": options.cacheControl || "no-store" });
+    response.end();
+    return;
+  }
+  response.writeHead(statusCode, {
+    "Content-Type": "application/json; charset=utf-8",
+    ETag: etag,
+    "Cache-Control": options.cacheControl || "no-store",
+  });
+  response.end(payload);
 };
 
 const escapeXml = (value) =>
@@ -220,8 +234,28 @@ const sendFile = async (response, filePath) => {
     return false;
   }
 
+  const etag = `"${fileStats.size.toString(16)}-${fileStats.mtimeMs.toString(16)}"`;
+  const immutableAsset = /[-.][a-f0-9]{8,}\./i.test(filePath);
+  const cacheControl = immutableAsset
+    ? "public, max-age=31536000, immutable"
+    : filePath.startsWith(galleryDirectory)
+      ? "public, max-age=300, stale-while-revalidate=60"
+      : extname(filePath).toLowerCase() === ".html"
+        ? "no-cache"
+        : "public, max-age=86400, stale-while-revalidate=3600";
+  const requestedEtags = String(response.requestHeaders?.["if-none-match"] || "")
+    .split(",")
+    .map((value) => value.trim());
+  if (requestedEtags.includes(etag) || requestedEtags.includes(etag.slice(1, -1))) {
+    response.writeHead(304, { ETag: etag, "Cache-Control": cacheControl });
+    response.end();
+    return true;
+  }
   response.writeHead(200, {
     "Content-Type": contentTypes[extname(filePath).toLowerCase()] || "application/octet-stream",
+    "Cache-Control": cacheControl,
+    ETag: etag,
+    "Last-Modified": fileStats.mtime.toUTCString(),
   });
   createReadStream(filePath).pipe(response);
   return true;
@@ -288,15 +322,15 @@ const parseNewsLinks = (value) => {
   }
 };
 
-const getNews = () =>
+const getNews = (includeDetails = true) =>
   database
     .prepare(
       `SELECT n.id, n.slug, n.title, n.description, n.detail_description, n.hero_data, n.hero_alt, n.links_json,
-              i.id AS image_id, i.image_data, i.alt_text
+              n.created_at, n.updated_at${includeDetails ? ", i.id AS image_id, i.image_data, i.alt_text" : ""}
        FROM news n
-       LEFT JOIN news_images i ON i.news_id = n.id
+       ${includeDetails ? "LEFT JOIN news_images i ON i.news_id = n.id" : ""}
        WHERE n.published = 1
-       ORDER BY n.sort_order ASC, n.id ASC, i.sort_order ASC, i.id ASC`,
+       ORDER BY n.sort_order ASC, n.id ASC${includeDetails ? ", i.sort_order ASC, i.id ASC" : ""}`,
     )
     .all()
     .reduce((items, row) => {
@@ -312,14 +346,21 @@ const getNews = () =>
           heroAlt: row.hero_alt,
           links: parseNewsLinks(row.links_json),
           images: [],
+          date: row.created_at,
+          updatedAt: row.updated_at,
         };
         items.push(item);
       }
-      if (row.image_id !== null) {
+      if (includeDetails && row.image_id !== null) {
         item.images.push({ id: Number(row.image_id), data: row.image_data, alt: row.alt_text });
       }
       return items;
     }, []);
+
+const getNewsItem = (identifier) =>
+  getNews(true).find((news) => news.id === Number(identifier) || news.slug === identifier);
+
+const getNewsList = () => getNews(false).map(({ detailDescription, links, images, ...item }) => item);
 
 const validateNews = (body) => {
   if (!body || typeof body !== "object" || typeof body.title !== "string" || !body.title.trim()) {
@@ -414,6 +455,7 @@ const getGallery = () =>
     }, []);
 
 const server = createServer(async (request, response) => {
+  response.requestHeaders = request.headers;
   const allowedMethods =
     request.method === "GET" || request.method === "POST" || request.method === "PUT" || request.method === "DELETE";
   if (!allowedMethods) {
@@ -429,7 +471,10 @@ const server = createServer(async (request, response) => {
   }
 
   if (requestUrl.pathname === "/api/news" && request.method === "GET") {
-    sendJson(response, 200, getNews());
+    const includeDetails = requestUrl.searchParams.get("include") === "details";
+    sendJson(response, 200, includeDetails ? getNews() : getNewsList(), {
+      cacheControl: "public, max-age=30, stale-while-revalidate=60",
+    });
     return;
   }
 
@@ -476,7 +521,7 @@ const server = createServer(async (request, response) => {
     }
     const parts = requestUrl.pathname.split("/").filter(Boolean);
     const newsIdentifier = decodeURIComponent(parts[2] || "");
-    const resolvedNews = getNews().find((news) => news.id === Number(newsIdentifier) || news.slug === newsIdentifier);
+    const resolvedNews = getNewsItem(newsIdentifier);
     const newsId = resolvedNews?.id || Number(newsIdentifier);
     const imageId = parts[4] ? Number(parts[4]) : null;
     try {
@@ -486,7 +531,7 @@ const server = createServer(async (request, response) => {
           sendJson(response, 404, { error: "News not found" });
           return;
         }
-        sendJson(response, 200, item);
+        sendJson(response, 200, item, { cacheControl: "public, max-age=30, stale-while-revalidate=60" });
         return;
       }
       if (request.method === "DELETE" && !imageId) {
@@ -585,13 +630,17 @@ const server = createServer(async (request, response) => {
   }
 
   if (requestUrl.pathname === "/api/gallery" && request.method === "GET") {
-    sendJson(response, 200, getGallery().map(serializeGallery));
+    sendJson(response, 200, getGallery().map(serializeGallery), {
+      cacheControl: "public, max-age=30, stale-while-revalidate=60",
+    });
     return;
   }
 
   if (requestUrl.pathname === "/api/members" && request.method === "GET") {
     const members = database.prepare("SELECT * FROM members WHERE published = 1 ORDER BY is_mentor ASC, name COLLATE NOCASE ASC").all();
-    sendJson(response, 200, members.map(serializeMember));
+    sendJson(response, 200, members.map(serializeMember), {
+      cacheControl: "public, max-age=30, stale-while-revalidate=60",
+    });
     return;
   }
 
@@ -998,7 +1047,7 @@ const server = createServer(async (request, response) => {
       .prepare("SELECT * FROM events WHERE published = 1 ORDER BY iso_date ASC, time ASC, slug ASC")
       .all()
       .map(serializeEvent);
-    sendJson(response, 200, events);
+    sendJson(response, 200, events, { cacheControl: "public, max-age=30, stale-while-revalidate=60" });
     return;
   }
 
@@ -1014,7 +1063,7 @@ const server = createServer(async (request, response) => {
         return;
       }
 
-      sendJson(response, 200, serializeEvent(event));
+      sendJson(response, 200, serializeEvent(event), { cacheControl: "public, max-age=30, stale-while-revalidate=60" });
       return;
     } catch (error) {
       if (error instanceof URIError) {

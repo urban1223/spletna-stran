@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import Seo from "@/components/Seo";
 import NewsLinkedText from "@/components/NewsLinkedText";
 import { members as legacyMembers, type Member } from "@/data/members-data";
 import { getMembers, type AdminMember } from "@/lib/members-api";
-import { getNews, type NewsItem } from "@/lib/news-api";
+import { getNews } from "@/lib/news-api";
 import { getSessionCookie, setSessionCookie } from "@/lib/cookies";
 import urbanImage from "@/assets/members/urban-klancar.jpg";
 import lauraImage from "@/assets/members/laura-calligaris.jpg";
@@ -59,8 +60,13 @@ import {
 const Home = () => {
   const navigate = useNavigate();
   const [homeMembers, setHomeMembers] = useState<HomeMember[]>(() => chooseMembers(legacyMembers));
-  const [news, setNews] = useState<NewsItem[]>([]);
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
+  const { data: news = [], isLoading: newsLoading, isError: newsError } = useQuery({
+    queryKey: ["news"],
+    queryFn: () => getNews(),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
 
   useEffect(() => {
     getMembers()
@@ -69,13 +75,9 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    getNews().then(setNews).catch(() => undefined);
-  }, []);
-
-  useEffect(() => {
     const visibleNewsCount = Math.min(news.length, 3);
+    setActiveNewsIndex((current) => (current < visibleNewsCount ? current : 0));
     if (visibleNewsCount <= 1) {
-      setActiveNewsIndex(0);
       return;
     }
     const timer = window.setInterval(() => {
@@ -131,32 +133,57 @@ const Home = () => {
         </div>
       </section>
 
-      {news.length > 0 && (
-        <section className="py-16">
+      <section className="py-16">
           <div className="container mx-auto px-4 relative z-10">
             <h2 className="text-3xl font-bold tracking-tight text-accent sm:text-4xl mb-9 text-center">
               Aktualno
             </h2>
-            <div className="mx-auto max-w-5xl">
-              {news.slice(0, 3).map((item, index) => index === activeNewsIndex && (
+            <div className="mx-auto grid max-w-5xl">
+              {newsLoading && (
+                <article aria-busy="true" className="grid min-h-[18rem] grid-cols-1 overflow-hidden rounded-lg border border-accent/30 bg-background/80 shadow-lg sm:grid-cols-[40%_1fr]">
+                  <div className="min-h-52 animate-pulse bg-accent/10 sm:min-h-0" />
+                  <div className="flex flex-col justify-center gap-4 p-5 sm:p-7">
+                    <div className="h-8 w-3/4 animate-pulse rounded bg-accent/10" />
+                    <div className="h-20 w-full animate-pulse rounded bg-accent/10" />
+                    <div className="h-10 w-32 animate-pulse rounded bg-accent/10" />
+                  </div>
+                </article>
+              )}
+              {newsError && !newsLoading && (
+                <p className="rounded-lg border border-destructive/30 p-6 text-center text-destructive">
+                  Novic trenutno ni mogoče naložiti.
+                </p>
+              )}
+              {!newsLoading && !newsError && news.length === 0 && (
+                <p className="rounded-lg border border-accent/30 p-6 text-center text-muted-foreground">
+                  Trenutno ni objavljenih novic.
+                </p>
+              )}
+              {!newsLoading && !newsError && news.slice(0, 3).map((item, index) => (
                 <article
                   key={item.id}
-                  className="flex flex-col sm:flex-row overflow-hidden rounded-lg border border-accent/30 bg-background/80 shadow-lg"
+                  aria-hidden={index !== activeNewsIndex}
+                  className={`col-start-1 row-start-1 grid grid-cols-1 overflow-hidden rounded-lg border border-accent/30 bg-background/80 shadow-lg transition-opacity sm:grid-cols-[40%_1fr] ${
+                    index === activeNewsIndex ? "relative opacity-100" : "relative invisible opacity-0"
+                  }`}
                 >
                   {item.heroData ? (
                     <img
                       src={item.heroData}
                       alt={item.heroAlt || item.title}
                       loading={index === 0 ? "eager" : "lazy"}
-                      decoding={index === 0 ? "sync" : "async"}
-                      className="h-52 w-full object-cover sm:h-auto sm:w-2/5"
+                      decoding="async"
+                      width="800"
+                      height="450"
+                      sizes="(max-width: 640px) 100vw, 40vw"
+                      className="aspect-video h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="hidden sm:block sm:w-2/5 bg-accent/10" aria-hidden="true" />
+                    <div className="aspect-video w-full bg-accent/10" aria-hidden="true" />
                   )}
-                  <div className="flex flex-1 items-center justify-between gap-5 p-5 sm:p-7">
+                  <div className="flex min-w-0 flex-1 flex-col justify-center gap-5 p-5 sm:p-7">
                     <div className="min-w-0">
-                      <h3 className="text-2xl font-semibold text-accent">
+                      <h3 className="line-clamp-3 text-2xl font-semibold text-accent">
                         <Link to={`/aktualno/${item.slug}`} className="hover:underline">
                           {item.title}
                         </Link>
@@ -199,7 +226,6 @@ const Home = () => {
             </div>
           </div>
         </section>
-      )}
 
       {/* Gallery Section */}
       <section className="pt-28 pb-8">
@@ -221,7 +247,10 @@ const Home = () => {
                         src={image.src}
                         alt={image.alt}
                         loading="lazy"
-                        className="w-full h-full object-cover transform transition-transform duration-500 hover:scale-105"
+                        width="1200"
+                        height="800"
+                        sizes="(max-width: 640px) 100vw, 80vw"
+                        className="h-full w-full object-cover transform transition-transform duration-500 hover:scale-105"
                       />
                     </div>
                   </CarouselItem>
@@ -264,6 +293,8 @@ const Home = () => {
             src={member.imageUrl || imageMap[member.imageKey]}
             alt={member.name}
             loading="lazy"
+            width="256"
+            height="256"
             className="rounded-full mx-auto object-cover w-64 h-64 border-4 border-yellow-500 shadow-lg hover:scale-105 transition-transform duration-300"
           />
           <p className="mt-4 font-semibold text-foreground">{member.name}</p>

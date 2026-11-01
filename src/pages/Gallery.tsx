@@ -137,7 +137,10 @@ const Gallery = () => {
                       src={img.src}
                       alt={img.alt}
                       loading="lazy"
-                      className="w-full h-[360px] object-cover hover:scale-105 transition-transform"
+                      width="800"
+                      height="600"
+                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                      className="aspect-[4/3] h-auto w-full object-cover hover:scale-105 transition-transform"
                     />
                   </div>
                 ))}

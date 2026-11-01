@@ -64,6 +64,9 @@ const NewsDetail = () => {
         <img
           src={news.heroData}
           alt={news.heroAlt || news.title}
+          width="1600"
+          height="700"
+          fetchPriority="high"
           className="h-56 w-full object-cover sm:h-72"
         />
       )}
@@ -87,6 +90,10 @@ const NewsDetail = () => {
                 key={image.id}
                 src={image.data}
                 alt={image.alt}
+                width="320"
+                height="180"
+                sizes="(max-width: 640px) 50vw, 20vw"
+                loading="lazy"
                 className="h-28 w-full rounded-md object-cover shadow-md sm:h-32"
               />
             ))}

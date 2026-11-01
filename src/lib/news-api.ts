@@ -19,7 +19,11 @@ export type NewsItem = {
   heroAlt: string;
   images: NewsImage[];
   links: NewsLink[];
+  date?: string;
+  updatedAt?: string;
 };
+
+export type NewsListItem = Pick<NewsItem, "id" | "slug" | "title" | "description" | "heroData" | "heroAlt" | "date" | "updatedAt">;
 
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   const response = await fetch(path, { ...options, credentials: "same-origin" });
@@ -39,7 +43,11 @@ const isNewsItem = (value: unknown): value is NewsItem => {
   );
 };
 
-export const getNews = () => request<NewsItem[]>("/api/news");
+export function getNews(includeDetails: true): Promise<NewsItem[]>;
+export function getNews(includeDetails?: false): Promise<NewsListItem[]>;
+export function getNews(includeDetails = false) {
+  return request<NewsItem[] | NewsListItem[]>(includeDetails ? "/api/news?include=details" : "/api/news");
+}
 
 export const getNewsItem = async (slug: string) => {
   const item = await request<NewsItem>(`/api/news/${encodeURIComponent(slug)}`);
