@@ -21,6 +21,7 @@ const Tools = lazy(() => import("./pages/Tools"));
 const AdminDodajaj = lazy(() => import("./pages/AdminDodajaj"));
 const NewsArchive = lazy(() => import("./pages/NewsArchive"));
 const NewsDetail = lazy(() => import("./pages/NewsDetail"));
+const ComposerWorkspace = lazy(() => import("./pages/ComposerWorkspace"));
 const Terms = lazy(() => import("./pages/Legal").then((module) => ({ default: module.Terms })));
 const Privacy = lazy(() => import("./pages/Legal").then((module) => ({ default: module.Privacy })));
 const Cookies = lazy(() => import("./pages/Legal").then((module) => ({ default: module.Cookies })));
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="/galerija" element={<Gallery />} />
               <Route path="/podprite-nas" element={<Support />} />
               <Route path="/admin-dodajaj" element={<AdminDodajaj />} />
+              <Route path="/admin-skladatelji" element={<ComposerWorkspace />} />
               <Route path="/aktualno" element={<NewsArchive />} />
               <Route path="/aktualno/:slug" element={<NewsDetail />} />
               <Route path="/pogoji-uporabe" element={<Terms />} />

@@ -1,10 +1,10 @@
 import { createReadStream } from "node:fs";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { access, mkdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
+import { access, cp, mkdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
-import { extname, join, normalize, sep } from "node:path";
+import { basename, dirname, extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { database } from "./db.mjs";
+import { database, databasePath } from "./db.mjs";
 import "./db.mjs";
 
 const port = Number(process.env.PORT || 8080);
@@ -190,6 +190,157 @@ const readJsonBody = async (request) => {
     }
   }
   return JSON.parse(body || "{}");
+};
+
+const slugifyComposerName = (name) =>
+  name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 100) || "skladatelj";
+
+const getComposers = () =>
+  database
+    .prepare(
+      `SELECT c.*, COUNT(e.id) AS event_count
+       FROM composers c LEFT JOIN composer_events e ON e.composer_id = c.id
+       GROUP BY c.id
+       ORDER BY c.status ASC, c.name COLLATE NOCASE ASC`,
+    )
+    .all();
+
+const getComposerBySlug = (slug) => {
+  const composer = database.prepare("SELECT * FROM composers WHERE slug = ?").get(slug);
+  if (!composer) return null;
+  return {
+    ...composer,
+    events: database
+      .prepare("SELECT * FROM composer_events WHERE composer_id = ? ORDER BY sort_order ASC, year ASC, id ASC")
+      .all(composer.id),
+  };
+};
+
+const serializeComposerEvent = (event) => ({
+  id: event.id,
+  type: event.event_type,
+  year: event.year,
+  yearEnd: event.year_end,
+  dateText: event.date_text,
+  place: event.place,
+  title: event.title,
+  description: event.description,
+  sourceExcerpt: event.source_excerpt,
+  confidence: event.confidence,
+  verified: Boolean(event.verified),
+  sortOrder: event.sort_order,
+});
+
+const serializeComposer = (composer) => ({
+  id: composer.id,
+  slug: composer.slug,
+  name: composer.name,
+  birthYear: composer.birth_year,
+  deathYear: composer.death_year,
+  birthPlace: composer.birth_place,
+  deathPlace: composer.death_place,
+  biography: composer.biography,
+  sourceUrl: composer.source_url,
+  sourceText: composer.source_text,
+  status: composer.status,
+  eventCount: composer.event_count,
+  updatedAt: composer.updated_at,
+  events: Array.isArray(composer.events) ? composer.events.map(serializeComposerEvent) : undefined,
+});
+
+const validateComposer = (body) => {
+  if (!body || typeof body !== "object") return "Missing composer data";
+  if (typeof body.name !== "string" || !body.name.trim()) return "Missing composer name";
+  if (body.status && !["draft", "in-progress", "review", "complete"].includes(body.status)) {
+    return "Invalid composer status";
+  }
+  if (body.birthYear !== null && body.birthYear !== undefined && !Number.isInteger(body.birthYear)) return "Invalid birth year";
+  if (body.deathYear !== null && body.deathYear !== undefined && !Number.isInteger(body.deathYear)) return "Invalid death year";
+  return null;
+};
+
+const validateComposerEvent = (event) => {
+  if (!event || typeof event !== "object") return false;
+  if (event.year !== null && event.year !== undefined && !Number.isInteger(event.year)) return false;
+  if (event.yearEnd !== null && event.yearEnd !== undefined && !Number.isInteger(event.yearEnd)) return false;
+  return ["birth", "death", "education", "employment", "composition", "premiere", "travel", "award", "other"].includes(
+    event.type || "other",
+  );
+};
+
+const extractionPrompt = (name, sourceText) => `You extract historical music events from biographies.
+Return only valid JSON, with this exact structure:
+{"birthYear": number|null,"deathYear": number|null,"birthPlace":"...","deathPlace":"...","events":[
+{"type":"birth|death|education|employment|composition|premiere|travel|award|other","year":number|null,"yearEnd":number|null,"dateText":"","place":"","title":"","description":"","sourceExcerpt":"","confidence":"high|medium|low"}
+]}
+Rules:
+- Composer: ${name}
+- Extract only facts stated or clearly established by the source.
+- Convert source facts into specific dated life events and work premieres.
+- Do not invent dates or places.
+- Keep sourceExcerpt short and quote-like.
+- Preserve historical place names when possible.
+- If a year is approximate, use the stated year and add an uncertainty to description.
+- Source:
+${sourceText.slice(0, 60000)}`;
+
+const parseAiJson = (text) => {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) throw new Error("AI returned no JSON");
+  return JSON.parse(text.slice(start, end + 1));
+};
+
+const extractComposerEvents = async (name, sourceText) => {
+  const prompt = extractionPrompt(name, sourceText);
+  if (process.env.OPENAI_API_KEY) {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        temperature: 0,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: "You are a careful historical research assistant. Never invent facts." },
+          { role: "user", content: prompt },
+        ],
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error?.message || "OpenAI extraction failed");
+    return parseAiJson(payload.choices?.[0]?.message?.content || "");
+  }
+
+  if (process.env.GEMINI_API_KEY) {
+    const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          generationConfig: { temperature: 0, responseMimeType: "application/json" },
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+        }),
+      },
+    );
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error?.message || "Gemini extraction failed");
+    return parseAiJson(payload.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "");
+  }
+
+  throw new Error("Configure OPENAI_API_KEY or GEMINI_API_KEY on the server");
 };
 
 const validateEvent = (body) => {
@@ -954,6 +1105,241 @@ const server = createServer(async (request, response) => {
     if (sessionId) sessions.delete(sessionId);
     clearSessionCookie(response);
     sendJson(response, 200, { authenticated: false });
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/composers" && request.method === "GET") {
+    if (!isAuthenticated(request)) {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    sendJson(response, 200, getComposers().map(serializeComposer));
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/composer-extract" && request.method === "POST") {
+    if (!isAuthenticated(request)) {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    try {
+      const body = await readJsonBody(request);
+      if (typeof body.name !== "string" || !body.name.trim()) {
+        sendJson(response, 400, { error: "Composer name is required" });
+        return;
+      }
+      if (typeof body.sourceText !== "string" || body.sourceText.trim().length < 40) {
+        sendJson(response, 400, { error: "Paste at least a short biography or source" });
+        return;
+      }
+      const extracted = await extractComposerEvents(body.name.trim(), body.sourceText.trim());
+      if (!extracted || !Array.isArray(extracted.events)) {
+        sendJson(response, 502, { error: "AI returned an invalid result" });
+        return;
+      }
+      const events = extracted.events.filter(validateComposerEvent).map((event, index) => ({
+        id: undefined,
+        type: event.type || "other",
+        year: Number.isInteger(event.year) ? event.year : null,
+        yearEnd: Number.isInteger(event.yearEnd) ? event.yearEnd : null,
+        dateText: typeof event.dateText === "string" ? event.dateText : "",
+        place: typeof event.place === "string" ? event.place : "",
+        title: typeof event.title === "string" ? event.title : "",
+        description: typeof event.description === "string" ? event.description : "",
+        sourceExcerpt: typeof event.sourceExcerpt === "string" ? event.sourceExcerpt : "",
+        confidence: ["high", "medium", "low"].includes(event.confidence) ? event.confidence : "medium",
+        verified: false,
+        sortOrder: index,
+      }));
+      sendJson(response, 200, {
+        birthYear: Number.isInteger(extracted.birthYear) ? extracted.birthYear : null,
+        deathYear: Number.isInteger(extracted.deathYear) ? extracted.deathYear : null,
+        birthPlace: typeof extracted.birthPlace === "string" ? extracted.birthPlace : "",
+        deathPlace: typeof extracted.deathPlace === "string" ? extracted.deathPlace : "",
+        events,
+        provider: process.env.OPENAI_API_KEY ? "openai" : "gemini",
+      });
+    } catch (error) {
+      console.error("Composer extraction failed:", error);
+      sendJson(response, 502, { error: error instanceof Error ? error.message : "Unable to extract composer events" });
+    }
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/admin/backup" && request.method === "POST") {
+    if (!isAuthenticated(request)) {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    try {
+      const backupDirectory = process.env.BACKUP_DIR || join(dirname(databasePath), "backups");
+      await mkdir(backupDirectory, { recursive: true });
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const backupPath = join(backupDirectory, `${basename(databasePath, ".sqlite")}-${timestamp}.sqlite`);
+      database.exec(`VACUUM INTO '${backupPath.replace(/'/g, "''")}'`);
+      const gallerySource = process.env.GALLERY_DIRECTORY || join(dirname(databasePath), "gallery");
+      const galleryBackupPath = join(backupDirectory, `gallery-${timestamp}`);
+      await cp(gallerySource, galleryBackupPath, { recursive: true, force: true }).catch((error) => {
+        if (error.code !== "ENOENT") throw error;
+      });
+      sendJson(response, 200, { backedUp: true, database: backupPath, gallery: galleryBackupPath });
+    } catch (error) {
+      console.error("Admin backup failed:", error);
+      sendJson(response, 500, { error: "Unable to create backup" });
+    }
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/composers" && request.method === "POST") {
+    if (!isAuthenticated(request)) {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    try {
+      const body = await readJsonBody(request);
+      const errorMessage = validateComposer(body);
+      if (errorMessage) {
+        sendJson(response, 400, { error: errorMessage });
+        return;
+      }
+      const slug = typeof body.slug === "string" && body.slug.trim()
+        ? body.slug.trim()
+        : slugifyComposerName(body.name);
+      let uniqueSlug = slug;
+      let suffix = 2;
+      while (database.prepare("SELECT id FROM composers WHERE slug = ?").get(uniqueSlug)) {
+        uniqueSlug = `${slug}-${suffix}`;
+        suffix += 1;
+      }
+      const result = database
+        .prepare(
+          `INSERT INTO composers
+            (slug, name, birth_year, death_year, birth_place, death_place, biography, source_url, source_text, status, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        )
+        .run(
+          uniqueSlug,
+          body.name.trim(),
+          body.birthYear ?? null,
+          body.deathYear ?? null,
+          body.birthPlace?.trim() || "",
+          body.deathPlace?.trim() || "",
+          body.biography?.trim() || "",
+          body.sourceUrl?.trim() || "",
+          body.sourceText?.trim() || "",
+          body.status || "draft",
+        );
+      sendJson(response, 201, { composer: serializeComposer(getComposerBySlug(uniqueSlug)) });
+    } catch (error) {
+      if (error instanceof SyntaxError) sendJson(response, 400, { error: "Invalid JSON" });
+      else {
+        console.error("Composer creation failed:", error);
+        sendJson(response, 500, { error: "Unable to save composer" });
+      }
+    }
+    return;
+  }
+
+  if (requestUrl.pathname.startsWith("/api/composers/")) {
+    if (!isAuthenticated(request)) {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    const slug = decodeURIComponent(requestUrl.pathname.slice("/api/composers/".length));
+    try {
+      if (request.method === "GET") {
+        const composer = getComposerBySlug(slug);
+        if (!composer) {
+          sendJson(response, 404, { error: "Composer not found" });
+          return;
+        }
+        sendJson(response, 200, serializeComposer(composer));
+        return;
+      }
+      if (request.method === "DELETE") {
+        const result = database.prepare("DELETE FROM composers WHERE slug = ?").run(slug);
+        if (!result.changes) {
+          sendJson(response, 404, { error: "Composer not found" });
+          return;
+        }
+        sendJson(response, 200, { deleted: true });
+        return;
+      }
+      const body = await readJsonBody(request);
+      const errorMessage = validateComposer(body);
+      if (errorMessage) {
+        sendJson(response, 400, { error: errorMessage });
+        return;
+      }
+      if (!Array.isArray(body.events)) {
+        sendJson(response, 400, { error: "Events array is required" });
+        return;
+      }
+      const existing = database.prepare("SELECT id FROM composers WHERE slug = ?").get(slug);
+      if (!existing) {
+        sendJson(response, 404, { error: "Composer not found" });
+        return;
+      }
+      for (const event of body.events) {
+        if (!validateComposerEvent(event)) {
+          sendJson(response, 400, { error: "Invalid composer event" });
+          return;
+        }
+      }
+      database.exec("BEGIN");
+      try {
+        database
+          .prepare(
+            `UPDATE composers SET name = ?, birth_year = ?, death_year = ?, birth_place = ?, death_place = ?,
+              biography = ?, source_url = ?, source_text = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          )
+          .run(
+            body.name.trim(),
+            body.birthYear ?? null,
+            body.deathYear ?? null,
+            body.birthPlace?.trim() || "",
+            body.deathPlace?.trim() || "",
+            body.biography?.trim() || "",
+            body.sourceUrl?.trim() || "",
+            body.sourceText?.trim() || "",
+            body.status || "draft",
+            existing.id,
+          );
+        database.prepare("DELETE FROM composer_events WHERE composer_id = ?").run(existing.id);
+        const insertEvent = database.prepare(
+          `INSERT INTO composer_events
+            (composer_id, event_type, year, year_end, date_text, place, title, description, source_excerpt, confidence, verified, sort_order, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        );
+        body.events.forEach((event, index) => {
+          insertEvent.run(
+            existing.id,
+            event.type || "other",
+            event.year ?? null,
+            event.yearEnd ?? null,
+            event.dateText?.trim() || "",
+            event.place?.trim() || "",
+            event.title?.trim() || "",
+            event.description?.trim() || "",
+            event.sourceExcerpt?.trim() || "",
+            event.confidence || "medium",
+            event.verified ? 1 : 0,
+            index,
+          );
+        });
+        database.exec("COMMIT");
+      } catch (error) {
+        database.exec("ROLLBACK");
+        throw error;
+      }
+      sendJson(response, 200, { composer: serializeComposer(getComposerBySlug(slug)) });
+    } catch (error) {
+      if (error instanceof SyntaxError) sendJson(response, 400, { error: "Invalid JSON" });
+      else {
+        console.error("Composer update failed:", error);
+        sendJson(response, 500, { error: "Unable to update composer" });
+      }
+    }
     return;
   }
 

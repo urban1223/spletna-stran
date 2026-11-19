@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
     steps:
     - name: Connect to VPS and deploy
@@ -18,7 +20,7 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
-        envs: ADMIN_PASSWORD
+        envs: ADMIN_PASSWORD,OPENAI_API_KEY,GEMINI_API_KEY
         script: |
           cd /home/timrekelj/nova-akademija
           git pull origin main
