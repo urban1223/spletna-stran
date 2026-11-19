@@ -293,6 +293,11 @@ const getFirestoreComposers = async () => {
       status: row.status || "draft",
       eventCount: eventSnapshot.size,
       updatedAt: row.updatedAt,
+      profileUid: row.profileUid || profileUid,
+      userId: row.userId || row.profileUid || profileUid,
+      ownerId: row.ownerId || row.profileUid || profileUid,
+      createdBy: row.createdBy || row.profileUid || profileUid,
+      sourceType: row.sourceType || "manual",
       events: eventSnapshot.docs.map((eventDocument) => ({
         id: eventDocument.id,
         ...eventDocument.data(),
@@ -323,6 +328,11 @@ const getFirestoreComposer = async (slug) => {
     status: row.status || "draft",
     eventCount: eventSnapshot.size,
     updatedAt: row.updatedAt,
+    profileUid: row.profileUid || profileUid,
+    userId: row.userId || row.profileUid || profileUid,
+    ownerId: row.ownerId || row.profileUid || profileUid,
+    createdBy: row.createdBy || row.profileUid || profileUid,
+    sourceType: row.sourceType || "manual",
     events: eventSnapshot.docs.map((eventDocument) => ({
       id: eventDocument.id,
       ...eventDocument.data(),

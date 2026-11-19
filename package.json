@@ -12,6 +12,7 @@
     "serve": "vite serve",
     "migrate:events": "node --experimental-sqlite server/migrate-events.mjs",
     "migrate:gallery": "node --experimental-sqlite server/migrate-gallery.mjs",
+    "migrate:composer-catalog": "node --experimental-sqlite server/migrate-composer-catalog.mjs",
     "migrate:composers": "node --experimental-sqlite server/migrate-composers.mjs",
     "backup:events": "node --experimental-sqlite server/backup-events.mjs",
     "start:local": "node --experimental-sqlite server/index.mjs",

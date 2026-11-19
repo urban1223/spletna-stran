@@ -30,5 +30,6 @@ jobs:
           docker compose run --rm nova-akademija npm run migrate:events
           docker compose run --rm nova-akademija npm run migrate:gallery
           docker compose run --rm nova-akademija npm run migrate:composers
+          docker compose run --rm nova-akademija npm run migrate:composer-catalog
           docker compose down
           docker compose up -d

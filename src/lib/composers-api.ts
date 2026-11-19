@@ -28,6 +28,11 @@ export type Composer = {
   eventCount?: number;
   updatedAt?: string;
   events?: ComposerEvent[];
+  profileUid?: string;
+  userId?: string;
+  ownerId?: string;
+  createdBy?: string;
+  sourceType?: "wikidata-catalog" | "legacy-musicians-migration" | "manual" | "firebase" | "sqlite-migration";
 };
 
 export type ExtractedComposer = {
