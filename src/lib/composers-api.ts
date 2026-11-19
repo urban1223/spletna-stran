@@ -70,3 +70,22 @@ export const extractComposer = (name: string, sourceText: string) =>
   });
 export const backupComposerData = () =>
   request<{ backedUp: boolean; database: string }>("/api/admin/backup", { method: "POST" });
+
+export type ComposerCatalogItem = { name: string; slug?: string };
+
+export type ComposerSettings = {
+  openAiConfigured: boolean;
+  geminiConfigured: boolean;
+  openAiKeyMasked: string;
+  geminiKeyMasked: string;
+  provider: "openai" | "gemini" | "none";
+};
+
+export const getComposerCatalog = () => request<ComposerCatalogItem[]>("/api/composer-catalog");
+export const getComposerSettings = () => request<ComposerSettings>("/api/composer-settings");
+export const updateComposerSettings = (openAiKey: string, geminiKey: string) =>
+  request<ComposerSettings>("/api/composer-settings", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ openAiKey, geminiKey }),
+  });

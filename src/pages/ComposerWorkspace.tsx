@@ -11,9 +11,14 @@ import {
   createComposer,
   deleteComposer,
   extractComposer,
+  getComposerCatalog,
+  getComposerSettings,
   getComposer,
   getComposers,
   updateComposer,
+  updateComposerSettings,
+  type ComposerCatalogItem,
+  type ComposerSettings,
   type Composer,
   type ComposerEvent,
 } from "@/lib/composers-api";
@@ -45,6 +50,21 @@ const eventTypes: ComposerEvent["type"][] = [
   "other",
 ];
 
+const highlightSourceExcerpt = (source: string, excerpt: string, active: boolean) => {
+  if (!excerpt.trim()) return source;
+  const index = source.toLowerCase().indexOf(excerpt.trim().toLowerCase());
+  if (index < 0) return source;
+  return (
+    <>
+      {source.slice(0, index)}
+      <mark className={active ? "bg-amber-300/90 text-black rounded px-0.5" : "bg-amber-200/40 rounded px-0.5"}>
+        {source.slice(index, index + excerpt.trim().length)}
+      </mark>
+      {source.slice(index + excerpt.trim().length)}
+    </>
+  );
+};
+
 export default function ComposerWorkspace() {
   const [authenticated, setAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
@@ -56,6 +76,13 @@ export default function ComposerWorkspace() {
   const [extracting, setExtracting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState("");
+  const [catalog, setCatalog] = useState<ComposerCatalogItem[]>([]);
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState<ComposerSettings | null>(null);
+  const [openAiKey, setOpenAiKey] = useState("");
+  const [geminiKey, setGeminiKey] = useState("");
+  const [hoveredEventIndex, setHoveredEventIndex] = useState<number | null>(null);
 
   const filteredComposers = useMemo(() => {
     const needle = filter.trim().toLowerCase();
@@ -76,7 +103,11 @@ export default function ComposerWorkspace() {
   useEffect(() => {
     if (!authenticated) return;
     setLoading(true);
-    reloadComposers()
+    Promise.all([reloadComposers(), getComposerCatalog(), getComposerSettings()])
+      .then(async ([, catalogItems, composerSettings]) => {
+        setCatalog(catalogItems);
+        setSettings(composerSettings);
+      })
       .then(async () => {
         const list = await getComposers();
         if (list.length) {
@@ -178,6 +209,37 @@ export default function ComposerWorkspace() {
     }
   };
 
+  const importCatalogComposer = async (item: ComposerCatalogItem) => {
+    try {
+      setLoading(true);
+      if (item.slug) {
+        await selectComposer(item.slug);
+        setCatalogOpen(false);
+        return;
+      }
+      const { composer: created } = await createComposer({ name: item.name, status: "draft" });
+      await reloadComposers();
+      setComposer(await getComposer(created.slug));
+      setCatalogOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Uvoz skladatelja ni uspel");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveApiSettings = async () => {
+    try {
+      const nextSettings = await updateComposerSettings(openAiKey, geminiKey);
+      setSettings(nextSettings);
+      setOpenAiKey("");
+      setGeminiKey("");
+      toast.success("API nastavitve so shranjene");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nastavitve niso shranjene");
+    }
+  };
+
   const removeComposer = async () => {
     if (!composer.slug || !window.confirm(`Izbrišem ${composer.name}?`)) return;
     try {
@@ -249,9 +311,49 @@ export default function ComposerWorkspace() {
         <h1 className="text-xl font-bold md:text-2xl">Skladatelji — hitro urejanje</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={createBackup}>Backup</Button>
+          <Button variant="outline" onClick={() => setCatalogOpen((open) => !open)}>Uvozi skladatelja</Button>
+          <Button variant="outline" onClick={() => setSettingsOpen((open) => !open)}>API ključi</Button>
           <Button variant="outline" onClick={async () => { await logoutAdmin(); setAuthenticated(false); }}>Odjava</Button>
         </div>
       </div>
+
+      {settingsOpen && (
+        <Card className="p-4 mb-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-[260px] flex-1">
+              <label className="text-sm">OpenAI API ključ
+                <Input type="password" value={openAiKey} onChange={(event) => setOpenAiKey(event.target.value)} placeholder={settings?.openAiKeyMasked || "sk-..."} />
+              </label>
+            </div>
+            <div className="min-w-[260px] flex-1">
+              <label className="text-sm">Gemini API ključ
+                <Input type="password" value={geminiKey} onChange={(event) => setGeminiKey(event.target.value)} placeholder={settings?.geminiKeyMasked || "AIza..."} />
+              </label>
+            </div>
+            <Button onClick={saveApiSettings}>Shrani ključe</Button>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Trenutni ponudnik: {settings?.provider === "openai" ? "OpenAI" : settings?.provider === "gemini" ? "Gemini" : "ni nastavljen"}.
+            Ključ se v SQLite shrani šifrirano. Prazno polje ob obstoječem ključu ne izbriše ključa.
+          </p>
+        </Card>
+      )}
+
+      {catalogOpen && (
+        <Card className="p-4 mb-3">
+          <div className="flex flex-wrap gap-2">
+            {catalog.map((item) => (
+              <Button
+                key={item.slug || item.name}
+                variant={item.slug ? "secondary" : "outline"}
+                onClick={() => void importCatalogComposer(item)}
+              >
+                {item.name}{item.slug ? " · uvožen" : ""}
+              </Button>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(320px,0.9fr)_minmax(420px,1.1fr)] gap-3">
         <Card className="p-3 h-fit lg:sticky lg:top-24">
@@ -318,6 +420,20 @@ export default function ComposerWorkspace() {
             onChange={(event) => setComposer((current) => ({ ...current, sourceText: event.target.value }))}
             placeholder="Sem prilepite celotno biografijo ali besedilo vira…"
           />
+          {composer.sourceText && (
+            <Card className="mt-3 p-3 max-h-[300px] overflow-auto">
+              <p className="text-xs font-semibold text-muted-foreground mb-2">Označen izvor · hover nad dogodkom</p>
+              <p className="whitespace-pre-wrap leading-7 text-sm">
+                {hoveredEventIndex !== null
+                  ? highlightSourceExcerpt(
+                      composer.sourceText,
+                      (composer.events || [])[hoveredEventIndex]?.sourceExcerpt || "",
+                      true,
+                    )
+                  : composer.sourceText}
+              </p>
+            </Card>
+          )}
           <p className="mt-2 text-xs text-muted-foreground">Ctrl/⌘ + Enter izvleče dogodke · Ctrl/⌘ + S shrani</p>
         </Card>
 
@@ -337,7 +453,12 @@ export default function ComposerWorkspace() {
 
           <div className="space-y-3 max-h-[72vh] overflow-auto pr-1">
             {(composer.events || []).map((event, index) => (
-              <Card key={index} className="p-3">
+              <Card
+                key={index}
+                className={`p-3 transition ${hoveredEventIndex === index ? "ring-2 ring-amber-400" : ""}`}
+                onMouseEnter={() => setHoveredEventIndex(index)}
+                onMouseLeave={() => setHoveredEventIndex(null)}
+              >
                 <div className="grid grid-cols-2 md:grid-cols-[130px_80px_1fr] gap-2">
                   <select
                     value={event.type}

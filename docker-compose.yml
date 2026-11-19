@@ -14,6 +14,7 @@ services:
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
+      - APP_ENCRYPTION_KEY=${APP_ENCRYPTION_KEY:-}
     ports:
       - 4231:8080
     volumes:

@@ -1,5 +1,5 @@
 import { createReadStream } from "node:fs";
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { access, cp, mkdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { basename, dirname, extname, join, normalize, sep } from "node:path";
@@ -275,6 +275,78 @@ const validateComposerEvent = (event) => {
   );
 };
 
+const settingEncryptionKey = () => {
+  const secret = process.env.APP_ENCRYPTION_KEY || adminPassword;
+  if (!secret) throw new Error("APP_ENCRYPTION_KEY or ADMIN_PASSWORD is required to store API keys");
+  return scryptSync(secret, "nova-akademija-settings-v1", 32);
+};
+
+const encryptSetting = (value) => {
+  if (!value) return "";
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", settingEncryptionKey(), iv);
+  const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
+  return `enc:v1:${iv.toString("base64")}:${cipher.getAuthTag().toString("base64")}:${encrypted.toString("base64")}`;
+};
+
+const decryptSetting = (value) => {
+  if (!value) return "";
+  if (!value.startsWith("enc:v1:")) return value;
+  try {
+    const [, , ivText, tagText, encryptedText] = value.split(":");
+    const decipher = createDecipheriv("aes-256-gcm", settingEncryptionKey(), Buffer.from(ivText, "base64"));
+    decipher.setAuthTag(Buffer.from(tagText, "base64"));
+    return Buffer.concat([decipher.update(Buffer.from(encryptedText, "base64")), decipher.final()]).toString("utf8");
+  } catch (error) {
+    console.error("Unable to decrypt app setting:", error);
+    return "";
+  }
+};
+
+const getSetting = (key) => decryptSetting(database.prepare("SELECT value FROM app_settings WHERE key = ?").get(key)?.value || "");
+
+const setSetting = (key, value) => {
+  database
+    .prepare(
+      `INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP`,
+    )
+    .run(key, encryptSetting(value));
+};
+
+const composerCatalog = [
+  "J. S. Bach",
+  "G. P. Telemann",
+  "G. F. Händel",
+  "A. Vivaldi",
+  "J. van Eyck",
+  "A. Corelli",
+  "P. A. Locatelli",
+  "G. Tartini",
+  "J. D. Zelenka",
+  "M. A. Charpentier",
+  "W. A. Mozart",
+  "G. B. Fontana",
+  "D. Buxtehude",
+  "J. J. Quantz",
+  "W. Byrd",
+  "T. Morley",
+  "G. de Machaut",
+  "C. Monteverdi",
+];
+
+const seedComposerCatalog = () => {
+  const insertComposer = database.prepare(
+    `INSERT OR IGNORE INTO composers (slug, name, status, updated_at)
+     VALUES (?, ?, 'draft', CURRENT_TIMESTAMP)`,
+  );
+  for (const name of composerCatalog) {
+    insertComposer.run(slugifyComposerName(name), name);
+  }
+};
+
+seedComposerCatalog();
+
 const extractionPrompt = (name, sourceText) => `You extract historical music events from biographies.
 Return only valid JSON, with this exact structure:
 {"birthYear": number|null,"deathYear": number|null,"birthPlace":"...","deathPlace":"...","events":[
@@ -300,12 +372,14 @@ const parseAiJson = (text) => {
 
 const extractComposerEvents = async (name, sourceText) => {
   const prompt = extractionPrompt(name, sourceText);
-  if (process.env.OPENAI_API_KEY) {
+  const openAiKey = getSetting("openai_api_key") || process.env.OPENAI_API_KEY;
+  const geminiKey = getSetting("gemini_api_key") || process.env.GEMINI_API_KEY;
+  if (openAiKey) {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: `Bearer ${openAiKey}`,
       },
       body: JSON.stringify({
         model: process.env.OPENAI_MODEL || "gpt-4o-mini",
@@ -322,10 +396,10 @@ const extractComposerEvents = async (name, sourceText) => {
     return parseAiJson(payload.choices?.[0]?.message?.content || "");
   }
 
-  if (process.env.GEMINI_API_KEY) {
+  if (geminiKey) {
     const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(geminiKey)}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1114,6 +1188,61 @@ const server = createServer(async (request, response) => {
       return;
     }
     sendJson(response, 200, getComposers().map(serializeComposer));
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/composer-catalog" && request.method === "GET") {
+    if (!isAuthenticated(request)) {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    const existing = new Set(getComposers().map((composer) => composer.name.toLowerCase()));
+    sendJson(response, 200, composerCatalog
+      .filter((name) => !existing.has(name.toLowerCase()))
+      .map((name) => ({ name }))
+      .concat(getComposers().map((composer) => ({ name: composer.name, slug: composer.slug }))));
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/composer-settings" && request.method === "GET") {
+    if (!isAuthenticated(request)) {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    const openAiKey = getSetting("openai_api_key") || process.env.OPENAI_API_KEY || "";
+    const geminiKey = getSetting("gemini_api_key") || process.env.GEMINI_API_KEY || "";
+    sendJson(response, 200, {
+      openAiConfigured: Boolean(openAiKey),
+      geminiConfigured: Boolean(geminiKey),
+      openAiKeyMasked: openAiKey ? `${openAiKey.slice(0, 4)}••••${openAiKey.slice(-4)}` : "",
+      geminiKeyMasked: geminiKey ? `${geminiKey.slice(0, 4)}••••${geminiKey.slice(-4)}` : "",
+      provider: openAiKey ? "openai" : geminiKey ? "gemini" : "none",
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/composer-settings" && request.method === "PUT") {
+    if (!isAuthenticated(request)) {
+      sendJson(response, 401, { error: "Authentication required" });
+      return;
+    }
+    try {
+      const body = await readJsonBody(request);
+      if (typeof body.openAiKey === "string" && body.openAiKey.trim()) setSetting("openai_api_key", body.openAiKey.trim());
+      if (typeof body.geminiKey === "string" && body.geminiKey.trim()) setSetting("gemini_api_key", body.geminiKey.trim());
+      const openAiKey = getSetting("openai_api_key") || process.env.OPENAI_API_KEY || "";
+      const geminiKey = getSetting("gemini_api_key") || process.env.GEMINI_API_KEY || "";
+      sendJson(response, 200, {
+        openAiConfigured: Boolean(openAiKey),
+        geminiConfigured: Boolean(geminiKey),
+        openAiKeyMasked: openAiKey ? `${openAiKey.slice(0, 4)}••••${openAiKey.slice(-4)}` : "",
+        geminiKeyMasked: geminiKey ? `${geminiKey.slice(0, 4)}••••${geminiKey.slice(-4)}` : "",
+        provider: openAiKey ? "openai" : geminiKey ? "gemini" : "none",
+      });
+    } catch (error) {
+      console.error("Composer settings update failed:", error);
+      sendJson(response, 500, { error: "Unable to save API settings" });
+    }
     return;
   }
 
