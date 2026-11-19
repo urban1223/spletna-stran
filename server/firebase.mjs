@@ -46,7 +46,7 @@ const getFirestore = async () => {
 
 const composersCollection = async () => {
   await initializeFirebase();
-  return firestore.collection("profiles").doc(profileUid).collection("composers");
+  return firestore.collection("musicians");
 };
 
 export { initializeFirebase, getFirestore, firestore, composersCollection, profileUid };

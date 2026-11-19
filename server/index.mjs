@@ -278,7 +278,21 @@ const getFirestoreComposers = async () => {
   const composers = [];
   for (const document of snapshot.docs) {
     const row = document.data();
-    const eventSnapshot = await collection.doc(document.id).collection("events").orderBy("sortOrder").get();
+    const eventSnapshot = await collection.doc(document.id).collection("events").get();
+    const arrayEvents = Array.isArray(row.events) ? row.events : [];
+    const subevents = eventSnapshot.docs.map((eventDocument) => ({
+      id: eventDocument.id,
+      ...eventDocument.data(),
+    }));
+    const eventsById = new Map();
+    for (const event of subevents) eventsById.set(String(event.id), event);
+    for (const [index, event] of arrayEvents.entries()) {
+      const eventId = event.id ? String(event.id) : `event-${index + 1}`;
+      if (!eventsById.has(eventId)) eventsById.set(eventId, { id: eventId, ...event });
+    }
+    const events = [...eventsById.values()].sort((a, b) =>
+      Number.parseInt(String(a.year ?? 9999), 10) - Number.parseInt(String(b.year ?? 9999), 10),
+    );
     composers.push({
       id: document.id,
       slug: document.id,
@@ -291,17 +305,14 @@ const getFirestoreComposers = async () => {
       sourceUrl: row.sourceUrl || "",
       sourceText: row.sourceText || "",
       status: row.status || "draft",
-      eventCount: eventSnapshot.size,
+      eventCount: events.length,
       updatedAt: row.updatedAt,
       profileUid: row.profileUid || profileUid,
       userId: row.userId || row.profileUid || profileUid,
       ownerId: row.ownerId || row.profileUid || profileUid,
       createdBy: row.createdBy || row.profileUid || profileUid,
       sourceType: row.sourceType || "manual",
-      events: eventSnapshot.docs.map((eventDocument) => ({
-        id: eventDocument.id,
-        ...eventDocument.data(),
-      })),
+      events,
     });
   }
   return composers;
@@ -313,7 +324,21 @@ const getFirestoreComposer = async (slug) => {
   const document = await collection.doc(slug).get();
   if (!document.exists) return null;
   const row = document.data();
-  const eventSnapshot = await collection.doc(slug).collection("events").orderBy("sortOrder").get();
+  const eventSnapshot = await collection.doc(slug).collection("events").get();
+  const arrayEvents = Array.isArray(row.events) ? row.events : [];
+  const subevents = eventSnapshot.docs.map((eventDocument) => ({
+    id: eventDocument.id,
+    ...eventDocument.data(),
+  }));
+  const eventsById = new Map();
+  for (const event of subevents) eventsById.set(String(event.id), event);
+  for (const [index, event] of arrayEvents.entries()) {
+    const eventId = event.id ? String(event.id) : `event-${index + 1}`;
+    if (!eventsById.has(eventId)) eventsById.set(eventId, { id: eventId, ...event });
+  }
+  const events = [...eventsById.values()].sort((a, b) =>
+    Number.parseInt(String(a.year ?? 9999), 10) - Number.parseInt(String(b.year ?? 9999), 10),
+  );
   return {
     id: document.id,
     slug: document.id,
@@ -326,17 +351,14 @@ const getFirestoreComposer = async (slug) => {
     sourceUrl: row.sourceUrl || "",
     sourceText: row.sourceText || "",
     status: row.status || "draft",
-    eventCount: eventSnapshot.size,
+    eventCount: events.length,
     updatedAt: row.updatedAt,
     profileUid: row.profileUid || profileUid,
     userId: row.userId || row.profileUid || profileUid,
     ownerId: row.ownerId || row.profileUid || profileUid,
     createdBy: row.createdBy || row.profileUid || profileUid,
     sourceType: row.sourceType || "manual",
-    events: eventSnapshot.docs.map((eventDocument) => ({
-      id: eventDocument.id,
-      ...eventDocument.data(),
-    })),
+    events,
   };
 };
 
@@ -1437,6 +1459,8 @@ const server = createServer(async (request, response) => {
         sourceUrl: body.sourceUrl?.trim() || "",
         sourceText: body.sourceText?.trim() || "",
         status: body.status || "draft",
+        events: [],
+        eventCount: 0,
         profileUid,
         sourceType: "firebase",
         updatedAt: new Date().toISOString(),
@@ -1509,6 +1533,22 @@ const server = createServer(async (request, response) => {
         }
       }
       const firestore = await getFirestore();
+      const legacyEvents = body.events.map((event, index) => ({
+        id: event.id ? String(event.id) : `${slug}-${index + 1}`,
+        year: event.year ?? null,
+        location: event.place?.trim() || "",
+        text: event.description?.trim() || event.title?.trim() || "",
+        dateText: event.dateText?.trim() || "",
+        place: event.place?.trim() || "",
+        title: event.title?.trim() || "",
+        description: event.description?.trim() || "",
+        sourceExcerpt: event.sourceExcerpt?.trim() || "",
+        source: event.sourceExcerpt?.trim() || "",
+        confidence: event.confidence || "medium",
+        verified: Boolean(event.verified),
+        type: event.type || "other",
+        sortOrder: index,
+      }));
       await document.ref.set({
         name: body.name.trim(),
         birthYear: body.birthYear ?? null,
@@ -1520,7 +1560,12 @@ const server = createServer(async (request, response) => {
         sourceText: body.sourceText?.trim() || "",
         status: body.status || "draft",
         profileUid,
+        userId: body.userId || document.data().userId || profileUid,
+        ownerId: body.ownerId || document.data().ownerId || profileUid,
+        createdBy: body.createdBy || document.data().createdBy || profileUid,
         sourceType: "firebase",
+        events: legacyEvents,
+        eventCount: legacyEvents.length,
         updatedAt: new Date().toISOString(),
       }, { merge: true });
       const eventSnapshot = await collection.doc(slug).collection("events").get();
