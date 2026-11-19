@@ -12,6 +12,7 @@
     "serve": "vite serve",
     "migrate:events": "node --experimental-sqlite server/migrate-events.mjs",
     "migrate:gallery": "node --experimental-sqlite server/migrate-gallery.mjs",
+    "migrate:composers": "node --experimental-sqlite server/migrate-composers.mjs",
     "backup:events": "node --experimental-sqlite server/backup-events.mjs",
     "start:local": "node --experimental-sqlite server/index.mjs",
     "sync:styles": "node scripts/sync-shared-style.mjs"
@@ -52,6 +53,7 @@
     "date-fns": "^3.6.0",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
+    "firebase-admin": "^14.5.1",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",

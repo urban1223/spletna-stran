@@ -5,6 +5,7 @@ import { createServer } from "node:http";
 import { basename, dirname, extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { database, databasePath } from "./db.mjs";
+import { initializeFirebase, getFirestore, composersCollection, profileUid } from "./firebase.mjs";
 import "./db.mjs";
 
 const port = Number(process.env.PORT || 8080);
@@ -255,6 +256,80 @@ const serializeComposer = (composer) => ({
   events: Array.isArray(composer.events) ? composer.events.map(serializeComposerEvent) : undefined,
 });
 
+const firestoreComposerFromRow = (row) => ({
+  slug: row.slug,
+  name: row.name,
+  birthYear: row.birth_year,
+  deathYear: row.death_year,
+  birthPlace: row.birth_place,
+  deathPlace: row.death_place,
+  biography: row.biography,
+  sourceUrl: row.source_url,
+  sourceText: row.source_text,
+  status: row.status,
+  profileUid,
+  updatedAt: row.updated_at,
+});
+
+const getFirestoreComposers = async () => {
+  await initializeFirebase();
+  const collection = await composersCollection();
+  const snapshot = await collection.orderBy("name").get();
+  const composers = [];
+  for (const document of snapshot.docs) {
+    const row = document.data();
+    const eventSnapshot = await collection.doc(document.id).collection("events").orderBy("sortOrder").get();
+    composers.push({
+      id: document.id,
+      slug: document.id,
+      name: row.name,
+      birthYear: row.birthYear ?? null,
+      deathYear: row.deathYear ?? null,
+      birthPlace: row.birthPlace || "",
+      deathPlace: row.deathPlace || "",
+      biography: row.biography || "",
+      sourceUrl: row.sourceUrl || "",
+      sourceText: row.sourceText || "",
+      status: row.status || "draft",
+      eventCount: eventSnapshot.size,
+      updatedAt: row.updatedAt,
+      events: eventSnapshot.docs.map((eventDocument) => ({
+        id: eventDocument.id,
+        ...eventDocument.data(),
+      })),
+    });
+  }
+  return composers;
+};
+
+const getFirestoreComposer = async (slug) => {
+  await initializeFirebase();
+  const collection = await composersCollection();
+  const document = await collection.doc(slug).get();
+  if (!document.exists) return null;
+  const row = document.data();
+  const eventSnapshot = await collection.doc(slug).collection("events").orderBy("sortOrder").get();
+  return {
+    id: document.id,
+    slug: document.id,
+    name: row.name,
+    birthYear: row.birthYear ?? null,
+    deathYear: row.deathYear ?? null,
+    birthPlace: row.birthPlace || "",
+    deathPlace: row.deathPlace || "",
+    biography: row.biography || "",
+    sourceUrl: row.sourceUrl || "",
+    sourceText: row.sourceText || "",
+    status: row.status || "draft",
+    eventCount: eventSnapshot.size,
+    updatedAt: row.updatedAt,
+    events: eventSnapshot.docs.map((eventDocument) => ({
+      id: eventDocument.id,
+      ...eventDocument.data(),
+    })),
+  };
+};
+
 const validateComposer = (body) => {
   if (!body || typeof body !== "object") return "Missing composer data";
   if (typeof body.name !== "string" || !body.name.trim()) return "Missing composer name";
@@ -335,17 +410,6 @@ const composerCatalog = [
   "C. Monteverdi",
 ];
 
-const seedComposerCatalog = () => {
-  const insertComposer = database.prepare(
-    `INSERT OR IGNORE INTO composers (slug, name, status, updated_at)
-     VALUES (?, ?, 'draft', CURRENT_TIMESTAMP)`,
-  );
-  for (const name of composerCatalog) {
-    insertComposer.run(slugifyComposerName(name), name);
-  }
-};
-
-seedComposerCatalog();
 
 const extractionPrompt = (name, sourceText) => `You extract historical music events from biographies.
 Return only valid JSON, with this exact structure:
@@ -1187,7 +1251,13 @@ const server = createServer(async (request, response) => {
       sendJson(response, 401, { error: "Authentication required" });
       return;
     }
-    sendJson(response, 200, getComposers().map(serializeComposer));
+    try {
+      const composers = await getFirestoreComposers();
+      sendJson(response, 200, composers);
+    } catch (error) {
+      console.error("Firestore composer list failed:", error);
+      sendJson(response, 503, { error: "Firebase is not configured or unavailable" });
+    }
     return;
   }
 
@@ -1196,11 +1266,17 @@ const server = createServer(async (request, response) => {
       sendJson(response, 401, { error: "Authentication required" });
       return;
     }
-    const existing = new Set(getComposers().map((composer) => composer.name.toLowerCase()));
-    sendJson(response, 200, composerCatalog
-      .filter((name) => !existing.has(name.toLowerCase()))
-      .map((name) => ({ name }))
-      .concat(getComposers().map((composer) => ({ name: composer.name, slug: composer.slug }))));
+    try {
+      const existingComposers = await getFirestoreComposers();
+      const existing = new Set(existingComposers.map((composer) => composer.name.toLowerCase()));
+      sendJson(response, 200, composerCatalog
+        .filter((name) => !existing.has(name.toLowerCase()))
+        .map((name) => ({ name }))
+        .concat(existingComposers.map((composer) => ({ name: composer.name, slug: composer.slug }))));
+    } catch (error) {
+      console.error("Firestore catalog failed:", error);
+      sendJson(response, 503, { error: "Firebase is not configured or unavailable" });
+    }
     return;
   }
 
@@ -1331,34 +1407,31 @@ const server = createServer(async (request, response) => {
         sendJson(response, 400, { error: errorMessage });
         return;
       }
-      const slug = typeof body.slug === "string" && body.slug.trim()
+      const firestore = await getFirestore();
+      const collection = await composersCollection();
+      let slug = typeof body.slug === "string" && body.slug.trim()
         ? body.slug.trim()
         : slugifyComposerName(body.name);
-      let uniqueSlug = slug;
       let suffix = 2;
-      while (database.prepare("SELECT id FROM composers WHERE slug = ?").get(uniqueSlug)) {
-        uniqueSlug = `${slug}-${suffix}`;
+      while ((await collection.doc(slug).get()).exists) {
+        slug = `${slugifyComposerName(body.name)}-${suffix}`;
         suffix += 1;
       }
-      const result = database
-        .prepare(
-          `INSERT INTO composers
-            (slug, name, birth_year, death_year, birth_place, death_place, biography, source_url, source_text, status, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-        )
-        .run(
-          uniqueSlug,
-          body.name.trim(),
-          body.birthYear ?? null,
-          body.deathYear ?? null,
-          body.birthPlace?.trim() || "",
-          body.deathPlace?.trim() || "",
-          body.biography?.trim() || "",
-          body.sourceUrl?.trim() || "",
-          body.sourceText?.trim() || "",
-          body.status || "draft",
-        );
-      sendJson(response, 201, { composer: serializeComposer(getComposerBySlug(uniqueSlug)) });
+      await collection.doc(slug).set({
+        name: body.name.trim(),
+        birthYear: body.birthYear ?? null,
+        deathYear: body.deathYear ?? null,
+        birthPlace: body.birthPlace?.trim() || "",
+        deathPlace: body.deathPlace?.trim() || "",
+        biography: body.biography?.trim() || "",
+        sourceUrl: body.sourceUrl?.trim() || "",
+        sourceText: body.sourceText?.trim() || "",
+        status: body.status || "draft",
+        profileUid,
+        sourceType: "firebase",
+        updatedAt: new Date().toISOString(),
+      });
+      sendJson(response, 201, { composer: await getFirestoreComposer(slug) });
     } catch (error) {
       if (error instanceof SyntaxError) sendJson(response, 400, { error: "Invalid JSON" });
       else {
@@ -1377,20 +1450,29 @@ const server = createServer(async (request, response) => {
     const slug = decodeURIComponent(requestUrl.pathname.slice("/api/composers/".length));
     try {
       if (request.method === "GET") {
-        const composer = getComposerBySlug(slug);
+        const composer = await getFirestoreComposer(slug);
         if (!composer) {
           sendJson(response, 404, { error: "Composer not found" });
           return;
         }
-        sendJson(response, 200, serializeComposer(composer));
+        sendJson(response, 200, composer);
         return;
       }
       if (request.method === "DELETE") {
-        const result = database.prepare("DELETE FROM composers WHERE slug = ?").run(slug);
-        if (!result.changes) {
+        const collection = await composersCollection();
+        const document = await collection.doc(slug).get();
+        if (!document.exists) {
           sendJson(response, 404, { error: "Composer not found" });
           return;
         }
+        const eventSnapshot = await collection.doc(slug).collection("events").get();
+        const firestore = await getFirestore();
+        const batch = firestore.batch();
+        for (const eventDocument of eventSnapshot.docs) {
+          batch.delete(eventDocument.ref);
+        }
+        batch.delete(document.ref);
+        await batch.commit();
         sendJson(response, 200, { deleted: true });
         return;
       }
@@ -1404,8 +1486,9 @@ const server = createServer(async (request, response) => {
         sendJson(response, 400, { error: "Events array is required" });
         return;
       }
-      const existing = database.prepare("SELECT id FROM composers WHERE slug = ?").get(slug);
-      if (!existing) {
+      const collection = await composersCollection();
+      const document = await collection.doc(slug).get();
+      if (!document.exists) {
         sendJson(response, 404, { error: "Composer not found" });
         return;
       }
@@ -1415,53 +1498,45 @@ const server = createServer(async (request, response) => {
           return;
         }
       }
-      database.exec("BEGIN");
-      try {
-        database
-          .prepare(
-            `UPDATE composers SET name = ?, birth_year = ?, death_year = ?, birth_place = ?, death_place = ?,
-              biography = ?, source_url = ?, source_text = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-          )
-          .run(
-            body.name.trim(),
-            body.birthYear ?? null,
-            body.deathYear ?? null,
-            body.birthPlace?.trim() || "",
-            body.deathPlace?.trim() || "",
-            body.biography?.trim() || "",
-            body.sourceUrl?.trim() || "",
-            body.sourceText?.trim() || "",
-            body.status || "draft",
-            existing.id,
-          );
-        database.prepare("DELETE FROM composer_events WHERE composer_id = ?").run(existing.id);
-        const insertEvent = database.prepare(
-          `INSERT INTO composer_events
-            (composer_id, event_type, year, year_end, date_text, place, title, description, source_excerpt, confidence, verified, sort_order, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-        );
-        body.events.forEach((event, index) => {
-          insertEvent.run(
-            existing.id,
-            event.type || "other",
-            event.year ?? null,
-            event.yearEnd ?? null,
-            event.dateText?.trim() || "",
-            event.place?.trim() || "",
-            event.title?.trim() || "",
-            event.description?.trim() || "",
-            event.sourceExcerpt?.trim() || "",
-            event.confidence || "medium",
-            event.verified ? 1 : 0,
-            index,
-          );
+      const firestore = await getFirestore();
+      await document.ref.set({
+        name: body.name.trim(),
+        birthYear: body.birthYear ?? null,
+        deathYear: body.deathYear ?? null,
+        birthPlace: body.birthPlace?.trim() || "",
+        deathPlace: body.deathPlace?.trim() || "",
+        biography: body.biography?.trim() || "",
+        sourceUrl: body.sourceUrl?.trim() || "",
+        sourceText: body.sourceText?.trim() || "",
+        status: body.status || "draft",
+        profileUid,
+        sourceType: "firebase",
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+      const eventSnapshot = await collection.doc(slug).collection("events").get();
+      const batch = firestore.batch();
+      for (const eventDocument of eventSnapshot.docs) batch.delete(eventDocument.ref);
+      for (const [index, event] of body.events.entries()) {
+        const eventId = event.id ? String(event.id) : `${slug}-${index + 1}`;
+        const eventRef = collection.doc(slug).collection("events").doc(eventId);
+        batch.set(eventRef, {
+          type: event.type || "other",
+          year: event.year ?? null,
+          yearEnd: event.yearEnd ?? null,
+          dateText: event.dateText?.trim() || "",
+          place: event.place?.trim() || "",
+          title: event.title?.trim() || "",
+          description: event.description?.trim() || "",
+          sourceExcerpt: event.sourceExcerpt?.trim() || "",
+          confidence: event.confidence || "medium",
+          verified: Boolean(event.verified),
+          sortOrder: index,
+          profileUid,
+          updatedAt: new Date().toISOString(),
         });
-        database.exec("COMMIT");
-      } catch (error) {
-        database.exec("ROLLBACK");
-        throw error;
       }
-      sendJson(response, 200, { composer: serializeComposer(getComposerBySlug(slug)) });
+      await batch.commit();
+      sendJson(response, 200, { composer: await getFirestoreComposer(slug) });
     } catch (error) {
       if (error instanceof SyntaxError) sendJson(response, 400, { error: "Invalid JSON" });
       else {

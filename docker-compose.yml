@@ -15,6 +15,10 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
       - APP_ENCRYPTION_KEY=${APP_ENCRYPTION_KEY:-}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-skladatelji}
+      - FIREBASE_PROFILE_UID=${FIREBASE_PROFILE_UID:-1n5oETZv4lbPiM0kSISI3bmBMa43}
+      - FIREBASE_CREDENTIALS_PATH=/run/secrets/firebase-service-account.json
+      - FIREBASE_SERVICE_ACCOUNT=${FIREBASE_SERVICE_ACCOUNT:-}
     ports:
       - 4231:8080
     volumes:
